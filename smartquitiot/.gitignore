@@ -47,4 +47,4 @@ app.*.map.json
 # cusor
 /cursor
 .cursorrules
-.cursorrules/
+/cusor-rules/
