@@ -8,13 +8,13 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'SmartQuit IoT',
+      title: 'Kwit - Quit Smoking App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
       ),
       routes: AppRoutes.routes,
-      initialRoute: AppRoutes.productList,
+      initialRoute: AppRoutes.quitSmokingWelcome,
     );
   }
 }
