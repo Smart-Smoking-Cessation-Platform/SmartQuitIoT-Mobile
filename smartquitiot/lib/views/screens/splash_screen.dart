@@ -11,7 +11,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    // Show Screen 1-A (Launch.png) for a few seconds, then navigate to 1-B
+    Future.delayed(const Duration(milliseconds: 2000), () {
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/welcome');
     });
@@ -19,45 +20,30 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: scheme.primary,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Center(
+      backgroundColor: const Color(0xFFDADCE0),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(),
+        child: SafeArea(
+          child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset(
-                  'lib/assets/logo.png',
-                  width: 160,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 24),
+                Image.asset('lib/assets/logo.png', width: 200, height: 200),
+                const SizedBox(height: 20),
                 Text(
-                  'Welcome To\nSmartQuit',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.headlineMedium?.copyWith(color: scheme.onPrimary),
+                  'SmartQuit',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
           ),
-          Positioned.fill(
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 1.0, end: 0.0),
-              duration: const Duration(milliseconds: 1000),
-              onEnd: () => Navigator.of(context).pushReplacementNamed('/login'),
-              builder: (context, value, child) {
-                return IgnorePointer(
-                  child: Container(color: scheme.primary.withOpacity(value)),
-                );
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

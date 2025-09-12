@@ -33,26 +33,32 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           children: [
             _q('How Long Have You Smoked?'),
             const SizedBox(height: 8),
-            TextField(
-              controller: _years,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(hintText: 'Years'),
+            _card(
+              child: TextField(
+                controller: _years,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(hintText: 'Years'),
+              ),
             ),
             const SizedBox(height: 16),
             _q('How Much Does It Cost To Buy A Pack Of Cigarettes?'),
             const SizedBox(height: 8),
-            TextField(
-              controller: _packCost,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(hintText: 'Price'),
+            _card(
+              child: TextField(
+                controller: _packCost,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(hintText: 'Price'),
+              ),
             ),
             const SizedBox(height: 16),
             _q('How Many Cigarettes In A Pack?'),
             const SizedBox(height: 8),
-            TextField(
-              controller: _cigsPerPack,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(hintText: '20'),
+            _card(
+              child: TextField(
+                controller: _cigsPerPack,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(hintText: '20'),
+              ),
             ),
             const SizedBox(height: 16),
             _q('How Soon After Waking Do You Smoke Your First Cigarette?'),
@@ -91,6 +97,24 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   Widget _q(String text) =>
       Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
+
+  Widget _card({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
 
   Widget _wakeOptions(ColorScheme scheme) {
     final List<String> options = [

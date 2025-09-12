@@ -5,13 +5,16 @@ class AppTheme {
 
   static ThemeData light() {
     // Brand color
-    const Color brand = Color(0xFF00D09E);
-    final ColorScheme scheme = ColorScheme.fromSeed(seedColor: brand);
+    const Color brand = Color(0xFF7AC555);
+    final ColorScheme scheme = ColorScheme.fromSeed(
+      seedColor: brand,
+      brightness: Brightness.light,
+    );
     return ThemeData(
-      colorScheme: scheme,
+      colorScheme: scheme.copyWith(primary: brand),
       useMaterial3: true,
       visualDensity: VisualDensity.adaptivePlatformDensity,
-      scaffoldBackgroundColor: scheme.surface,
+      scaffoldBackgroundColor: const Color(0xFFDADCE0),
       textTheme: const TextTheme(
         displaySmall: TextStyle(fontWeight: FontWeight.w700),
         headlineMedium: TextStyle(fontWeight: FontWeight.w700),
@@ -19,15 +22,15 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: brand,
-          foregroundColor: scheme.onPrimary,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
           shape: const StadiumBorder(),
           minimumSize: const Size.fromHeight(48),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerHighest,
+        fillColor: Colors.white.withOpacity(0.9),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,

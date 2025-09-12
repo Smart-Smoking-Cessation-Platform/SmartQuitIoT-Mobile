@@ -34,7 +34,7 @@ class SocialIconCircle extends StatelessWidget {
           alignment: Alignment.center,
           child: isSvg
               ? SvgPicture.asset(asset, width: 24, height: 24)
-              : Image.asset(asset, width: 24, height: 24),
+              : Image.asset(asset, width: 24, height: 24, fit: BoxFit.contain),
         ),
       ),
     );

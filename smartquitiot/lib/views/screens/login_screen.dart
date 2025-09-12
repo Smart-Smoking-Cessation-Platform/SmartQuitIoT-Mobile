@@ -27,6 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: const Color(0xFFDADCE0),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -102,12 +103,36 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(width: 16),
                         SocialIconCircle(
-                          asset: 'lib/assets/google.svg',
+                          asset: 'lib/assets/google.png',
                           onTap: () {},
                           background: Colors.white,
                           border: scheme.outline,
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/forgot'),
+                        child: const Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Forgot password? ',
+                                style: TextStyle(color: Colors.black87),
+                              ),
+                              TextSpan(
+                                text: 'Click here',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w700,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Center(

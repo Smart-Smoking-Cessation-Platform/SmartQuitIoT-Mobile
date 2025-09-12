@@ -11,6 +11,7 @@ class HomeScreen extends ConsumerWidget {
     final vm = ref.read(homeViewModelProvider.notifier);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFDADCE0),
       appBar: AppBar(
         title: const Text('SmartQuit'),
         actions: [

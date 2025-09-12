@@ -15,22 +15,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _OnboardPage(
       title: 'Welcome To SmartQuit',
       subtitle: 'Are You Ready To Save Your Life?',
-      icon: Icons.smoke_free,
     ),
     _OnboardPage(
-      title: 'Tell Us About You',
-      subtitle: 'Answer questions to help us understand you clearly',
-      icon: Icons.health_and_safety_outlined,
+      title: 'Let’s talk…',
+      subtitle: 'Tell us about your smoking habits',
+      overlayAsset: 'lib/assets/Group.png',
+      secondaryAsset:
+          'lib/assets/bank-card-mobile-phone-online-payment-removebg-preview 1.png',
     ),
     _OnboardPage(
       title: 'Stay Motivated',
       subtitle: 'Tips, achievements and progress every day',
-      icon: Icons.emoji_events_outlined,
-    ),
-    _OnboardPage(
-      title: 'Let’s Get Started',
-      subtitle: 'Create your plan to quit smoking now',
-      icon: Icons.flag_circle_outlined,
     ),
   ];
 
@@ -47,7 +42,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeOut,
       );
     } else {
-      Navigator.pushReplacementNamed(context, '/home');
+      // After 2-C, show 1-A Launch (1).png briefly, then go to Home
+      Navigator.of(context).pushReplacementNamed('/relaunch');
     }
   }
 
@@ -55,11 +51,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: const Color(0xFFDADCE0),
       body: SafeArea(
         child: Column(
           children: [
+            // Header with title on brand color
             Container(
-              height: 200,
+              height: 160,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: scheme.primary,
@@ -69,12 +67,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               alignment: Alignment.center,
-              child: Text(
-                _pages[_index].title,
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.headlineSmall?.copyWith(color: scheme.onPrimary),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _pages[_index].title,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_index == 0)
+                    Image.asset('lib/assets/Group.png', width: 56, height: 56),
+                ],
               ),
             ),
             Expanded(
@@ -86,19 +93,73 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   final p = _pages[i];
                   return Column(
                     children: [
-                      const SizedBox(height: 32),
-                      // Use provided assets when available; fallback to icon
-                      Icon(p.icon, size: 120, color: scheme.primary),
                       const SizedBox(height: 24),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (p.overlayAsset != null)
+                                  Align(
+                                    alignment: Alignment.topRight,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Image.asset(
+                                        p.overlayAsset!,
+                                        width: 72,
+                                        height: 72,
+                                      ),
+                                    ),
+                                  ),
+                                if (p.secondaryAsset != null)
+                                  Align(
+                                    alignment: Alignment.bottomCenter,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 24,
+                                      ),
+                                      child: Image.asset(
+                                        p.secondaryAsset!,
+                                        width: 200,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                if (p.secondaryAsset == null)
+                                  Icon(
+                                    Icons.smoke_free,
+                                    size: 120,
+                                    color: scheme.primary,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Text(
                           p.subtitle,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(color: Colors.black87),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(_pages.length, (dot) {
@@ -109,9 +170,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             margin: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: active
-                                  ? scheme.primary
-                                  : scheme.outlineVariant,
+                              color: active ? Colors.white : Colors.white70,
                             ),
                           );
                         }),
@@ -120,6 +179,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                         child: ElevatedButton(
                           onPressed: _next,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                          ),
                           child: Text(
                             _index == _pages.length - 1 ? 'Start' : 'Next',
                           ),
@@ -140,10 +203,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 class _OnboardPage {
   final String title;
   final String subtitle;
-  final IconData icon;
+  final String? overlayAsset;
+  final String? secondaryAsset;
   const _OnboardPage({
     required this.title,
     required this.subtitle,
-    required this.icon,
+    this.overlayAsset,
+    this.secondaryAsset,
   });
 }

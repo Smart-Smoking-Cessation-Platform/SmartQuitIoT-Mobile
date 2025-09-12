@@ -30,7 +30,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: const Color(0xFFDADCE0),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -108,6 +110,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ElevatedButton(
                 onPressed: () =>
                     Navigator.pushReplacementNamed(context, '/onboarding'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: scheme.primary,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Sign Up'),
               ),
               const SizedBox(height: 12),
