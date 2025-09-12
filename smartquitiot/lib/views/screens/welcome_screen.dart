@@ -5,149 +5,196 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFDADCE0),
+      backgroundColor: const Color(0xFFF1FFF3), // Light green background
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo + title card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 28,
-                  horizontal: 20,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+              const Spacer(),
+
+              // Logo và title
+              Column(
+                children: [
+                  // Logo từ assets
+                  Image.asset('lib/assets/logo.png', width: 120, height: 120),
+                  const SizedBox(height: 24),
+                  Text(
+                    'SMART QUIT',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF00D09E),
+                      letterSpacing: 1.5,
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Image.asset('lib/assets/logo.png', width: 128, height: 128),
-                    const SizedBox(height: 16),
-                    Text(
-                      'SmartQuit',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(
-                            color: scheme.primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              // Actions card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+
+              const SizedBox(height: 60),
+
+              // Cụm 1: Sign In và Sign Up buttons
+              Column(
+                children: [
+                  // Sign In button
+                  Container(
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D09E),
+                      borderRadius: BorderRadius.circular(25),
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, '/onboarding'),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/login'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: scheme.primary,
-                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
                       ),
-                      child: const Text('Sign In'),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () => Navigator.pushNamed(context, '/signup'),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.grey[300]!),
-                        backgroundColor: Colors.white,
-                        shape: const StadiumBorder(),
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      child: Text(
-                        'Sign Up',
-                        style: TextStyle(color: Colors.grey[800]),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _SocialButton(
-                      onTap: () => Navigator.pushNamed(context, '/onboarding'),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'lib/assets/google.png',
-                            width: 20,
-                            height: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Continue with Google'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _SocialButton(
-                      onTap: () => Navigator.pushNamed(context, '/onboarding'),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'lib/assets/facebook.png',
-                            width: 20,
-                            height: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Continue with Facebook'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/forgot'),
-                        child: const Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'Forgot password? ',
-                                style: TextStyle(color: Colors.black87),
-                              ),
-                              TextSpan(
-                                text: 'Click here',
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w700,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ],
-                          ),
+                      child: const Text(
+                        'Sign In',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Sign Up button
+                  Container(
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: const Color(0xFF00D09E).withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/signup'),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      child: const Text(
+                        'Sign Up',
+                        style: TextStyle(
+                          color: Color(0xFF00D09E),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Divider đơn giản
+              Row(
+                children: [
+                  Expanded(child: Container(height: 1, color: Colors.black26)),
+                  Expanded(child: Container(height: 1, color: Colors.black26)),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Cụm 2: Social login buttons
+              Column(
+                children: [
+                  // Google Sign In
+                  _SocialButton(
+                    onTap: () => Navigator.pushNamed(context, '/onboarding'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'lib/assets/google.png',
+                          width: 20,
+                          height: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Sign in with Google',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Facebook Sign In
+                  _SocialButton(
+                    onTap: () => Navigator.pushNamed(context, '/onboarding'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'lib/assets/facebook.png',
+                          width: 20,
+                          height: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Login with Facebook',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 32),
+
+              // Cụm 3: Forgot Password
+              Center(
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/forgot'),
+                  child: RichText(
+                    text: const TextSpan(
+                      text: 'Forgot Password? ',
+                      style: TextStyle(color: Colors.black87, fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: 'Click Here',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
+
               const Spacer(),
             ],
           ),
@@ -167,13 +214,14 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(25),
       child: Container(
-        height: 48,
+        width: double.infinity,
+        height: 50,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.black12),
+          color: Colors.white.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.black12, width: 1),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: child,

@@ -37,32 +37,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header với curved shape
+              // Header
               Container(
                 height: 200,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF00D09E), // Dark green
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(40),
-                    bottomRight: Radius.circular(40),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 20),
-                      Text(
-                        'Sign Up New Account',
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ],
+                color: const Color(0xFF00D09E), // Dark green header
+                child: Center(
+                  child: Text(
+                    'Sign Up New Account',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -78,7 +64,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     _CustomTextField(
                       controller: _name,
                       label: 'Full Name',
-                      hint: 'example@example.com',
+                      hint: 'John Doe',
                     ),
                     const SizedBox(height: 16),
                     _CustomTextField(
@@ -120,21 +106,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const SizedBox(height: 32),
 
                     // Sign Up Button
-                    Container(
+                    SizedBox(
                       width: double.infinity,
                       height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00D09E),
-                        borderRadius: BorderRadius.circular(28),
-                      ),
                       child: ElevatedButton(
                         onPressed: () => Navigator.pushReplacementNamed(
                           context,
                           '/onboarding',
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
+                          backgroundColor: const Color(0xFF00D09E),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28),
                           ),
@@ -221,38 +202,45 @@ class _CustomTextField extends StatelessWidget {
             ),
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFF00D09E).withOpacity(0.2),
-              width: 1,
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscure,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
             ),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            obscureText: obscure,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: const Color(0xFF00D09E).withOpacity(0.3),
+                width: 1.5,
               ),
-              suffixIcon: onToggle != null
-                  ? IconButton(
-                      icon: Icon(
-                        obscure ? Icons.visibility_off : Icons.visibility,
-                        color: const Color(0xFF00D09E),
-                        size: 20,
-                      ),
-                      onPressed: onToggle,
-                    )
-                  : null,
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: const Color(0xFF00D09E).withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFF00D09E), width: 2),
+            ),
+            suffixIcon: onToggle != null
+                ? IconButton(
+                    icon: Icon(
+                      obscure ? Icons.visibility_off : Icons.visibility,
+                      color: const Color(0xFF00D09E),
+                      size: 20,
+                    ),
+                    onPressed: onToggle,
+                  )
+                : null,
           ),
         ),
       ],
