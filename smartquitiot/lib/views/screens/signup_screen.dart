@@ -30,107 +30,155 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFDADCE0),
+      backgroundColor: const Color(0xFFF1FFF3), // Light green background
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 8),
-              _SignHeader(title: 'Sign Up New Account'),
+              // Header với curved shape
+              Container(
+                height: 200,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF00D09E), // Dark green
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      Text(
+                        'Sign Up New Account',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 24),
-              _label('Full Name'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _name,
-                decoration: const InputDecoration(hintText: 'Your name'),
-              ),
-              const SizedBox(height: 12),
-              _label('Email'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  hintText: 'example@example.com',
-                ),
-              ),
-              const SizedBox(height: 12),
-              _label('Mobile Number'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(hintText: '+ 123 456 789'),
-              ),
-              const SizedBox(height: 12),
-              _label('Date Of Birth'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _dob,
-                keyboardType: TextInputType.datetime,
-                decoration: const InputDecoration(hintText: 'DD / MM / YYYY'),
-              ),
-              const SizedBox(height: 12),
-              _label('Password'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _password,
-                obscureText: _obscure1,
-                decoration: InputDecoration(
-                  hintText: '••••••••',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscure1 ? Icons.visibility : Icons.visibility_off,
+
+              // Form fields
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _CustomTextField(
+                      controller: _name,
+                      label: 'Full Name',
+                      hint: 'example@example.com',
                     ),
-                    onPressed: () => setState(() => _obscure1 = !_obscure1),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _label('Confirm Password'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _confirm,
-                obscureText: _obscure2,
-                decoration: InputDecoration(
-                  hintText: '••••••••',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscure2 ? Icons.visibility : Icons.visibility_off,
+                    const SizedBox(height: 16),
+                    _CustomTextField(
+                      controller: _email,
+                      label: 'Email',
+                      hint: 'example@example.com',
+                      keyboardType: TextInputType.emailAddress,
                     ),
-                    onPressed: () => setState(() => _obscure2 = !_obscure2),
-                  ),
+                    const SizedBox(height: 16),
+                    _CustomTextField(
+                      controller: _phone,
+                      label: 'Mobile Number',
+                      hint: '+ 123 456 789',
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 16),
+                    _CustomTextField(
+                      controller: _dob,
+                      label: 'Date Of Birth',
+                      hint: 'DD / MM / YYYY',
+                      keyboardType: TextInputType.datetime,
+                    ),
+                    const SizedBox(height: 16),
+                    _CustomTextField(
+                      controller: _password,
+                      label: 'Password',
+                      hint: '••••••••',
+                      obscure: _obscure1,
+                      onToggle: () => setState(() => _obscure1 = !_obscure1),
+                    ),
+                    const SizedBox(height: 16),
+                    _CustomTextField(
+                      controller: _confirm,
+                      label: 'Confirm Password',
+                      hint: '••••••••',
+                      obscure: _obscure2,
+                      onToggle: () => setState(() => _obscure2 = !_obscure2),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Sign Up Button
+                    Container(
+                      width: double.infinity,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00D09E),
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pushReplacementNamed(
+                          context,
+                          '/onboarding',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
+                        child: const Text(
+                          'Sign Up',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Center(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: RichText(
+                          text: const TextSpan(
+                            text: 'Already have an account? ',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 14,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Log In',
+                                style: TextStyle(
+                                  color: Color(0xFF00D09E),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () =>
-                    Navigator.pushReplacementNamed(context, '/onboarding'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: scheme.primary,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Sign Up'),
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Already have an account? Log In'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.privacy_tip_outlined, size: 18),
-                  SizedBox(width: 6),
-                  Text('We respect your privacy'),
-                ],
               ),
             ],
           ),
@@ -138,37 +186,76 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
-
-  Widget _label(String text) =>
-      Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
 }
 
-class _SignHeader extends StatelessWidget {
-  final String title;
-  const _SignHeader({required this.title});
+class _CustomTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final TextInputType? keyboardType;
+  final bool obscure;
+  final VoidCallback? onToggle;
+
+  const _CustomTextField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    this.keyboardType,
+    this.obscure = false,
+    this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-      decoration: BoxDecoration(
-        color: scheme.primary,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Image.asset('lib/assets/logo.png', width: 64),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(color: scheme.onPrimary),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
           ),
-        ],
-      ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF00D09E).withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            obscureText: obscure,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              suffixIcon: onToggle != null
+                  ? IconButton(
+                      icon: Icon(
+                        obscure ? Icons.visibility_off : Icons.visibility,
+                        color: const Color(0xFF00D09E),
+                        size: 20,
+                      ),
+                      onPressed: onToggle,
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
