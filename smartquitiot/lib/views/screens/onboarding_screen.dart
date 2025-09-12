@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/question_card.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -108,14 +109,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: ListView(
                     children: [
-                      questionInput('How Long Have You Smoked?'),
-                      questionInput(
-                        'How Much Does It Cost To Buy A Pack Of Cigarettes?',
+                      QuestionInputCard(
+                        question: 'How Long Have You Smoked?',
+                        controller: TextEditingController(),
+                        hintText: 'Nhập thông tin...',
                       ),
-                      questionInput('How Many Cigarettes In A Pack?'),
-                      questionOptions(
-                        'How Soon After Waking Do You Smoke Your First Cigarette?',
-                        ['5 minutes', '5–10 minutes', '31–60 minutes', 'Other'],
+                      QuestionInputCard(
+                        question:
+                            'How Much Does It Cost To Buy A Pack Of Cigarettes?',
+                        controller: TextEditingController(),
+                        hintText: 'Nhập thông tin...',
+                      ),
+                      QuestionInputCard(
+                        question: 'How Many Cigarettes In A Pack?',
+                        controller: TextEditingController(),
+                        hintText: 'Nhập thông tin...',
+                      ),
+                      QuestionOptionsCard(
+                        question:
+                            'How Soon After Waking Do You Smoke Your First Cigarette?',
+                        options: [
+                          '5 minutes',
+                          '5–10 minutes',
+                          '31–60 minutes',
+                          'Other',
+                        ],
                       ),
                     ],
                   ),
@@ -129,25 +147,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: ListView(
                     children: [
-                      questionOptions(
-                        'How Many Cigarettes Do You Smoke Per Day On Average?',
-                        ['1–10', '11–20', '21–30', '30+'],
+                      QuestionOptionsCard(
+                        question:
+                            'How Many Cigarettes Do You Smoke Per Day On Average?',
+                        options: ['1–10', '11–20', '21–30', '30+'],
                       ),
-                      questionOptions(
-                        'Do You Find It Difficult To Refrain From Smoking In Places Where It Is Forbidden?',
-                        ['Yes', 'No'],
+                      QuestionOptionsCard(
+                        question:
+                            'Do You Find It Difficult To Refrain From Smoking In Places Where It Is Forbidden?',
+                        options: ['Yes', 'No'],
                       ),
-                      questionOptions(
-                        'Which Cigarette Would You Hate To Give Up?',
-                        ['First in the morning', 'Any other'],
+                      QuestionOptionsCard(
+                        question: 'Which Cigarette Would You Hate To Give Up?',
+                        options: ['First in the morning', 'Any other'],
                       ),
-                      questionOptions(
-                        'Do You Smoke More Frequently In The Morning?',
-                        ['Yes', 'No'],
+                      QuestionOptionsCard(
+                        question:
+                            'Do You Smoke More Frequently In The Morning?',
+                        options: ['Yes', 'No'],
                       ),
-                      questionOptions(
-                        'Do You Smoke Even If You Are Sick In Bed Most Of The Day?',
-                        ['Yes', 'No'],
+                      QuestionOptionsCard(
+                        question:
+                            'Do You Smoke Even If You Are Sick In Bed Most Of The Day?',
+                        options: ['Yes', 'No'],
                       ),
                       const SizedBox(height: 40),
                       ElevatedButton(
@@ -199,116 +221,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget questionInput(String text) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              text,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Nhập thông tin...',
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.grey, // viền khi chưa focus
-                    width: 1.5,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.black87, // viền khi focus
-                    width: 1.5,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget questionInputBox(String label) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: TextField(
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: Colors.white,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Colors.grey, // viền khi chưa focus
-              width: 1.5,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Colors.black87, // viền khi focus
-              width: 1.5,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget questionOptions(String text, List<String> options) {
-    // bạn có thể dùng state riêng để lưu lựa chọn
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              text,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            Column(
-              children: options.map((o) {
-                return ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Radio(
-                    value: o,
-                    groupValue: null, // bạn tự quản lý state ở đây
-                    onChanged: (val) {},
-                    activeColor: const Color(0xFF00D09E),
-                  ),
-                  title: Text(o),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/question_widget.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
   const QuestionnaireScreen({super.key});
@@ -31,45 +32,50 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _q('How Long Have You Smoked?'),
-            const SizedBox(height: 8),
-            _card(
-              child: TextField(
-                controller: _years,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(hintText: 'Years'),
+            QuestionWidget(
+              question: 'How Long Have You Smoked?',
+              child: QuestionCard(
+                child: TextField(
+                  controller: _years,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: 'Years'),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            _q('How Much Does It Cost To Buy A Pack Of Cigarettes?'),
-            const SizedBox(height: 8),
-            _card(
-              child: TextField(
-                controller: _packCost,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(hintText: 'Price'),
+            QuestionWidget(
+              question: 'How Much Does It Cost To Buy A Pack Of Cigarettes?',
+              child: QuestionCard(
+                child: TextField(
+                  controller: _packCost,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: 'Price'),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            _q('How Many Cigarettes In A Pack?'),
-            const SizedBox(height: 8),
-            _card(
-              child: TextField(
-                controller: _cigsPerPack,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(hintText: '20'),
+            QuestionWidget(
+              question: 'How Many Cigarettes In A Pack?',
+              child: QuestionCard(
+                child: TextField(
+                  controller: _cigsPerPack,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: '20'),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            _q('How Soon After Waking Do You Smoke Your First Cigarette?'),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(18),
+            QuestionWidget(
+              question:
+                  'How Soon After Waking Do You Smoke Your First Cigarette?',
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: _wakeOptions(scheme),
               ),
-              child: _wakeOptions(scheme),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -92,27 +98,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _q(String text) =>
-      Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
-
-  Widget _card({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: child,
     );
   }
 

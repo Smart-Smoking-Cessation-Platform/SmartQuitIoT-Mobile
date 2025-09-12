@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/social_icon_circle.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -61,14 +63,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _CustomTextField(
+                    CustomTextField(
                       controller: _email,
                       label: 'Email',
                       hint: 'example@example.com',
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
-                    _CustomTextField(
+                    CustomTextField(
                       controller: _password,
                       label: 'Password',
                       hint: '••••••••',
@@ -152,14 +154,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _SocialIconCircle(
+                        SocialIconCircle(
                           asset: 'lib/assets/facebook.png',
                           onTap: () {},
                           background: Colors.white,
                           borderColor: Colors.grey.shade300,
                         ),
                         const SizedBox(width: 16),
-                        _SocialIconCircle(
+                        SocialIconCircle(
                           asset: 'lib/assets/google.png',
                           onTap: () {},
                           background: Colors.white,
@@ -202,124 +204,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CustomTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final TextInputType? keyboardType;
-  final bool obscure;
-  final VoidCallback? onToggle;
-
-  const _CustomTextField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    this.keyboardType,
-    this.obscure = false,
-    this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-        ),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          obscureText: obscure,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: const Color(0xFF00D09E).withOpacity(0.3),
-                width: 1.5,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: const Color(0xFF00D09E).withOpacity(0.3),
-                width: 1.5,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF00D09E), width: 2),
-            ),
-            suffixIcon: onToggle != null
-                ? IconButton(
-                    icon: Icon(
-                      obscure ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF00D09E),
-                      size: 20,
-                    ),
-                    onPressed: onToggle,
-                  )
-                : null,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SocialIconCircle extends StatelessWidget {
-  final String asset;
-  final VoidCallback onTap;
-  final Color background;
-  final Color borderColor;
-
-  const _SocialIconCircle({
-    required this.asset,
-    required this.onTap,
-    required this.background,
-    required this.borderColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: background,
-          shape: BoxShape.circle,
-          border: Border.all(color: borderColor, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(child: Image.asset(asset, width: 28, height: 28)),
       ),
     );
   }
