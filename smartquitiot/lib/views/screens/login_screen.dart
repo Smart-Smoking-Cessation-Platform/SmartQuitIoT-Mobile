@@ -86,8 +86,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(28),
                       ),
                       child: ElevatedButton(
-                        onPressed: () =>
-                            Navigator.pushReplacementNamed(context, '/home'),
+                        onPressed: () => Navigator.pushReplacementNamed(
+                          context,
+                          '/onboarding',
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -123,39 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     const SizedBox(height: 16),
-
-                    // Sign Up Button (outlined)
-                    // Container(
-                    //   width: double.infinity,
-                    //   height: 56,
-                    //   decoration: BoxDecoration(
-                    //     color: Colors.white.withOpacity(0.8),
-                    //     borderRadius: BorderRadius.circular(28),
-                    //     border: Border.all(
-                    //       color: const Color(0xFF00D09E).withOpacity(0.3),
-                    //       width: 1,
-                    //     ),
-                    //   ),
-                    //   child: OutlinedButton(
-                    //     onPressed: () =>
-                    //         Navigator.pushNamed(context, '/signup'),
-                    //     style: OutlinedButton.styleFrom(
-                    //       backgroundColor: Colors.transparent,
-                    //       side: BorderSide.none,
-                    //       shape: RoundedRectangleBorder(
-                    //         borderRadius: BorderRadius.circular(28),
-                    //       ),
-                    //     ),
-                    //     child: const Text(
-                    //       'Sign Up',
-                    //       style: TextStyle(
-                    //         color: Color(0xFF00D09E),
-                    //         fontSize: 16,
-                    //         fontWeight: FontWeight.bold,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
                     const SizedBox(height: 8),
 
                     // Divider
@@ -186,8 +155,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         _SocialIconCircle(
                           asset: 'lib/assets/facebook.png',
                           onTap: () {},
-                          background: const Color(0xFF1877F2),
-                          borderColor: Colors.blue,
+                          background: Colors.white,
+                          borderColor: Colors.grey.shade300,
                         ),
                         const SizedBox(width: 16),
                         _SocialIconCircle(

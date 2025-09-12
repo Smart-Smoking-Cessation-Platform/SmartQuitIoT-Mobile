@@ -20,26 +20,34 @@ class _RelaunchScreenState extends State<RelaunchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFDADCE0),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(),
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset('lib/assets/logo.png', width: 160, height: 160),
-                const SizedBox(height: 12),
-                Text(
-                  'Welcome to SmartQuit',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      backgroundColor: const Color(0xFF00D09E), // nền xanh SmartQuit
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo SmartQuit
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  'lib/assets/logo.png',
+                  width: 180,
+                  height: 180,
+                  fit: BoxFit.contain,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+              // Text Welcome
+              const Text(
+                'Welcome To SmartQuit',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),
