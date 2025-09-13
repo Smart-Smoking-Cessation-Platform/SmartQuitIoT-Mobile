@@ -29,31 +29,31 @@ class _ChatScreenState extends State<ChatScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF00D09E),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Message Box',
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
             onPressed: () {},
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF00D09E),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF00D09E),
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
           tabs: const [
             Tab(text: 'Chat'),
             Tab(text: 'Message'),
@@ -68,23 +68,16 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildChatTab() {
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _coaches.length,
-            itemBuilder: (context, index) {
-              final coach = _coaches[index];
-              return ChatCoachListItem(
-                coach: coach,
-                onTap: () => _navigateToCoachChat(coach),
-              );
-            },
-          ),
-        ),
-        _buildMessageInput(),
-      ],
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _coaches.length,
+      itemBuilder: (context, index) {
+        final coach = _coaches[index];
+        return ChatCoachListItem(
+          coach: coach,
+          onTap: () => _navigateToCoachChat(coach),
+        );
+      },
     );
   }
 
@@ -94,7 +87,23 @@ class _ChatScreenState extends State<ChatScreen>
       itemCount: _recentChats.length,
       itemBuilder: (context, index) {
         final chat = _recentChats[index];
-        return _buildRecentChatItem(chat);
+        return GestureDetector(
+          onTap: () {
+            // Tìm coach tương ứng theo avatar hoặc name
+            final coach = _coaches.firstWhere(
+              (c) => c['avatar'] == chat['avatar'],
+              orElse: () => {
+                'name': chat['name'],
+                'avatar': chat['avatar'],
+                'specialty': 'Unknown',
+                'isOnline': false,
+                'rating': 0.0,
+              },
+            );
+            _navigateToCoachChat(coach);
+          },
+          child: _buildRecentChatItem(chat),
+        );
       },
     );
   }
@@ -158,50 +167,7 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE5E5E5))),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Write Here...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5F5F5),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF00D09E),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: () {},
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _navigateToCoachChat(Map<String, dynamic> coach) {
-    // Navigate to individual coach chat
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => CoachChatScreen(coach: coach)),
@@ -212,21 +178,21 @@ class _ChatScreenState extends State<ChatScreen>
     {
       'name': 'Dr. Sarah Johnson',
       'specialty': 'Addiction Specialist',
-      'avatar': 'https://via.placeholder.com/50',
+      'avatar': 'https://i.pravatar.cc/150?img=47',
       'isOnline': true,
       'rating': 4.9,
     },
     {
       'name': 'Michael Chen',
       'specialty': 'Behavioral Therapist',
-      'avatar': 'https://via.placeholder.com/50',
+      'avatar': 'https://i.pravatar.cc/150?img=48',
       'isOnline': true,
       'rating': 4.8,
     },
     {
       'name': 'Dr. Emily Rodriguez',
       'specialty': 'Health Coach',
-      'avatar': 'https://via.placeholder.com/50',
+      'avatar': 'https://i.pravatar.cc/150?img=49',
       'isOnline': false,
       'rating': 4.9,
     },
@@ -236,19 +202,19 @@ class _ChatScreenState extends State<ChatScreen>
     {
       'name': 'Maximillian Jacobson',
       'lastMessage': 'It was a pleasure to accommodate your request...',
-      'avatar': 'https://via.placeholder.com/50',
+      'avatar': 'https://i.pravatar.cc/150?img=50',
       'time': 'Just now',
     },
     {
       'name': 'Dr. Sarah Johnson',
       'lastMessage': 'Great progress! Keep it up!',
-      'avatar': 'https://via.placeholder.com/50',
+      'avatar': 'https://i.pravatar.cc/150?img=47',
       'time': '2 min ago',
     },
     {
       'name': 'Michael Chen',
       'lastMessage': 'Remember to practice the breathing exercises',
-      'avatar': 'https://via.placeholder.com/50',
+      'avatar': 'https://i.pravatar.cc/150?img=48',
       'time': '1 hour ago',
     },
   ];
@@ -264,10 +230,10 @@ class CoachChatScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF00D09E),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -281,16 +247,16 @@ class CoachChatScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  coach['name'],
+                  coach['name'] ?? '',
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  coach['specialty'],
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  coach['specialty'] ?? '',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
@@ -298,7 +264,7 @@ class CoachChatScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: () {},
           ),
         ],
