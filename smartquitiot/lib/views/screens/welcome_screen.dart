@@ -188,6 +188,11 @@ class WelcomeScreen extends StatelessWidget {
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             decoration: TextDecoration.underline,
+                            decorationThickness: 2, // độ dày gạch
+                            decorationColor: Colors.black87, // màu gạch
+                            decorationStyle:
+                                TextDecorationStyle.solid, // kiểu gạch
+                            // không có spacing trực tiếp, nhưng dày hơn sẽ tạo cảm giác "cách ra"
                           ),
                         ),
                       ],
