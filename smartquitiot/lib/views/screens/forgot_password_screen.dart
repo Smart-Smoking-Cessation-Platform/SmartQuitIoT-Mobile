@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'otp_screen.dart'; // import màn OTP
+import 'otp_screen.dart';
+import '../widgets/custom_text_field.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -18,7 +19,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _sendResetLink() {
-    // có thể validate email nếu muốn
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const OtpScreen()),
@@ -28,39 +28,38 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // gradient background
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF00D09E), Color(0xFFF1FFF3)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 24),
-                const Text(
-                  'Forgot Password',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+      backgroundColor: const Color(0xFFF1FFF3),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Container(
+                height: 120,
+                decoration: const BoxDecoration(color: Color(0xFF00D09E)),
+                child: const Center(
+                  child: Text(
+                    'Forgot Password',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+              ),
 
-                // Card input email
-                Container(
-                  padding: const EdgeInsets.all(16),
+              const SizedBox(height: 32),
+
+              // Card input email
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -73,47 +72,65 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Text(
-                        'Enter your email to reset password',
+                        'Enter your email to reset your password',
                         style: TextStyle(fontSize: 14, color: Colors.black87),
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
+                      CustomTextField(
                         controller: _email,
+                        hint: 'example@email.com',
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          hintText: 'example@email.com',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
                       ),
                     ],
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-                ElevatedButton(
-                  onPressed: _sendResetLink,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00D09E),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              // Send Reset Link Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _sendResetLink,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00D09E),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                    ),
+                    child: const Text(
+                      'Send OTP',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Back to login
+              Center(
+                child: TextButton(
+                  onPressed: () =>
+                      Navigator.pushReplacementNamed(context, '/login'),
                   child: const Text(
-                    'Send Reset Link',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    'Back to Login',
+                    style: TextStyle(
+                      color: Color(0xFF00D09E),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 32),
+            ],
           ),
         ),
       ),
