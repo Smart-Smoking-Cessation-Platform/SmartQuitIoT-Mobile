@@ -14,7 +14,7 @@ class AppTheme {
       colorScheme: scheme.copyWith(primary: brand),
       useMaterial3: true,
       visualDensity: VisualDensity.adaptivePlatformDensity,
-      scaffoldBackgroundColor: const Color(0xFFDADCE0),
+      scaffoldBackgroundColor: const Color(0xFFF1FFF3),
       textTheme: const TextTheme(
         displaySmall: TextStyle(fontWeight: FontWeight.w700),
         headlineMedium: TextStyle(fontWeight: FontWeight.w700),

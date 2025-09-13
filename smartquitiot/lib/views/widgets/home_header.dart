@@ -9,20 +9,15 @@ class HomeHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment:
+            CrossAxisAlignment.start, // ✅ cho phép hiển thị nhiều dòng
         children: [
+          /// Bên trái
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: const [
+              SizedBox(height: 4),
               Text(
-                '4- A - Home',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
                 'Hello, User...',
                 style: TextStyle(
                   fontSize: 18,
@@ -32,33 +27,42 @@ class HomeHeader extends StatelessWidget {
               ),
             ],
           ),
-          Row(
+
+          /// Bên phải
+          Column(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1FFF3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Image.asset(
-                  'lib/assets/notification.png',
-                  width: 20,
-                  height: 20,
-                ),
+              // Hàng icon notification + setting
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1FFF3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Image.asset(
+                      'lib/assets/notification.png',
+                      width: 20,
+                      height: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1FFF3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.settings,
+                      size: 20,
+                      color: Color(0xFF00D09E),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1FFF3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.settings,
-                  size: 20,
-                  color: Color(0xFF00D09E),
-                ),
-              ),
+
+              const SizedBox(height: 8),
             ],
           ),
         ],

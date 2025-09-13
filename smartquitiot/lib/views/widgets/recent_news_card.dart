@@ -49,17 +49,11 @@ class RecentNewsCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _buildNewsCard(
-                  imageUrl:
-                      'https://via.placeholder.com/80x60/FF6B6B/FFFFFF?text=A23',
-                  title: 'How to customize your...',
-                ),
+                child: _buildNewsCard(title: 'How to customize your...'),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildNewsCard(
-                  imageUrl:
-                      'https://via.placeholder.com/80x60/4ECDC4/FFFFFF?text=PHONE',
                   title: 'Nothing Phone 2 review: It\'s a bit of a...',
                 ),
               ),
@@ -69,20 +63,10 @@ class RecentNewsCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _buildNewsCard(
-                  imageUrl:
-                      'https://via.placeholder.com/80x60/45B7D1/FFFFFF?text=SCREEN',
-                  title: 'Lumen review: a breathalyzer...',
-                ),
+                child: _buildNewsCard(title: 'Lumen review: a breathalyzer...'),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildNewsCard(
-                  imageUrl:
-                      'https://via.placeholder.com/80x60/96CEB4/FFFFFF?text=OPPO',
-                  title: 'Oppo A...',
-                ),
-              ),
+              Expanded(child: _buildNewsCard(title: 'Oppo A...')),
             ],
           ),
         ],
@@ -90,7 +74,7 @@ class RecentNewsCard extends StatelessWidget {
     );
   }
 
-  Widget _buildNewsCard({required String imageUrl, required String title}) {
+  Widget _buildNewsCard({required String title}) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -104,14 +88,14 @@ class RecentNewsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              image: DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
-              ),
+          // 🔽 Load ảnh bằng Image.asset
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              'lib/assets/news.jpg', // Đường dẫn ảnh local
+              height: 60,
+              width: double.infinity,
+              fit: BoxFit.cover,
             ),
           ),
           const SizedBox(height: 8),

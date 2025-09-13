@@ -22,139 +22,73 @@ class CommunityTrendingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ====== Title + View More ======
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Community - Trending Article',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              const Expanded(
+                child: Text(
+                  'Community - Trending Article',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
-              TextButton(
-                onPressed: () {},
-                child: const Text(
-                  'View More',
-                  style: TextStyle(
-                    color: Color(0xFF00D09E),
-                    fontWeight: FontWeight.w500,
+              SizedBox(
+                height: 32,
+                child: TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    'View More',
+                    style: TextStyle(
+                      color: Color(0xFF00D09E),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              image: const DecorationImage(
-                image: NetworkImage(
-                  'https://via.placeholder.com/400x200/333333/FFFFFF?text=SMOKING+SKULL+IMAGE',
-                ),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'PIXTA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+
+          // ====== Image Container ======
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              'lib/assets/news.jpg', // ✅ dùng assets ngoài lib
+              height: 150,
+              width: double.infinity,
+              fit: BoxFit.cover,
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              _buildEngagementIcon(Icons.local_fire_department, '1'),
-              const SizedBox(width: 16),
-              _buildEngagementIcon(Icons.favorite, '1'),
-              const SizedBox(width: 16),
-              _buildEngagementIcon(Icons.comment, '10 comments'),
-            ],
-          ),
-          const SizedBox(height: 12),
+
+          // ====== Article title ======
           const Text(
-            'LinkedIn, Bohomian and 900,000 others',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'marvel. Start your countdown to the glorious arrival of Marvel Studios\' #yak.',
+            '5 Tips to Quit Smoking in 2025',
             style: TextStyle(
               fontSize: 14,
+              fontWeight: FontWeight.w600,
               color: Colors.black87,
-              fontWeight: FontWeight.w400,
             ),
           ),
           const SizedBox(height: 4),
+
+          // ====== Short description ======
           const Text(
-            'more',
+            'Discover how thousands of people are quitting smoking '
+            'using science-backed techniques. Read the full article to learn more.',
             style: TextStyle(
               fontSize: 12,
-              color: Color(0xFF00D09E),
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w400,
+              color: Colors.black54,
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox.shrink(),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.chat, color: Colors.white, size: 20),
-              ),
-            ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildEngagementIcon(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }

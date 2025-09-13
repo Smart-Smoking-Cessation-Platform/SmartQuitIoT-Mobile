@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 class QuitPlanCard extends StatelessWidget {
-  const QuitPlanCard({super.key});
+  final double progress;
+  const QuitPlanCard({super.key, this.progress = 0.5});
 
   @override
   Widget build(BuildContext context) {
+    final int percent = (progress * 100).round();
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(20),
@@ -22,6 +25,7 @@ class QuitPlanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// Title + Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -33,27 +37,35 @@ class QuitPlanCard extends StatelessWidget {
                   color: Colors.black87,
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D09E),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              SizedBox(
+                height: 32,
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00D09E),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  child: const Text(
+                    'Create Now',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
-                ),
-                child: const Text(
-                  'Create Now',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
           ),
+
           const SizedBox(height: 20),
+
+          /// Progress label
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -65,9 +77,9 @@ class QuitPlanCard extends StatelessWidget {
                   color: Colors.black87,
                 ),
               ),
-              const Text(
-                '0%',
-                style: TextStyle(
+              Text(
+                '$percent%',
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF00D09E),
@@ -75,22 +87,32 @@ class QuitPlanCard extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 8),
+
+          /// Progress bar animated
           Container(
             height: 8,
             decoration: BoxDecoration(
               color: const Color(0xFFF1FFF3),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: 0.0, // 0% progress
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00D09E),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final barWidth = constraints.maxWidth * progress;
+                return Stack(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      width: barWidth,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00D09E),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
