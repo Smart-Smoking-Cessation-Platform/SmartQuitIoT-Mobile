@@ -4,6 +4,8 @@ import 'chat_screen.dart';
 import 'calendar_screen.dart';
 import 'achievement_screen.dart';
 import 'profile_screen.dart';
+import 'diary_screen.dart';
+import 'craving_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -18,6 +20,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const ChatScreen(),
+    const DiaryScreen(),
+    const CravingScreen(),
     const CalendarScreen(),
     const AchievementScreen(),
     const ProfileScreen(),
