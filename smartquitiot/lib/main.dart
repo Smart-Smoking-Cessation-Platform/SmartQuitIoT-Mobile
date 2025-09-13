@@ -10,7 +10,7 @@ import 'package:smartquitiot/views/screens/questionnaire_screen.dart';
 import 'package:smartquitiot/views/screens/_relaunch_screen.dart';
 import 'package:smartquitiot/views/screens/forgot_password_screen.dart';
 import 'package:smartquitiot/views/screens/debug_home_screen.dart';
-import 'package:smartquitiot/views/screens/home_screen.dart';
+import 'package:smartquitiot/views/screens/main_navigation_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignUpScreen(),
         '/onboarding': (_) => OnboardingScreen(),
-        '/home': (_) => const HomeScreen(),
+        '/home': (_) => const MainNavigationScreen(),
         '/questionnaire': (_) => const QuestionnaireScreen(),
         '/relaunch': (_) => const RelaunchScreen(),
         '/forgot': (_) => const ForgotPasswordScreen(),

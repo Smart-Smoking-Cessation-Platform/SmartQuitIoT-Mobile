@@ -9,6 +9,7 @@ import '../widgets/today_mission_card.dart';
 import '../widgets/analysis_card.dart';
 import '../widgets/community_trending_card.dart';
 import '../widgets/recent_news_card.dart';
+import 'ai_chat_welcome_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -19,41 +20,40 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF1FFF3),
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 80), // tránh che FAB
           child: Column(
-            children: [
-              const HomeHeader(),
-              const SmokeFreeTimerCard(),
-              const StatsTableCard(),
-              const HealthImprovementCard(),
-              const AchievementsCard(),
-              const QuitPlanCard(),
-              const TodayMissionCard(),
-              const AnalysisCard(),
-              const CommunityTrendingCard(),
-              const RecentNewsCard(),
-              const SizedBox(height: 20),
+            children: const [
+              HomeHeader(),
+              SmokeFreeTimerCard(),
+              StatsTableCard(),
+              HealthImprovementCard(),
+              AchievementsCard(),
+              QuitPlanCard(),
+              TodayMissionCard(),
+              AnalysisCard(),
+              CommunityTrendingCard(),
+              RecentNewsCard(),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF00D09E),
-        unselectedItemColor: Colors.grey,
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events),
-            label: 'Achievements',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AiChatWelcomeScreen(),
+            ),
+          );
+        },
+        backgroundColor: const Color(0xFF00D09E), // màu xanh chủ đạo
+        elevation: 8,
+        child: const Icon(
+          Icons.smart_toy, // AI icon
+          color: Colors.white,
+          size: 28,
+        ),
       ),
     );
   }
