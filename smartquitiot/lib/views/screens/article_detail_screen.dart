@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 
 class ArticleDetailPage extends StatefulWidget {
+  const ArticleDetailPage({super.key});
+
   @override
-  _ArticleDetailPageState createState() => _ArticleDetailPageState();
+  State<ArticleDetailPage> createState() => _ArticleDetailPageState();
 }
 
 class _ArticleDetailPageState extends State<ArticleDetailPage> {
-  bool isUnlocked = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF1A1B2E),
+      backgroundColor: const Color(0xFFF1FFF3),
       body: CustomScrollView(
         slivers: [
+          // Header AppBar
           SliverAppBar(
-            backgroundColor: Color(0xFF1A1B2E),
+            backgroundColor: const Color(0xFF00D09E),
             elevation: 0,
             pinned: true,
+            centerTitle: true,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context),
             ),
-            title: Text(
+            title: const Text(
               'Articles',
               style: TextStyle(
                 color: Colors.white,
@@ -30,37 +32,39 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            centerTitle: false,
           ),
+
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Title
-                  Text(
+                  const Text(
                     'Mental Wellness in the Digital Age',
+                    textAlign: TextAlign.center, // chỉ title mới center
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
                   // Stats Row
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildStatItem(Icons.favorite, '331', Colors.red),
-                      SizedBox(width: 20),
-                      _buildStatItem(Icons.bookmark, '23K', Colors.white),
-                      SizedBox(width: 20),
-                      _buildStatItem(Icons.share, '131', Colors.white),
+                      const SizedBox(width: 20),
+                      _buildStatItem(Icons.bookmark, '23K', Colors.black),
+                      const SizedBox(width: 20),
+                      _buildStatItem(Icons.share, '131', Colors.black),
                     ],
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Author Section
                   Row(
@@ -68,17 +72,17 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                       CircleAvatar(
                         radius: 20,
                         backgroundColor: Colors.grey[600],
-                        child: Icon(Icons.person, color: Colors.white),
+                        child: const Icon(Icons.person, color: Colors.white),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'By Dr. Harrison Lector',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Colors.black,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -86,7 +90,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                             Text(
                               'Mental Health Expert',
                               style: TextStyle(
-                                color: Colors.grey[400],
+                                color: Colors.grey[600],
                                 fontSize: 12,
                               ),
                             ),
@@ -94,15 +98,15 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                         ),
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Color(0xFF4A90E2),
+                          color: const Color(0xFF00D09E),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Follow',
                           style: TextStyle(
                             color: Colors.white,
@@ -113,188 +117,143 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                   // Introduction Section
-                  Text(
+                  const Text(
                     'Introduction',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    'In an era of constant digital connectivity, the impact on mental health is undeniable. The persistent barrage of notifications, social media pressures, and the fast-paced nature of modern life can take a toll on our overall wellbeing.',
+                    'In an era of constant digital connectivity, the impact on mental health is undeniable. '
+                    'The persistent barrage of notifications, social media pressures, and the fast-paced nature '
+                    'of modern life can take a toll on our overall wellbeing.',
                     style: TextStyle(
-                      color: Colors.grey[300],
+                      color: Colors.grey[800],
                       fontSize: 16,
                       height: 1.5,
-                    ),
+                    ), // paragraph để mặc định trái\
+                    textAlign: TextAlign.justify,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                     'It is crucial to proactively address these challenges and cultivate mental resilience in the digital age.',
                     style: TextStyle(
-                      color: Colors.grey[300],
+                      color: Colors.grey[800],
                       fontSize: 16,
                       height: 1.5,
                     ),
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                   // Image Section
                   Container(
-                    height: 300,
+                    height: 250,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      image: DecorationImage(
-                        image: AssetImage(
-                          'assets/woman_exercise.jpg',
-                        ), // Replace with your image
+                      image: const DecorationImage(
+                        image: NetworkImage(
+                          'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e',
+                        ),
                         fit: BoxFit.cover,
                       ),
                     ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.3),
-                          ],
-                        ),
-                      ),
-                    ),
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                   // Content Section
-                  Text(
+                  const Text(
                     'The Digital Health Dilemma',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    'The digital age brings with it a myriad of wellness. From blue light affecting sleep patterns, to the constant stimulation faced by social media, individuals often find themselves overwhelmed by digital demands.',
+                    'The digital age brings with it a myriad of wellness. From blue light affecting sleep patterns, '
+                    'to the constant stimulation faced by social media, individuals often find themselves overwhelmed by digital demands.',
                     style: TextStyle(
-                      color: Colors.grey[300],
+                      color: Colors.grey[800],
                       fontSize: 16,
                       height: 1.5,
                     ),
+                    textAlign: TextAlign.justify,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                     'Recognizing these stressors is the first step toward a mentally healthier digital experience.',
                     style: TextStyle(
-                      color: Colors.grey[300],
+                      color: Colors.grey[800],
                       fontSize: 16,
                       height: 1.5,
                     ),
                   ),
-                  SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-                  // Unlock Button
-                  if (!isUnlocked)
-                    Container(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            isUnlocked = true;
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF4A90E2),
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                  // Extra Content Example
+                  const Text(
+                    'Digital Wellness Strategies',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildBulletPoint(
+                    'Set specific times for checking social media',
+                  ),
+                  _buildBulletPoint('Use blue light filters in the evening'),
+                  _buildBulletPoint('Practice digital detox regularly'),
+                  _buildBulletPoint('Create tech-free zones in your home'),
+                  const SizedBox(height: 30),
+
+                  // Another image
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      image: const DecorationImage(
+                        image: NetworkImage(
+                          'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
                         ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.lock_open,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Unlock Full Article',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Continue Reading',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
+                        fit: BoxFit.cover,
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 30),
 
-                  // Additional Content (shown after unlock)
-                  if (isUnlocked) ...[
-                    Text(
-                      'Digital Wellness Strategies',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  const Text(
+                    'Conclusion',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Implementing effective digital wellness strategies can significantly improve your mental health. Here are some key approaches:',
-                      style: TextStyle(
-                        color: Colors.grey[300],
-                        fontSize: 16,
-                        height: 1.5,
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Mental wellness in the digital age requires intentional effort and mindful practices. '
+                    'By implementing these strategies, we can harness the benefits of technology while protecting our mental health.',
+                    style: TextStyle(
+                      color: Colors.grey[800],
+                      fontSize: 16,
+                      height: 1.5,
                     ),
-                    SizedBox(height: 16),
-                    _buildBulletPoint(
-                      'Set specific times for checking social media',
-                    ),
-                    _buildBulletPoint('Use blue light filters in the evening'),
-                    _buildBulletPoint('Practice digital detox regularly'),
-                    _buildBulletPoint('Create tech-free zones in your home'),
-                    SizedBox(height: 30),
-
-                    Text(
-                      'Conclusion',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Mental wellness in the digital age requires intentional effort and mindful practices. By implementing these strategies, we can harness the benefits of technology while protecting our mental health.',
-                      style: TextStyle(
-                        color: Colors.grey[300],
-                        fontSize: 16,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-
-                  SizedBox(height: 40),
+                    textAlign: TextAlign.justify,
+                  ),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -308,24 +267,24 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
     return Row(
       children: [
         Icon(icon, color: color, size: 18),
-        SizedBox(width: 4),
-        Text(count, style: TextStyle(color: Colors.grey[400], fontSize: 14)),
+        const SizedBox(width: 4),
+        Text(count, style: TextStyle(color: Colors.grey[700], fontSize: 14)),
       ],
     );
   }
 
   Widget _buildBulletPoint(String text) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: EdgeInsets.only(top: 8, right: 12),
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Color(0xFF4A90E2),
+            margin: const EdgeInsets.only(top: 8, right: 12),
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Color(0xFF00D09E),
               shape: BoxShape.circle,
             ),
           ),
@@ -333,7 +292,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             child: Text(
               text,
               style: TextStyle(
-                color: Colors.grey[300],
+                color: Colors.grey[800],
                 fontSize: 16,
                 height: 1.5,
               ),
