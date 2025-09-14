@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../widgets/filter_posts_modal.dart'; // import file FilterPostsModal.dart của bạn
+
+void main() {
+  runApp(MaterialApp(home: CommunityPage()));
+}
 
 class CommunityPage extends StatefulWidget {
   @override
@@ -7,11 +12,12 @@ class CommunityPage extends StatefulWidget {
 
 class _CommunityPageState extends State<CommunityPage> {
   String selectedCategory = 'Wellness';
+  Map<String, dynamic>? currentFilter;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF1FFF3), // nền xanh lá nhạt
+      backgroundColor: Color(0xFFF1FFF3),
       body: SafeArea(
         child: Column(
           children: [
@@ -28,7 +34,7 @@ class _CommunityPageState extends State<CommunityPage> {
                         radius: 24,
                         backgroundImage: NetworkImage(
                           'https://picsum.photos/200/200',
-                        ), // avatar thật
+                        ),
                       ),
                       SizedBox(width: 12),
                       Expanded(
@@ -83,15 +89,25 @@ class _CommunityPageState extends State<CommunityPage> {
                         ),
                       ),
                       Spacer(),
-                      Icon(
-                        Icons.trending_up,
-                        color: Colors.grey[600],
-                        size: 18,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Trending',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      GestureDetector(
+                        onTap: _openFilterModal,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.trending_up,
+                              color: Colors.grey[600],
+                              size: 18,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Trending',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -102,11 +118,11 @@ class _CommunityPageState extends State<CommunityPage> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildCategoryTab('🧘', 'Wellness', true),
+                        _buildCategoryTabWithModal('🧘', 'Wellness'),
                         SizedBox(width: 12),
-                        _buildCategoryTab('💪', 'Health', false),
+                        _buildCategoryTabWithModal('💪', 'Health'),
                         SizedBox(width: 12),
-                        _buildCategoryTab('🧠', 'Mindfulness', false),
+                        _buildCategoryTabWithModal('🧠', 'Mindfulness'),
                       ],
                     ),
                   ),
@@ -145,28 +161,16 @@ class _CommunityPageState extends State<CommunityPage> {
                   ),
                   _buildPost(
                     username: 'Dokomon Senee',
-                    avatarUrl: 'https://picsum.photos/100/100?3',
+                    avatarUrl: 'https://picsum.photos/100/100?5',
                     isVerified: true,
-                    timeAgo: '1 day',
-                    content:
-                        'WHAT IS THIS Eating 3 times a WRONG? I said YES for this episode so let you should see how many times should you eat?',
-                    imageUrl: null,
-                    likes: '1.5K',
-                    comments: '215',
-                    shares: '3',
-                  ),
-                  _buildPost(
-                    username: 'Dokomon Senee',
-                    avatarUrl: 'https://picsum.photos/100/100?4',
-                    isVerified: true,
-                    timeAgo: '2 days',
-                    content:
-                        'Training PUSH day with my homie 💪 it was really a INTENSE REPS By CARMEL you?',
-                    imageUrl: 'https://picsum.photos/400/200?video',
-                    hasVideo: true,
-                    likes: '5.5K',
-                    comments: '215',
-                    shares: '3',
+                    timeAgo: '3 hours',
+                    content: 'Check out this workout video! 🔥 #HIIT #FullBody',
+                    imageUrl:
+                        'https://picsum.photos/400/200?video', // dùng ảnh đại diện video
+                    hasVideo: true, // bật icon play
+                    likes: '2K',
+                    comments: '120',
+                    shares: '10',
                   ),
                 ],
               ),
@@ -174,6 +178,18 @@ class _CommunityPageState extends State<CommunityPage> {
           ],
         ),
       ),
+    );
+  }
+
+  // --- Category tab with modal ---
+  Widget _buildCategoryTabWithModal(String emoji, String title) {
+    bool isSelected = selectedCategory == title;
+    return GestureDetector(
+      onTap: () {
+        setState(() => selectedCategory = title);
+        _openFilterModal();
+      },
+      child: _buildCategoryTab(emoji, title, isSelected),
     );
   }
 
@@ -202,6 +218,33 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 
+  // --- Open Filter Modal ---
+  void _openFilterModal() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.8,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => FilterPostsModal(
+          controller: controller,
+          currentFilter: currentFilter,
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        currentFilter = result;
+        selectedCategory = result['category'];
+        // postType, videoLength có thể dùng để lọc posts
+      });
+    }
+  }
+
+  // --- Post widget ---
   Widget _buildPost({
     required String username,
     required String avatarUrl,
@@ -221,7 +264,6 @@ class _CommunityPageState extends State<CommunityPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Post Header
           Row(
             children: [
               CircleAvatar(
@@ -260,13 +302,10 @@ class _CommunityPageState extends State<CommunityPage> {
             ],
           ),
           SizedBox(height: 12),
-
-          // Post Content
           Text(
             content,
             style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
           ),
-
           if (imageUrl != null) ...[
             SizedBox(height: 12),
             Container(
@@ -306,19 +345,16 @@ class _CommunityPageState extends State<CommunityPage> {
               ),
             ),
           ],
-
           SizedBox(height: 16),
-
-          // Post Actions
           Row(
             children: [
-              _buildActionButton(Icons.favorite_border, likes, false),
+              _buildActionButton(Icons.favorite_border, likes),
               SizedBox(width: 20),
-              _buildActionButton(Icons.chat_bubble_outline, comments, false),
+              _buildActionButton(Icons.chat_bubble_outline, comments),
               SizedBox(width: 20),
-              _buildActionButton(Icons.share_outlined, shares, false),
+              _buildActionButton(Icons.share_outlined, shares),
               Spacer(),
-              _buildActionButton(Icons.bookmark_border, '', false),
+              _buildActionButton(Icons.bookmark_border, ''),
             ],
           ),
         ],
@@ -326,15 +362,11 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String count, bool isActive) {
+  Widget _buildActionButton(IconData icon, String count) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: isActive ? Color(0xFF00D09E) : Colors.grey[600],
-          size: 20,
-        ),
+        Icon(icon, color: Colors.grey[600], size: 20),
         if (count.isNotEmpty) ...[
           SizedBox(width: 4),
           Text(count, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
