@@ -48,8 +48,7 @@ class BadgeData {
           'Giảm nguy cơ đau tim',
           'Cải thiện lưu thông máu',
         ],
-        imagePath:
-            'https://via.placeholder.com/150/00FF00/FFFFFF?text=Badge+1', // 👈 ảnh mẫu
+        imagePath: 'lib/assets/Achievement.png', // 👈 ảnh mẫu
       ),
       Badge(
         id: '2',
@@ -67,8 +66,7 @@ class BadgeData {
           'Răng trắng hơn',
           'Tiết kiệm được một số tiền đáng kể',
         ],
-        imagePath:
-            'https://via.placeholder.com/150/FF8800/FFFFFF?text=Badge+2', // 👈 ảnh mẫu
+        imagePath: 'lib/assets/Achievement.png', // 👈 ảnh mẫu
       ),
       Badge(
         id: '3',
@@ -85,8 +83,7 @@ class BadgeData {
           'Tăng năng lượng đáng kể',
           'Cải thiện tuần hoàn máu',
         ],
-        imagePath:
-            'https://via.placeholder.com/150/800080/FFFFFF?text=Badge+3', // 👈 ảnh mẫu
+        imagePath: 'lib/assets/Achievement.png', // 👈 ảnh mẫu
       ),
       // ... các badge tiếp theo cũng thêm imagePath tương tự
     ];

@@ -33,14 +33,19 @@ class BadgesScreen extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF00D09E), // 👈 xanh mới
+                  Color(0xFF00D09E),
                   Color(0xFF00D09E), // 👈 xanh mới
                 ],
               ),
             ),
             child: Column(
               children: [
-                const Icon(Icons.smoke_free, size: 60, color: Colors.white),
+                // 👇 Thay Icon bằng hình PNG Achivement
+                Image.asset(
+                  'lib/assets/Achievement.png', // đường dẫn local trong thư mục assets
+                  height: 110, // bạn chỉnh theo kích thước mong muốn
+                  width: 110,
+                ),
                 const SizedBox(height: 10),
                 const Text(
                   'Thành Tựu Của Bạn',
