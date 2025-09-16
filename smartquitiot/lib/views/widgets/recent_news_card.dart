@@ -47,12 +47,24 @@ class RecentNewsCard extends StatefulWidget {
 }
 
 class _RecentNewsCardState extends State<RecentNewsCard> {
-  final PageController _pageController = PageController(viewportFraction: 0.8);
+  final PageController _pageController = PageController(viewportFraction: 0.75);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white, // Background trắng kiểu card
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -137,32 +149,25 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
       margin: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        image: DecorationImage(
-          image: AssetImage(news.imageUrl),
-          fit: BoxFit.cover,
-        ),
+        color: Colors.white, // Giữ nền trắng cho từng card nhỏ
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.15),
-            blurRadius: 6,
-            offset: const Offset(0, 4),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
+        image: DecorationImage(
+          image: AssetImage(news.imageUrl),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withOpacity(0.25), // overlay nhẹ để chữ nổi bật
+            BlendMode.darken,
+          ),
+        ),
       ),
       child: Stack(
         children: [
-          /// Gradient overlay để tiêu đề nổi bật
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.6), Colors.transparent],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-            ),
-          ),
-
           /// Category tag
           Positioned(
             top: 12,

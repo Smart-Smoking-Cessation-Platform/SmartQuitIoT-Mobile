@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 class AnalysisCard extends StatelessWidget {
   const AnalysisCard({super.key});
@@ -22,6 +23,7 @@ class AnalysisCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ===== Header =====
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -63,29 +65,47 @@ class AnalysisCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+
+          // ===== Charts =====
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFF1FFF3),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ===== Line Chart =====
                 const Text(
-                  'Cravings',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+                  'Cigarette Consumption Trend',
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
+                const SizedBox(height: 8),
+                SizedBox(height: 120, child: _AnimatedLineChart()),
                 const SizedBox(height: 16),
-                SizedBox(height: 120, child: _buildCravingsChart(context)),
+
+                // ===== Bar Chart =====
+                const Text(
+                  'Weekly Activities',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(height: 120, child: _AnimatedBarChart()),
+                const SizedBox(height: 16),
+
+                // ===== Pie Chart =====
+                const Text(
+                  'Daily Habit Proportion',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(height: 160, child: _AnimatedPieChart()),
               ],
             ),
           ),
           const SizedBox(height: 16),
+
+          // ===== Explore Button =====
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -108,100 +128,161 @@ class AnalysisCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildCravingsChart(BuildContext context) {
-    // Simple line chart simulation
-    return CustomPaint(
-      painter: CravingsChartPainter(),
-      size: Size(MediaQuery.of(context).size.width - 80, 120),
+// ===== Animated Line Chart =====
+class _AnimatedLineChart extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(seconds: 1),
+      builder: (context, value, child) {
+        return CustomPaint(
+          painter: _LineChartPainter(animationValue: value),
+          size: Size.infinite,
+        );
+      },
     );
   }
 }
 
-class CravingsChartPainter extends CustomPainter {
+class _LineChartPainter extends CustomPainter {
+  final double animationValue;
+  _LineChartPainter({required this.animationValue});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF00D09E)
+      ..color = Colors.redAccent
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
     final path = Path();
-    final points = [
-      const Offset(0, 100),
-      const Offset(20, 80),
-      const Offset(40, 60),
-      const Offset(60, 70),
-      const Offset(80, 50),
-      const Offset(100, 40),
-      const Offset(120, 30),
-      const Offset(140, 35),
-      const Offset(160, 25),
-      const Offset(180, 20),
-      const Offset(200, 15),
-      const Offset(220, 10),
-      const Offset(240, 5),
-      const Offset(260, 8),
-      const Offset(280, 12),
-    ];
 
-    path.moveTo(points.first.dx, points.first.dy);
-    for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx, points[i].dy);
+    // Fake data minh họa: hút thuốc
+    final data = [2, 3, 5, 4, 6, 5, 7, 6, 8, 7, 6, 5, 4, 3, 2];
+    final maxData = data.reduce(max);
+
+    for (int i = 0; i < data.length; i++) {
+      final dx = i * (size.width / (data.length - 1));
+      final dy = size.height - (data[i] / maxData * size.height);
+      if (i == 0) {
+        path.moveTo(dx, dy);
+      } else {
+        path.lineTo(dx, dy);
+      }
     }
 
-    canvas.drawPath(path, paint);
+    final pathMetrics = path.computeMetrics().toList();
+    final extractLength = pathMetrics.first.length * animationValue;
+    final extractPath = pathMetrics.first.extractPath(0, extractLength);
 
-    // Draw data points
-    final pointPaint = Paint()
-      ..color = const Color(0xFF00D09E)
-      ..style = PaintingStyle.fill;
+    canvas.drawPath(extractPath, paint);
+  }
 
-    for (final point in points) {
-      canvas.drawCircle(point, 3, pointPaint);
-    }
+  @override
+  bool shouldRepaint(covariant _LineChartPainter oldDelegate) =>
+      oldDelegate.animationValue != animationValue;
+}
 
-    // Draw axes
-    final axisPaint = Paint()
-      ..color = Colors.grey[300]!
-      ..strokeWidth = 1;
-
-    // Y-axis
-    canvas.drawLine(const Offset(0, 0), Offset(0, size.height), axisPaint);
-
-    // X-axis
-    canvas.drawLine(
-      Offset(0, size.height),
-      Offset(size.width, size.height),
-      axisPaint,
+// ===== Animated Bar Chart =====
+class _AnimatedBarChart extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(seconds: 1),
+      builder: (context, value, child) {
+        return CustomPaint(
+          painter: _BarChartPainter(animationValue: value),
+          size: Size.infinite,
+        );
+      },
     );
+  }
+}
 
-    // Draw labels
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+class _BarChartPainter extends CustomPainter {
+  final double animationValue;
+  _BarChartPainter({required this.animationValue});
 
-    // Y-axis labels
-    final yLabels = ['0', '10', '20', '30'];
-    for (int i = 0; i < yLabels.length; i++) {
-      textPainter.text = TextSpan(
-        text: yLabels[i],
-        style: const TextStyle(color: Colors.grey, fontSize: 10),
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.blueAccent;
+    final data = [3, 5, 2, 6, 4, 7, 5]; // fake data hoạt động tuần
+    final maxData = data.reduce(max);
+    final barWidth = size.width / data.length;
+
+    for (int i = 0; i < data.length; i++) {
+      final barHeight = (data[i] / maxData) * size.height * animationValue;
+      canvas.drawRect(
+        Rect.fromLTWH(
+          i * barWidth,
+          size.height - barHeight,
+          barWidth - 8,
+          barHeight,
+        ),
+        paint,
       );
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(-25, size.height - (i * 30) - 5));
-    }
-
-    // X-axis labels
-    final xLabels = ['1', '5', '10', '15'];
-    for (int i = 0; i < xLabels.length; i++) {
-      textPainter.text = TextSpan(
-        text: xLabels[i],
-        style: const TextStyle(color: Colors.grey, fontSize: 10),
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(i * 70 - 5, size.height + 10));
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _BarChartPainter oldDelegate) =>
+      oldDelegate.animationValue != animationValue;
+}
+
+// ===== Animated Pie Chart =====
+class _AnimatedPieChart extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(seconds: 1),
+      builder: (context, value, child) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final size = min(constraints.maxWidth, constraints.maxHeight);
+            return Center(
+              child: SizedBox(
+                width: size,
+                height: size,
+                child: CustomPaint(
+                  painter: _PieChartPainter(animationValue: value),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _PieChartPainter extends CustomPainter {
+  final double animationValue;
+  _PieChartPainter({required this.animationValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    // Fake data thói quen
+    final data = [0.3, 0.4, 0.3];
+    final colors = [Colors.green, Colors.redAccent, Colors.orange];
+    double startAngle = -pi / 2;
+
+    for (int i = 0; i < data.length; i++) {
+      final sweep = 2 * pi * data[i] * animationValue;
+      paint.color = colors[i];
+      canvas.drawArc(rect, startAngle, sweep, true, paint);
+      startAngle += 2 * pi * data[i];
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PieChartPainter oldDelegate) =>
+      oldDelegate.animationValue != animationValue;
 }
