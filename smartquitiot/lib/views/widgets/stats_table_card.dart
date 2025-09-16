@@ -118,13 +118,21 @@ class _StatsTableCardState extends State<StatsTableCard> {
                   'Dashboard',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'View More',
-                    style: TextStyle(
-                      color: Color(0xFF00D09E),
-                      fontWeight: FontWeight.bold,
+                Padding(
+                  padding: const EdgeInsets.only(right: 15.0), // thụt vào 8px
+                  child: TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      padding:
+                          EdgeInsets.zero, // loại bỏ padding mặc định nếu muốn
+                      minimumSize: const Size(50, 30), // tuỳ chỉnh size nếu cần
+                    ),
+                    child: const Text(
+                      'View More',
+                      style: TextStyle(
+                        color: Color(0xFF00D09E),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

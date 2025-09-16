@@ -6,7 +6,7 @@ class AchievementsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -30,27 +30,28 @@ class AchievementsCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937), // tối hơn đỡ nhợt nhạt
+                  color: Color(0xFF1F2937), // chữ tối
                 ),
               ),
-              TextButton(
-                onPressed: () {},
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: const Color(0xFF00D09E), // xanh dương nhẹ
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+              GestureDetector(
+                onTap: () {
+                  // TODO: Thêm hành động khi nhấn
+                },
+                child: Padding(
+                  padding: EdgeInsets.only(right: 12),
+                  child: const Text(
+                    'View More',
+                    style: TextStyle(
+                      color: Color(0xFF00D09E), // xanh lá đồng bộ
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                child: const Text('View More'),
               ),
             ],
           ),
+
           const SizedBox(height: 18),
           Row(
             children: [

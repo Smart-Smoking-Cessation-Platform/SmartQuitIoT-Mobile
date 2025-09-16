@@ -1,7 +1,50 @@
 import 'package:flutter/material.dart';
 
+class Mission {
+  final String title;
+  final String description;
+  final IconData icon;
+
+  const Mission({
+    required this.title,
+    required this.description,
+    this.icon = Icons.self_improvement,
+  });
+}
+
 class TodayMissionCard extends StatelessWidget {
-  const TodayMissionCard({super.key});
+  final List<Mission> missions;
+
+  const TodayMissionCard({
+    super.key,
+    this.missions = const [
+      Mission(
+        title: "Meditation",
+        description:
+            "Meditation is an act of control, willing to anything, preparing to do.",
+      ),
+      Mission(
+        title: "Drink Water",
+        description: "Drink at least 8 glasses of water today.",
+        icon: Icons.local_drink,
+      ),
+      Mission(
+        title: "Short Walk",
+        description: "Take a 15-minute walk to refresh your mind.",
+        icon: Icons.directions_walk,
+      ),
+      Mission(
+        title: "Read Article",
+        description: "Read one article related to health or mindfulness.",
+        icon: Icons.article,
+      ),
+      Mission(
+        title: "Stretching",
+        description: "Do 5 minutes of stretching to relax your body.",
+        icon: Icons.accessibility_new,
+      ),
+    ],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,67 +65,96 @@ class TodayMissionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Today\'s mission',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
+          /// Header: title + View More
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Today\'s Mission',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // TODO: Thêm hành động khi nhấn View More
+                },
+                child: const Text(
+                  'View More',
+                  style: TextStyle(
+                    color: Color(0xFF00D09E),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00D09E),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.self_improvement,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+
+          /// Danh sách nhiệm vụ
+          Column(
+            children: missions.map((mission) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00D09E),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Meditation',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Meditation is an act of control, willing to anything, preparing to do.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
+                      child: Icon(mission.icon, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            mission.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold, // bold cho dễ nhìn
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            mission.description,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ],
                 ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ],
-            ),
+              );
+            }).toList(),
           ),
         ],
       ),
