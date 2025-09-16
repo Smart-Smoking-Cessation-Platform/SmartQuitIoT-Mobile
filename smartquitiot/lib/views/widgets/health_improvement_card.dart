@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
 class HealthImprovementCard extends StatelessWidget {
   const HealthImprovementCard({super.key});
@@ -22,6 +23,7 @@ class HealthImprovementCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -46,23 +48,28 @@ class HealthImprovementCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
+
+          // Progress Circles
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildProgressCircle(
                 title: 'Pulse rate',
-                progress: 0.5,
+                progress: 0.7,
                 icon: Icons.favorite,
+                gradientColors: [Colors.redAccent, Colors.pink],
               ),
               _buildProgressCircle(
                 title: 'Oxygen levels',
-                progress: 0.5,
+                progress: 0.6,
                 icon: Icons.air,
+                gradientColors: [Colors.blueAccent, Colors.cyan],
               ),
               _buildProgressCircle(
-                title: 'Carbon monoxide Levels',
-                progress: 0.5,
+                title: 'CO Levels',
+                progress: 0.4,
                 icon: Icons.warning,
+                gradientColors: [Colors.orange, Colors.deepOrange],
               ),
             ],
           ),
@@ -75,49 +82,119 @@ class HealthImprovementCard extends StatelessWidget {
     required String title,
     required double progress,
     required IconData icon,
+    required List<Color> gradientColors,
   }) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 80,
-              height: 80,
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 8,
-                backgroundColor: const Color(0xFFF1FFF3),
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFF00D09E),
+    return SizedBox(
+      width: 90, // fix width để 3 card bằng nhau
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 90,
+            height: 90,
+            child: CustomPaint(
+              painter: CircleProgressPainter(
+                progress: progress,
+                gradientColors: gradientColors,
+                backgroundColor: gradientColors.first.withOpacity(0.15),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        icon,
+                        color: gradientColors.last.withOpacity(0.9),
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${(progress * 100).toInt()}%',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: gradientColors.last,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            Positioned(
-              top: 8,
-              child: Icon(icon, color: const Color(0xFF00D09E), size: 16),
-            ),
-            Text(
-              '${(progress * 100).toInt()}%',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF00D09E),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 8),
+          SizedBox(
+            width: 80,
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold, // 👈 bold
+                color: gradientColors.last, // 👈 đồng bộ màu
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
+
+class CircleProgressPainter extends CustomPainter {
+  final double progress;
+  final List<Color> gradientColors;
+  final Color backgroundColor;
+
+  CircleProgressPainter({
+    required this.progress,
+    required this.gradientColors,
+    required this.backgroundColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double strokeWidth = 8;
+    double radius = (size.width / 2) - strokeWidth / 2;
+    Offset center = Offset(size.width / 2, size.height / 2);
+
+    // Background circle
+    Paint bgPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, bgPaint);
+
+    // Gradient arc
+    Rect rect = Rect.fromCircle(center: center, radius: radius);
+    SweepGradient gradient = SweepGradient(
+      colors: gradientColors,
+      startAngle: -math.pi / 2,
+      endAngle: 1.5 * math.pi,
+    );
+
+    Paint fgPaint = Paint()
+      ..shader = gradient.createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    double sweepAngle = 2 * math.pi * progress;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      sweepAngle,
+      false,
+      fgPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
