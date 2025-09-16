@@ -12,7 +12,7 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
     {'title': 'Wellness', 'color': Colors.pink[100], 'icon': '🧘'},
     {'title': 'Healthcare', 'color': Colors.blue[100], 'icon': '⚕️'},
     {'title': 'Diet', 'color': Colors.orange[100], 'icon': '🥗'},
-    {'title': 'Fitness', 'color': Colors.green[100], 'icon': '💪'},
+    {'title': 'Fitness', 'color': Color(0xFF00D09E)[100], 'icon': '💪'},
     {'title': 'Nutrition', 'color': Colors.purple[100], 'icon': '🥑'},
     {'title': 'Mindful', 'color': Colors.cyan[100], 'icon': '🧠'},
     {'title': 'Sleep', 'color': Colors.yellow[100], 'icon': '😴'},

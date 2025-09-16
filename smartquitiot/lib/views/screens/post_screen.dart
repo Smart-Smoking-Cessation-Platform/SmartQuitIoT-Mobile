@@ -321,7 +321,7 @@ class _PostContentPageState extends State<PostContentPage> {
                           style: TextStyle(fontSize: 16, color: Colors.black87),
                         ),
                         SizedBox(width: 8),
-                        Icon(Icons.check, color: Colors.green, size: 16),
+                        Icon(Icons.check, color: Color(0xFF00D09E), size: 16),
                       ],
                     ),
                     SizedBox(height: 40),

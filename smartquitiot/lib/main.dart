@@ -13,6 +13,10 @@ import 'package:smartquitiot/views/screens/debug_home_screen.dart';
 import 'package:smartquitiot/views/screens/main_navigation_screen.dart';
 import 'package:smartquitiot/views/screens/premium_membership_screen.dart';
 import 'package:smartquitiot/views/screens/article_detail_screen.dart';
+import 'package:smartquitiot/views/screens/community_screen.dart';
+import 'package:smartquitiot/views/screens/filter_post_screen.dart';
+import 'package:smartquitiot/views/screens/badges_screen.dart';
+import 'package:smartquitiot/views/screens/notification_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -26,9 +30,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Smoke Quit',
       theme: AppTheme.light(),
-      // home: const SplashScreen(),
-      home: const PremiumMembershipScreen(),
-      // home: ArticleDetailPage(),
+      home: const SplashScreen(),
+   
+
       routes: {
         '/welcome': (_) => const WelcomeScreen(),
         '/login': (_) => const LoginScreen(),
