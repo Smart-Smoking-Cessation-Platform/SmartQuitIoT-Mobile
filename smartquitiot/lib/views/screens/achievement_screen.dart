@@ -25,51 +25,64 @@ class _AchievementScreenState extends State<AchievementScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FFFE),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF00D09E),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Achievements',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
-          tabs: const [
-            Tab(text: 'All'),
-            Tab(text: 'Completed'),
-            Tab(text: 'In Progress'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildAllAchievements(),
-          _buildCompletedAchievements(),
-          _buildInProgressAchievements(),
-        ],
-      ),
+    return PopScope(
+        canPop: false, // Prevent default pop
+        onPopInvoked: (didPop) {
+      if (!didPop) {
+        // Navigate to HomeScreen instead of popping
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home', // hoặc route name của HomeScreen
+              (route) => false,
+        );
+      }
+    },
+    child: Scaffold(
+    backgroundColor: const Color(0xFFF8FFFE),
+    appBar: AppBar(
+    backgroundColor: const Color(0xFF00D09E),
+    elevation: 0,
+    iconTheme: const IconThemeData(color: Colors.white),
+    title: const Text(
+    'Achievements',
+    style: TextStyle(
+    color: Colors.white,
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 0.5,
+    ),
+    ),
+    centerTitle: true,
+    bottom: TabBar(
+    controller: _tabController,
+    labelColor: Colors.white,
+    unselectedLabelColor: Colors.white70,
+    indicatorColor: Colors.white,
+    indicatorWeight: 3,
+    labelStyle: const TextStyle(
+    fontWeight: FontWeight.w600,
+    fontSize: 15,
+    ),
+    unselectedLabelStyle: const TextStyle(
+    fontWeight: FontWeight.w500,
+    fontSize: 14,
+    ),
+    tabs: const [
+    Tab(text: 'All'),
+    Tab(text: 'Completed'),
+    Tab(text: 'In Progress'),
+    ],
+    ),
+    ),
+    body: TabBarView(
+    controller: _tabController,
+    children: [
+    _buildAllAchievements(),
+    _buildCompletedAchievements(),
+    _buildInProgressAchievements(),
+    ],
+    ),
+    )
     );
   }
 

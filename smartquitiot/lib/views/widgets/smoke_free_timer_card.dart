@@ -20,51 +20,22 @@ class SmokeFreeTimerCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center, // 👈 center tất cả
         children: [
-          // Row Text + nút Log Diary
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Time Smoke Free:',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(
-                height: 32,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: mở trang log diary
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFC107), // màu vàng
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text(
-                    'Log Diary',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
+          // Text canh giữa
+          const Text(
+            'Time Smoke Free:',
+            textAlign: TextAlign.center, // 👈 chắc chắn nằm giữa
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
 
           const SizedBox(height: 16),
 
-          // Row icon + timer giữ nguyên
+          // Row icon + timer
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
