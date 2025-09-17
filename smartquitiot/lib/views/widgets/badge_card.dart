@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:smartquitiot/models/badge.dart' as mymodels;
+import 'package:SmartQuitIoT/models/badge.dart' as mymodels;
 
 class BadgeCard extends StatelessWidget {
   final mymodels.Badge badge; // 👈 dùng model Badge

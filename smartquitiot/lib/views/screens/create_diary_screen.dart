@@ -345,21 +345,23 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: color,
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
               ),
             ),
           ],
         ),
+
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: color.withOpacity(0.3)),
           ),
@@ -583,9 +585,11 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
             height: 120,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF9C27B0).withOpacity(0.05),
+              // 👇 nền trắng hoàn toàn
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF9C27B0).withOpacity(0.2)),
+              // 👇 viền xám nhẹ
+              border: Border.all(color: Colors.grey[300]!),
             ),
             child: TextField(
               controller: notesController,
@@ -610,6 +614,7 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
       ),
     );
   }
+
 
   Widget _buildSaveButton() {
     return SizedBox(

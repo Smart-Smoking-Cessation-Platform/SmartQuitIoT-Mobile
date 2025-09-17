@@ -108,8 +108,8 @@ class WelcomeScreen extends StatelessWidget {
               // Divider đơn giản
               Row(
                 children: [
-                  Expanded(child: Container(height: 1, color: Colors.black26)),
-                  Expanded(child: Container(height: 1, color: Colors.black26)),
+                  Expanded(child: Container(height: 1.2, color: Colors.black)),
+                  Expanded(child: Container(height: 1.2, color: Colors.black)),
                 ],
               ),
 

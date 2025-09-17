@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/screens/premium_membership_screen.dart';
 import 'package:flutter/material.dart';
 import 'create_diary_screen.dart';
 import 'diary_history_screen.dart';
@@ -158,7 +159,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const CreateDiaryScreen(),
+            builder: (context) => const PremiumMembershipScreen(),
           ),
         );
       },
@@ -218,7 +219,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   Widget _buildTodayStats() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center, // 👈 đổi từ start sang center
       children: [
         const Text(
           'Today\'s Overview',
@@ -227,9 +228,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
             fontWeight: FontWeight.bold,
             color: Color(0xFF2D3748),
           ),
+          textAlign: TextAlign.center, // 👈 căn giữa tiêu đề
         ),
         const SizedBox(height: 16),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center, // 👈 căn giữa row
           children: [
             Expanded(
               child: _buildStatCard(
@@ -254,6 +257,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         ),
         const SizedBox(height: 12),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center, // 👈 căn giữa row
           children: [
             Expanded(
               child: _buildStatCard(
@@ -280,7 +284,14 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, String subtitle, IconData icon, Color color) {
+
+  Widget _buildStatCard(
+      String title,
+      String value,
+      String subtitle,
+      IconData icon,
+      Color color,
+      ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -296,9 +307,10 @@ class _DiaryScreenState extends State<DiaryScreen> {
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center, // 👈 căn giữa
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center, // 👈 căn icon giữa
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
@@ -307,15 +319,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
-              ),
-              const Spacer(),
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
               ),
             ],
           ),
@@ -327,6 +330,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
+            textAlign: TextAlign.center, // 👈 căn giữa text
           ),
           const SizedBox(height: 4),
           Text(
@@ -336,6 +340,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
+            textAlign: TextAlign.center,
           ),
           Text(
             subtitle,
@@ -343,11 +348,13 @@ class _DiaryScreenState extends State<DiaryScreen> {
               color: Colors.grey[500],
               fontSize: 11,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
+
 
   Widget _buildWeeklyTrend() {
     return Container(
@@ -380,13 +387,13 @@ class _DiaryScreenState extends State<DiaryScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  color: const Color(0xFF00D09E).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
                   'Improving',
                   style: TextStyle(
-                    color: Color(0xFF4CAF50),
+                    color: Color(0xFF00D09E),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -505,24 +512,33 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   Widget _buildInsightItem(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Icon check / bullet
           Container(
-            width: 4,
-            height: 4,
-            decoration: const BoxDecoration(
-              color: Color(0xFF2196F3),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2196F3).withOpacity(0.15),
               shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check,
+              size: 14,
+              color: Color(0xFF2196F3),
             ),
           ),
           const SizedBox(width: 12),
+          // Text nội dung
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: Colors.grey[700],
-                fontSize: 14,
+              style: const TextStyle(
+                color: Color(0xFF2D3748),          // chữ đậm hơn một chút
+                fontSize: 15,                      // to hơn xíu
+                fontWeight: FontWeight.w600,       // semi-bold cho nổi bật
+                height: 1.4,                       // giãn dòng cho dễ đọc
               ),
             ),
           ),
@@ -530,4 +546,5 @@ class _DiaryScreenState extends State<DiaryScreen> {
       ),
     );
   }
+
 }

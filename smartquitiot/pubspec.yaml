@@ -1,5 +1,5 @@
-name: smartquitiot
-description: "A new Flutter project."
+name: SmartQuitIoT
+description: "SmartQuitIoT is an intelligent platform connecting individuals who want to quit smoking with cessation coaches and supportive communities to overcome the limits of traditional methods. Using AI, the system generates personalized quit plans based on each member’s health status, habits, and goals. IoT devices like smartwatches or fitness bands monitor smoking-related behaviors and health indicators in real time, with data synchronized directly to the platform. The platform offers clear statistics on smoke-free days, money saved, and health improvements, along with badges and leaderboards to boost motivation. Members can share experiences and receive timely encouragement, while coaches access health and progress data to provide accurate, tailored guidance. Administrators manage accounts, achievements, and reports for effective system oversight."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -50,6 +50,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
+  # Plugin for changing app launcher icon
+  flutter_launcher_icons: ^0.14.4
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -65,7 +68,7 @@ flutter:
     - lib/assets/
     - lib/assets/Achievement.png
   
-
+  
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
@@ -91,3 +94,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Configuration for flutter_launcher_icons plugin
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "../lib/assets/logo.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  
+

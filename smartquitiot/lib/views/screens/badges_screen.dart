@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:smartquitiot/models/badge.dart' as mymodels; // 👈 model prefix
+import 'package:SmartQuitIoT/models/badge.dart' as mymodels; // 👈 model prefix
 import '../widgets/badge_card.dart';
 import 'badge_detail_screen.dart';
 

@@ -1,4 +1,6 @@
+// ... các import không đổi
 import 'package:flutter/material.dart';
+import 'create_diary_screen.dart';
 import 'premium_membership_screen.dart';
 import '../widgets/receipt_bottom_sheet.dart';
 
@@ -86,62 +88,13 @@ class _SuccessScreenState extends State<SuccessScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // Status Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '9:41',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        width: 18,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Container(
-                        width: 18,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Container(
-                        width: 24,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Success Content
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Success Animation
+                    // ==== Success Animation ====
                     AnimatedBuilder(
                       animation: _scaleAnimation,
                       builder: (context, child) {
@@ -181,7 +134,7 @@ class _SuccessScreenState extends State<SuccessScreen>
 
                     const SizedBox(height: 40),
 
-                    // Success Message
+                    // ==== Success Text ====
                     AnimatedBuilder(
                       animation: _fadeAnimation,
                       builder: (context, child) {
@@ -209,48 +162,67 @@ class _SuccessScreenState extends State<SuccessScreen>
                               ),
                               const SizedBox(height: 32),
 
-                              // Payment Details Card
+                              // ==== Payment Card ====
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.grey[300]!),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
                                 ),
                                 child: Column(
                                   children: [
-                                    _buildRow(
-                                      'Plan:',
-                                      widget.selectedPlan == 'annual'
+                                    _buildDetailRow(
+                                      icon: Icons.workspace_premium,
+                                      title: 'Plan',
+                                      value: widget.selectedPlan == 'annual'
                                           ? 'Annual'
                                           : 'Monthly',
                                     ),
-                                    const SizedBox(height: 12),
-                                    _buildRow('Amount:', planPrice),
-                                    const SizedBox(height: 12),
-                                    _buildRow('Method:', paymentTitle),
+                                    const SizedBox(height: 16),
+                                    _buildDetailRow(
+                                      icon: Icons.attach_money,
+                                      title: 'Amount',
+                                      value: planPrice,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildDetailRow(
+                                      icon: Icons.payment,
+                                      title: 'Method',
+                                      value: paymentTitle,
+                                    ),
                                   ],
                                 ),
                               ),
 
                               const SizedBox(height: 40),
 
-                              // Continue Button
+                              // ==== Continue Button (white bg / black text) ====
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: () => _navigateToHome(context),
+                                  onPressed: () {
+                                    // Navigate tới CreateDiaryScreen
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const CreateDiaryScreen()),
+                                    );
+                                  },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    elevation: 0,
+                                    elevation: 2,
                                   ),
                                   child: const Text(
                                     'Continue',
@@ -264,26 +236,29 @@ class _SuccessScreenState extends State<SuccessScreen>
 
                               const SizedBox(height: 16),
 
-                              // View Receipt Button
+                              // ==== View Receipt Button (white bg / black text) ====
                               SizedBox(
                                 width: double.infinity,
-                                child: OutlinedButton(
+                                child: OutlinedButton.icon(
                                   onPressed: () => _showReceipt(context),
-                                  style: OutlinedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
-                                  child: const Text(
+                                  icon: const Icon(Icons.receipt_long,
+                                      size: 20, color: Colors.black),
+                                  label: const Text(
                                     'View Receipt',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(
+                                        color: Colors.white, width: 1.5),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 18),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
                                   ),
                                 ),
@@ -298,7 +273,7 @@ class _SuccessScreenState extends State<SuccessScreen>
               ),
             ),
 
-            // Home Indicator
+            // ==== Home Indicator ====
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: Container(
@@ -316,25 +291,7 @@ class _SuccessScreenState extends State<SuccessScreen>
     );
   }
 
-  Widget _buildRow(String title, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(color: Colors.black87, fontSize: 14),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
+  // ==== Helpers ====
 
   String _getPaymentTitle(String method) {
     switch (method) {
@@ -359,9 +316,8 @@ class _SuccessScreenState extends State<SuccessScreen>
 
   void _showReceipt(BuildContext context) {
     final plan = widget.selectedPlan == 'annual' ? 'Annual' : 'Monthly';
-    final amount = widget.selectedPlan == 'annual'
-        ? '900,000 VND'
-        : '99,000 VND';
+    final amount =
+    widget.selectedPlan == 'annual' ? '900,000 VND' : '99,000 VND';
     final method = _getPaymentTitle(widget.paymentMethod);
     final transactionId = 'PAY${DateTime.now().millisecondsSinceEpoch}';
     final date = DateTime.now().toString().substring(0, 19);
@@ -379,6 +335,43 @@ class _SuccessScreenState extends State<SuccessScreen>
           date: date,
         );
       },
+    );
+  }
+
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00D09E).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: const Color(0xFF00D09E), size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Colors.black54,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
