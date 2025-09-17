@@ -7,7 +7,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FFFE),
+      backgroundColor: const Color(0xFFDFF7E2), // body background xanh nhạt
       appBar: AppBar(
         backgroundColor: const Color(0xFF00D09E),
         elevation: 0,
@@ -27,31 +27,33 @@ class QuitPlanOptionsScreen extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildHeaderSection(),
-                  const SizedBox(height: 40),
-                  _buildOptionCard(
-                    context,
-                    'Keep quit plan',
-                    'Continue with your current plan and track your progress.',
-                    Icons.trending_up,
-                    const Color(0xFF4CAF50),
-                    true,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildOptionCard(
-                    context,
-                    'Create new Plan',
-                    'Start fresh with a new personalized quit plan.',
-                    Icons.add_circle,
-                    const Color(0xFF2196F3),
-                    false,
-                  ),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildHeaderSection(),
+                    const SizedBox(height: 40),
+                    _buildOptionCard(
+                      context,
+                      'Keep quit plan',
+                      'Continue with your current plan and track your progress.',
+                      Icons.trending_up,
+                      Color(0xFF00D09E),
+                      true,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildOptionCard(
+                      context,
+                      'Create new Plan',
+                      'Start fresh with a new personalized quit plan.',
+                      Icons.add_circle,
+                      const Color(0xFF2196F3),
+                      false,
+                    ),
+                  ],
+                ),
               ),
             ),
+            const SizedBox(height: 20),
             _buildBottomNote(),
           ],
         ),
@@ -141,7 +143,6 @@ class QuitPlanOptionsScreen extends StatelessWidget {
             ),
           );
         } else {
-          // Navigate to create new plan screen
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Creating new plan...'),
@@ -162,12 +163,12 @@ class QuitPlanOptionsScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 15,
+              color: color.withOpacity(0.2),
+              blurRadius: 12,
               offset: const Offset(0, 6),
             ),
           ],
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withOpacity(0.15)),
         ),
         child: Row(
           children: [
@@ -183,7 +184,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withOpacity(0.3),
+                    color: color.withOpacity(0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -305,8 +306,22 @@ class QuitPlanOptionsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF2196F3).withOpacity(0.05),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF2196F3).withOpacity(0.15),
+            const Color(0xFF2196F3).withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2196F3).withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
         border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.2)),
       ),
       child: Row(
@@ -314,12 +329,23 @@ class QuitPlanOptionsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF2196F3).withOpacity(0.1),
+              gradient: LinearGradient(
+                colors: [const Color(0xFF2196F3), const Color(0xFF21CBF3)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2196F3).withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: const Icon(
               Icons.lightbulb_outline,
-              color: Color(0xFF2196F3),
+              color: Colors.white,
               size: 20,
             ),
           ),
@@ -327,8 +353,8 @@ class QuitPlanOptionsScreen extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
+              children: const [
+                Text(
                   'Remember',
                   style: TextStyle(
                     fontSize: 14,
@@ -336,13 +362,14 @@ class QuitPlanOptionsScreen extends StatelessWidget {
                     color: Color(0xFF2196F3),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
-                  'Quitting smoking is a journey, not a destination. Every attempt gets you closer to success.',
+                  'Quitting smoking is a journey, not a destination. Every attempt gets you closer to success!',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[700],
+                    color: Colors.black,
                     height: 1.3,
+                    fontWeight: FontWeight.bold
                   ),
                 ),
               ],
