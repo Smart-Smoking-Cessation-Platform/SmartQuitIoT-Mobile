@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/badges_screen.dart';
 
 class AchievementsCard extends StatelessWidget {
   const AchievementsCard({super.key});
@@ -35,7 +36,10 @@ class AchievementsCard extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Thêm hành động khi nhấn
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => BadgesScreen()),
+                  );
                 },
                 child: Padding(
                   padding: EdgeInsets.only(right: 12),

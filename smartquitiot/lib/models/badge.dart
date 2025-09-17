@@ -12,7 +12,7 @@ class Badge {
   final String detailDescription;
   final List<String> benefits;
 
-  // 👇 thêm dòng này
+  // 👇 added this line
   final String imagePath;
 
   Badge({
@@ -25,7 +25,7 @@ class Badge {
     this.unlockedDate,
     required this.detailDescription,
     required this.benefits,
-    required this.imagePath, // 👈 thêm vào constructor
+    required this.imagePath, // 👈 added to constructor
   });
 }
 
@@ -34,58 +34,58 @@ class BadgeData {
     return [
       Badge(
         id: '1',
-        title: '24 Giờ Đầu Tiên',
-        description: 'Không hút thuốc trong 24 giờ',
+        title: 'First 24 Hours',
+        description: 'No smoking for 24 hours',
         icon: Icons.access_time,
         color: Colors.blue,
         isUnlocked: true,
-        unlockedDate: DateTime.now().subtract(Duration(days: 10)),
+        unlockedDate: DateTime.now().subtract(const Duration(days: 10)),
         detailDescription:
-            'Chúc mừng! Bạn đã vượt qua 24 giờ đầu tiên không hút thuốc. Đây là bước đầu tiên quan trọng nhất trong hành trình cai thuốc của bạn.',
+        'Congratulations! You have made it through the first 24 hours without smoking. This is the most important first step in your quit-smoking journey.',
         benefits: [
-          'Nồng độ CO trong máu giảm xuống mức bình thường',
-          'Tim và phổi bắt đầu phục hồi',
-          'Giảm nguy cơ đau tim',
-          'Cải thiện lưu thông máu',
+          'Carbon monoxide levels in the blood drop to normal',
+          'Heart and lungs start to recover',
+          'Reduced risk of heart attack',
+          'Improved blood circulation',
         ],
-        imagePath: 'lib/assets/Achievement.png', // 👈 ảnh mẫu
+        imagePath: 'lib/assets/Achievement.png', // 👈 sample image
       ),
       Badge(
         id: '2',
-        title: 'Tuần Đầu Tiên',
-        description: 'Hoàn thành 1 tuần không thuốc lá',
+        title: 'First Week',
+        description: 'Completed 1 week smoke-free',
         icon: Icons.calendar_view_week,
         color: Colors.orange,
         isUnlocked: true,
-        unlockedDate: DateTime.now().subtract(Duration(days: 5)),
+        unlockedDate: DateTime.now().subtract(const Duration(days: 5)),
         detailDescription:
-            'Tuyệt vời! Một tuần đã trôi qua và bạn vẫn kiên trì. Cơ thể bạn đang bắt đầu làm sạch nicotine.',
+        'Awesome! One week has passed and you are still staying strong. Your body is beginning to clear out nicotine.',
         benefits: [
-          'Vị giác và khứu giác bắt đầu cải thiện',
-          'Hơi thở thơm hơn',
-          'Răng trắng hơn',
-          'Tiết kiệm được một số tiền đáng kể',
+          'Taste and smell begin to improve',
+          'Fresher breath',
+          'Whiter teeth',
+          'Significant money savings',
         ],
-        imagePath: 'lib/assets/Achievement.png', // 👈 ảnh mẫu
+        imagePath: 'lib/assets/Achievement.png', // 👈 sample image
       ),
       Badge(
         id: '3',
-        title: 'Tháng Đầu Tiên',
-        description: '30 ngày mạnh mẽ',
+        title: 'First Month',
+        description: '30 days strong',
         icon: Icons.calendar_month,
         color: Colors.purple,
         isUnlocked: false,
         detailDescription:
-            'Một tháng không hút thuốc là một thành tựu lớn! Cơ thể bạn đã thay đổi đáng kể.',
+        'One month smoke-free is a huge achievement! Your body has changed significantly.',
         benefits: [
-          'Chức năng phổi cải thiện 30%',
-          'Giảm ho và khò khè',
-          'Tăng năng lượng đáng kể',
-          'Cải thiện tuần hoàn máu',
+          'Lung function improves by 30%',
+          'Less coughing and wheezing',
+          'Significant boost in energy',
+          'Better blood circulation',
         ],
-        imagePath: 'lib/assets/Achievement.png', // 👈 ảnh mẫu
+        imagePath: 'lib/assets/Achievement.png', // 👈 sample image
       ),
-      // ... các badge tiếp theo cũng thêm imagePath tương tự
+      // ... add more badges similarly with imagePath
     ];
   }
 }

@@ -11,7 +11,7 @@ class BadgeDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF00D09E),
-        // 👇 màu text và icon back trắng
+        // 👇 text and back icon color set to white
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(badge.title, style: const TextStyle(color: Colors.white)),
         centerTitle: true,
@@ -22,11 +22,11 @@ class BadgeDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 👇 dùng image mặc định nếu null hoặc rỗng
+            // 👇 use default image if null or empty
             if (badge.imagePath.isNotEmpty)
               Image.asset(badge.imagePath)
             else
-              Image.asset('assets/images/default_badge.png'), // ảnh fallback
+              Image.asset('assets/images/default_badge.png'), // fallback image
 
             const SizedBox(height: 20),
             Text(

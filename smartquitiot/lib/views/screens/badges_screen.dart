@@ -4,7 +4,7 @@ import '../widgets/badge_card.dart';
 import 'badge_detail_screen.dart';
 
 class BadgesScreen extends StatelessWidget {
-  // Lấy danh sách badges từ model
+  // Get the list of badges from model
   final List<mymodels.Badge> badges = mymodels.BadgeData.getBadges();
 
   BadgesScreen({super.key});
@@ -15,10 +15,10 @@ class BadgesScreen extends StatelessWidget {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
-          'Hành Trình Cai Thuốc',
+          'Quit Smoking Journey', // 👈 translated
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF00D09E), // 👈 hardcode màu
+        backgroundColor: const Color(0xFF00D09E), // 👈 hardcoded color
         elevation: 0,
         centerTitle: true,
       ),
@@ -34,21 +34,21 @@ class BadgesScreen extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   Color(0xFF00D09E),
-                  Color(0xFF00D09E), // 👈 xanh mới
+                  Color(0xFF00D09E), // 👈 green color
                 ],
               ),
             ),
             child: Column(
               children: [
-                // 👇 Thay Icon bằng hình PNG Achivement
+                // 👇 Replace Icon with PNG image Achievement
                 Image.asset(
-                  'lib/assets/Achievement.png', // đường dẫn local trong thư mục assets
-                  height: 110, // bạn chỉnh theo kích thước mong muốn
+                  'lib/assets/Achievement.png', // local path in assets folder
+                  height: 110,
                   width: 110,
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Thành Tựu Của Bạn',
+                  'Your Achievements', // 👈 translated
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -57,7 +57,7 @@ class BadgesScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${badges.where((b) => b.isUnlocked).length}/${badges.length} badges đã mở khóa',
+                  '${badges.where((b) => b.isUnlocked).length}/${badges.length} badges unlocked', // 👈 translated
                   style: const TextStyle(fontSize: 16, color: Colors.white70),
                 ),
               ],
@@ -77,8 +77,7 @@ class BadgesScreen extends StatelessWidget {
                 ),
                 itemCount: badges.length,
                 itemBuilder: (context, index) {
-                  final mymodels.Badge badge =
-                      badges[index]; // 👈 ràng buộc type
+                  final mymodels.Badge badge = badges[index]; // 👈 typed
                   return GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -86,11 +85,11 @@ class BadgesScreen extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (context) => BadgeDetailScreen(
                             badge: badge,
-                          ), // 👈 truyền model Badge
+                          ), // 👈 pass Badge model
                         ),
                       );
                     },
-                    child: BadgeCard(badge: badge), // 👈 truyền model Badge
+                    child: BadgeCard(badge: badge), // 👈 pass Badge model
                   );
                 },
               ),

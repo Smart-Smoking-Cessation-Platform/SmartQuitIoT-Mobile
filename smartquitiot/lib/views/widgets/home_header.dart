@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/notification_screen.dart'; // 👈 import NotificationScreen
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
@@ -10,7 +11,7 @@ class HomeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment:
-            CrossAxisAlignment.start, // ✅ cho phép hiển thị nhiều dòng
+        CrossAxisAlignment.start, // ✅ cho phép hiển thị nhiều dòng
         children: [
           /// Bên trái
           Column(
@@ -34,19 +35,33 @@ class HomeHeader extends StatelessWidget {
               // Hàng icon notification + setting
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1FFF3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Image.asset(
-                      'lib/assets/notification.png',
-                      width: 20,
-                      height: 20,
+                  // 👇 Icon notification có thể click
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                          const NotificationsScreen(), // 👈 mở NotificationScreen
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1FFF3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Image.asset(
+                        'lib/assets/notification.png',
+                        width: 20,
+                        height: 20,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
+
+                  // 👇 Icon settings (bạn có thể thêm onTap nếu muốn)
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -61,7 +76,6 @@ class HomeHeader extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 8),
             ],
           ),
