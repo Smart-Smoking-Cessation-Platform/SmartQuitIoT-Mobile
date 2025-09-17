@@ -18,12 +18,12 @@ class ArticleListPage extends StatelessWidget {
       'author': 'Dr. Jane Doe',
       'image': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
     },
-    {
-      'title': 'Exercise and Mental Health',
-      'subtitle': 'The connection between physical activity and well-being',
-      'author': 'Dr. John Smith',
-      'image': 'https://images.unsplash.com/photo-1526401485004-9e6f3f788f18',
-    },
+    // {
+    //   'title': 'Exercise and Mental Health',
+    //   'subtitle': 'The connection between physical activity and well-being',
+    //   'author': 'Dr. John Smith',
+    //   'image': './lib/assets/Achievement.png',
+    // },
   ];
 
   @override
@@ -34,6 +34,7 @@ class ArticleListPage extends StatelessWidget {
         backgroundColor: const Color(0xFF00D09E),
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white), // ⬅️ mũi tên trắng
         title: const Text(
           'Articles',
           style: TextStyle(
@@ -43,6 +44,7 @@ class ArticleListPage extends StatelessWidget {
           ),
         ),
       ),
+
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: articles.length,

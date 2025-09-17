@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'chat_screen.dart';
-import 'calendar_screen.dart';
 import 'achievement_screen.dart';
-import 'profile_screen.dart';
 import 'diary_screen.dart';
 import 'craving_screen.dart';
 
@@ -22,9 +20,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const ChatScreen(),
     const DiaryScreen(),
     const CravingScreen(),
-    const CalendarScreen(),
     const AchievementScreen(),
-    const ProfileScreen(),
   ];
 
   @override
@@ -50,14 +46,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Craving',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.emoji_events),
             label: 'Achievements',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );

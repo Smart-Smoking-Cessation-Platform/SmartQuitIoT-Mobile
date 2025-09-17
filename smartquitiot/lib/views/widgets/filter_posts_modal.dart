@@ -146,7 +146,7 @@ class _FilterPostsModalState extends State<FilterPostsModal> {
             ),
             child: Text(
               'Apply Filter',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
             ),
           ),
         ],

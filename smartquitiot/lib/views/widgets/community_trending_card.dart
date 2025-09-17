@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import '../screens/community_screen.dart';
 
 class CommunityPost {
   final String authorName;
@@ -101,7 +102,12 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CommunityPage()),
+                  );
+                },
                 child: const Text(
                   'View More',
                   style: TextStyle(
@@ -110,6 +116,7 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
                   ),
                 ),
               ),
+
             ],
           ),
           const SizedBox(height: 12),

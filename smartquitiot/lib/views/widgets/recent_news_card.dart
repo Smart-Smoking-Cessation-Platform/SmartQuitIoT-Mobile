@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import '../screens/article_list_screen.dart';
 
 class News {
   final String title;
@@ -55,7 +56,7 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white, // Background trắng kiểu card
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -81,7 +82,15 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  /// 👇 Điều hướng tới ArticleListPage
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ArticleListPage(),
+                    ),
+                  );
+                },
                 child: const Text(
                   'View More',
                   style: TextStyle(
@@ -109,8 +118,7 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
                     double value = 1.0;
                     if (_pageController.hasClients &&
                         _pageController.position.haveDimensions) {
-                      final page =
-                          _pageController.page ??
+                      final page = _pageController.page ??
                           _pageController.initialPage.toDouble();
                       double diff = (page - index).abs();
                       value = (1 - (diff * 0.1)).clamp(0.9, 1.0).toDouble();
@@ -149,7 +157,7 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
       margin: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white, // Giữ nền trắng cho từng card nhỏ
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.15),
@@ -161,7 +169,7 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
           image: AssetImage(news.imageUrl),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.25), // overlay nhẹ để chữ nổi bật
+            Colors.black.withOpacity(0.25),
             BlendMode.darken,
           ),
         ),
