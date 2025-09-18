@@ -1,5 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 
+import 'diary_screen.dart';
+
 class QuitPlanScreen extends StatefulWidget {
   const QuitPlanScreen({super.key});
 
@@ -26,8 +28,13 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
     '28/09/2025 - 30/09/2025',
   ];
 
-  final stageProgress = [0.2, 0.4, 0.6, 0.8, 1.0];
+  List<Map<String, dynamic>> missions = [
+    {'title': 'Không hút thuốc buổi sáng', 'completed': false},
+    {'title': 'Không hút thuốc khi căng thẳng', 'completed': false},
+    {'title': 'Đi bộ 15 phút', 'completed': true},
+  ];
 
+  final stageProgress = [0.2, 0.4, 0.6, 0.8, 1.0];
   final stageTarget = [0.5, 0.6, 0.7, 0.8, 1.0];
 
   final colors = [
@@ -56,7 +63,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
       ),
       body: Column(
         children: [
-          // Thanh giai đoạn
+          // Stage bar
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -85,8 +92,9 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: isSelected ? color : Colors.black87,
-                          fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 12,
                         ),
                       ),
@@ -97,7 +105,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
             ),
           ),
 
-          // Hiện ngày
+          // Stage dates
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -118,7 +126,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
             ),
           ),
 
-          // Pass Condition + Stage Status + Progress Bar + Current/Target + Craving/No Smoking
+          // Progress + Status
           Container(
             width: double.infinity,
             color: Colors.white,
@@ -126,7 +134,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Dòng Pass Condition + Stage Status
+                // Pass Condition + Status
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -137,7 +145,6 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
-                      
                     ),
                     Builder(builder: (context) {
                       String statusText;
@@ -148,7 +155,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                         statusText = "In Progress";
                         textColor = Colors.white;
                         bgColor = Colors.green.withOpacity(0.85);
-                      } else if (selectedIndex < 0) { // không dùng, nhưng giữ ví dụ Completed
+                      } else if (selectedIndex < 0) {
                         statusText = "Completed";
                         textColor = Colors.white;
                         bgColor = Colors.grey.shade600.withOpacity(0.85);
@@ -159,7 +166,8 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                       }
 
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: bgColor,
                           borderRadius: BorderRadius.circular(12),
@@ -177,7 +185,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 22), // khoảng cách xuống thanh
+                const SizedBox(height: 22),
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final fullWidth = constraints.maxWidth;
@@ -189,7 +197,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          // nền progress
+                          // Background progress
                           Container(
                             height: 18,
                             decoration: BoxDecoration(
@@ -197,7 +205,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          // tiến độ
+                          // Current progress
                           Container(
                             height: 18,
                             width: currentWidth,
@@ -206,7 +214,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          // số % current trên thanh, màu giai đoạn
+                          // Current percent
                           Positioned(
                             left: (currentWidth - 20).clamp(0, fullWidth - 40),
                             top: -20,
@@ -218,7 +226,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                                   fontSize: 12),
                             ),
                           ),
-                          // marker target
+                          // Target marker
                           Positioned(
                             left: targetX - 1,
                             top: 0,
@@ -228,7 +236,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                               color: Colors.red,
                             ),
                           ),
-                          // số % target trên marker, dính sát vạch đỏ
+                          // Target percent
                           Positioned(
                             left: (targetX - 16).clamp(0, fullWidth - 40),
                             top: -20,
@@ -246,35 +254,41 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                // Current & Target Text dưới progress bar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Current: $currentPercent%',
                       style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.bold, color: currentColor),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: currentColor),
                     ),
                     Text(
                       'Target: $targetPercent%',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Hiển thị 2 dòng Craving & No Smoking chỉ khi không phải giai đoạn Preparation
                 if (selectedIndex > 0) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'Craving level:',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '4 / 6', // current / target, có thể đổi thành biến
+                        '4 / 6',
                         style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.bold, color: currentColor),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: currentColor),
                       ),
                     ],
                   ),
@@ -282,14 +296,17 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'No Smoking day:',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '5 / 2', // current / target
+                        '5 / 2',
                         style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.bold, color: currentColor),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: currentColor),
                       ),
                     ],
                   ),
@@ -298,9 +315,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
             ),
           ),
 
-
-
-          // Nội dung
+          // Content
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -309,9 +324,35 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                 children: [
                   _buildDateGridCard(),
                   const SizedBox(height: 16),
-                  _buildMissionCard(),
+                  _buildMissionGridCard(),
                   const SizedBox(height: 16),
-                  _buildProgressCard(),
+
+                  // Nút Go to Diary
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Go to Diary pressed!')),
+                        );
+                        // TODO: Thêm navigation tới DiaryScreen
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => DiaryScreen()));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF00D09E),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      child: const Text('Go to Diary', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -321,76 +362,160 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
     );
   }
 
-  /// ================== DATE GRID CARD ==================
-  Widget _buildDateGridCard() {
-    final items = List.generate(8, (i) => 'Ngày ${i + 1}');
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Lịch trình',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          GridView.builder(
-            itemCount: items.length,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemBuilder: (context, index) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00D09E).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: Text(items[index],
-                    style: const TextStyle(fontSize: 12)),
-              );
-            },
+  Widget _buildMissionGridCard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Missions',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: missions.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 1,
+            mainAxisExtent: 70,
+            mainAxisSpacing: 8,
+          ),
+          itemBuilder: (context, index) {
+            final mission = missions[index];
+            final completed = mission['completed'] as bool;
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'lib/assets/gold-cup.png',
+                    width: 28,
+                    height: 28,
+                    color: completed ? null : Colors.grey.shade400,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      mission['title'] as String,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: completed
+                            ? Colors.amber.shade700
+                            : Colors.black87,
+                      ),
+                    ),
+                  ),
+                  if (completed)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.shade400,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Completed',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
-  /// ================== MISSION CARD ==================
-  Widget _buildMissionCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Text('Nhiệm vụ hôm nay (giữ nguyên nội dung)'),
-    );
-  }
+  Widget _buildDateGridCard() {
+    final days = List.generate(8, (i) => i + 1);
+    final dates = [
+      '15/09',
+      '16/09',
+      '17/09',
+      '18/09',
+      '19/09',
+      '20/09',
+      '21/09',
+      '22/09'
+    ];
 
-  /// ================== PROGRESS CARD ==================
-  Widget _buildProgressCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text('Tiến trình', style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          LinearProgressIndicator(value: 0.5),
-          SizedBox(height: 8),
-          Text('50% hoàn thành'),
-        ],
+    return SizedBox(
+      height: 80,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: days.length,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemBuilder: (context, index) {
+          final isCurrent = index == selectedIndex;
+          final isCompleted = index < selectedIndex;
+
+          final bgColor = isCurrent
+              ? Colors.green.shade400
+              : isCompleted
+              ? Colors.grey.shade300
+              : Colors.white;
+          final textColor =
+          isCurrent || isCompleted ? Colors.white : Colors.black87;
+
+          return Container(
+            width: 60,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Day ${days[index]}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  dates[index],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
