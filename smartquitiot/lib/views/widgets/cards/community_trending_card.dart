@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import '../screens/community_screen.dart';
+import 'package:SmartQuitIoT/views/screens/community/community.dart';
 
 class CommunityPost {
   final String authorName;
@@ -116,7 +116,6 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
                   ),
                 ),
               ),
-
             ],
           ),
           const SizedBox(height: 12),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import '../screens/article_list_screen.dart';
+import 'package:SmartQuitIoT/views/screens/articles/article_list_screen.dart';
 
 class News {
   final String title;
@@ -118,7 +118,8 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
                     double value = 1.0;
                     if (_pageController.hasClients &&
                         _pageController.position.haveDimensions) {
-                      final page = _pageController.page ??
+                      final page =
+                          _pageController.page ??
                           _pageController.initialPage.toDouble();
                       double diff = (page - index).abs();
                       value = (1 - (diff * 0.1)).clamp(0.9, 1.0).toDouble();

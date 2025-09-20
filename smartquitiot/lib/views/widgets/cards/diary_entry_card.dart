@@ -174,7 +174,7 @@ class DiaryEntryCard extends StatelessWidget {
         _buildStatItem(
           'Anxiety',
           '${entry['anxiety']}',
-          Icons.anxiety,
+          Icons.psychology,
           Colors.red,
         ),
       ],

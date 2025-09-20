@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../screens/notification_screen.dart'; // 👈 import NotificationScreen
+import '../../screens/notification_screen.dart'; // 👈 import NotificationScreen
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
@@ -11,7 +11,7 @@ class HomeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment:
-        CrossAxisAlignment.start, // ✅ cho phép hiển thị nhiều dòng
+            CrossAxisAlignment.start, // ✅ cho phép hiển thị nhiều dòng
         children: [
           /// Bên trái
           Column(
@@ -42,7 +42,7 @@ class HomeHeader extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                          const NotificationsScreen(), // 👈 mở NotificationScreen
+                              const NotificationsScreen(), // 👈 mở NotificationScreen
                         ),
                       );
                     },
