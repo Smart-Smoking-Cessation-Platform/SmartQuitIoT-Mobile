@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../insight_item.dart';
+import 'package:SmartQuitIoT/views/widgets/lists/insight_item.dart';
 
 class QuickInsightsSection extends StatelessWidget {
   final List<String> insights;

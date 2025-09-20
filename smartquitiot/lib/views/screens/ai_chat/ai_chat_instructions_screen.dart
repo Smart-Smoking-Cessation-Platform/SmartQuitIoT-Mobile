@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'ai_chat_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/ai_chat_logo_section.dart';
-import 'package:SmartQuitIoT/views/widgets/instruction_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/instruction_card.dart';
 import 'package:SmartQuitIoT/views/widgets/ai/ai_chat_message_input.dart';
 
 class AiChatInstructionsScreen extends StatelessWidget {

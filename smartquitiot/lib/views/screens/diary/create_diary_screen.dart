@@ -1,8 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/screens/onboarding/quit_plan_options.dart';
 import 'package:SmartQuitIoT/views/widgets/common/diary_date_selector.dart';
-import 'package:SmartQuitIoT/views/widgets/smoking_choice_card.dart';
-import 'package:SmartQuitIoT/views/widgets/mood_slider_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/smoking_choice_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/mood_slider_card.dart';
 
 class CreateDiaryScreen extends StatefulWidget {
   const CreateDiaryScreen({super.key});

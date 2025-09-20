@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../stat_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/stat_card.dart';
 
 class TodayStatsSection extends StatelessWidget {
   final List<Map<String, dynamic>> stats;

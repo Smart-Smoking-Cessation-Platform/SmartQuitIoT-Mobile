@@ -1,7 +1,7 @@
 // ... các import không đổi
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/screens/create_diary_screen.dart';
-import 'premium_membership_screen.dart';
+import 'package:SmartQuitIoT/views/screens/diary/create_diary_screen.dart';
+import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/common/receipt_bottom_sheet.dart';
 
 class SuccessScreen extends StatefulWidget {

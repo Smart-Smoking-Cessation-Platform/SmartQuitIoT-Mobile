@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import '../widgets/diary_entry_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/diary_entry_card.dart';
 
 class DiaryHistoryScreen extends StatefulWidget {
   const DiaryHistoryScreen({super.key});

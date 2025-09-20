@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/models/badge.dart' as mymodels; // 👈 model prefix
-import '../widgets/badge_card.dart';
-import 'badge_detail_screen.dart';
+import 'package:SmartQuitIoT/models/badge.dart' as mymodels;
+import 'package:SmartQuitIoT/views/widgets/cards/badge_card.dart';
+import 'package:SmartQuitIoT/views/screens/achievements/badge_detail_screen.dart';
 
 class BadgesScreen extends StatelessWidget {
   // Get the list of badges from model

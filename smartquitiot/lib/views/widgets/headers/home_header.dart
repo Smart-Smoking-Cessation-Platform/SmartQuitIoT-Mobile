@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../screens/notification_screen.dart'; // 👈 import NotificationScreen
+import 'package:SmartQuitIoT/views/screens/common/notification_screen.dart'; // 👈 import NotificationScreen
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});

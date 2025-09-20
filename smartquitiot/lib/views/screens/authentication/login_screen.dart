@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/auth_header.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/auth_divider.dart';
-import '../widgets/social_login_buttons.dart';
+import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
+import 'package:SmartQuitIoT/views/widgets/headers/auth_header.dart';
+import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
+import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
+import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
