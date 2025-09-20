@@ -20,7 +20,7 @@ class WelcomeScreen extends StatelessWidget {
               Column(
                 children: [
                   // Logo từ assets
-                  Image.asset('lib/assets/logo.png', width: 120, height: 120),
+                  Image.asset('lib/assets/logo-2.png', width: 120, height: 120),
                   const SizedBox(height: 24),
                   Text(
                     'SMART QUIT',
