@@ -1,11 +1,11 @@
-import 'package:SmartQuitIoT/views/screens/premium_membership_screen.dart';
+import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
 import 'package:flutter/material.dart';
 import 'diary_history_screen.dart';
-import '../widgets/progress_card.dart';
-import '../widgets/action_button.dart';
-import '../widgets/today_stats_section.dart';
-import '../widgets/weekly_trend_section.dart';
-import '../widgets/quick_insights_section.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/progress_card.dart';
+import 'package:SmartQuitIoT/views/widgets/buttons/action_button.dart';
+import 'package:SmartQuitIoT/views/widgets/sections/today_stats_section.dart';
+import 'package:SmartQuitIoT/views/widgets/sections/weekly_trend_section.dart';
+import 'package:SmartQuitIoT/views/widgets/sections/quick_insights_section.dart';
 
 class DiaryScreen extends StatefulWidget {
   const DiaryScreen({super.key});
