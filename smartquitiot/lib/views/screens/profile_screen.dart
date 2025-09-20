@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/screens/edit_profile_screen.dart';
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -112,8 +113,16 @@ class ProfileScreen extends StatelessWidget {
                             icon: Icons.person_outline,
                             title: 'Edit Profile',
                             color: Color(0xFF0984E3),
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => EditProfileScreen(),
+                                ),
+                              );
+                            },
                           ),
+
 
                           SizedBox(height: 12),
 
