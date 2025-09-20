@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'payment_options_screen.dart';
 
 class PremiumMembershipScreen extends StatelessWidget {
-  const PremiumMembershipScreen({Key? key}) : super(key: key);
+  const PremiumMembershipScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
