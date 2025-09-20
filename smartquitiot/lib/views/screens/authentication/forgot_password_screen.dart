@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'otp_screen.dart';
-import '../widgets/custom_text_field.dart';
+import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});

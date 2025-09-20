@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import 'suggested_mission_screen.dart';
+import 'package:SmartQuitIoT/views/screens/suggested_mission_screen.dart';
 
 class QuitPlanOptionsScreen extends StatelessWidget {
   const QuitPlanOptionsScreen({super.key});
@@ -84,7 +84,9 @@ class QuitPlanOptionsScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFE91E63).withOpacity(0.1),
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE91E63).withOpacity(0.3)),
+              border: Border.all(
+                color: const Color(0xFFE91E63).withOpacity(0.3),
+              ),
             ),
             child: const Icon(
               Icons.psychology,
@@ -114,10 +116,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             'What Would You Like To Do Next?',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF718096),
-            ),
+            style: TextStyle(fontSize: 14, color: Color(0xFF718096)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -126,13 +125,13 @@ class QuitPlanOptionsScreen extends StatelessWidget {
   }
 
   Widget _buildOptionCard(
-      BuildContext context,
-      String title,
-      String description,
-      IconData icon,
-      Color color,
-      bool isKeepPlan,
-      ) {
+    BuildContext context,
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+    bool isKeepPlan,
+  ) {
     return GestureDetector(
       onTap: () {
         if (isKeepPlan) {
@@ -192,13 +191,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  Center(
-                    child: Icon(
-                      icon,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
+                  Center(child: Icon(icon, color: Colors.white, size: 32)),
                   if (isKeepPlan)
                     Positioned(
                       right: 4,
@@ -217,11 +210,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.star,
-                          color: color,
-                          size: 12,
-                        ),
+                        child: Icon(Icons.star, color: color, size: 12),
                       ),
                     ),
                 ],
@@ -277,11 +266,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(
-                        Icons.arrow_forward,
-                        color: color,
-                        size: 16,
-                      ),
+                      Icon(Icons.arrow_forward, color: color, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         isKeepPlan ? 'Continue journey' : 'Start fresh',
@@ -369,7 +354,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
                     fontSize: 12,
                     color: Colors.black,
                     height: 1.3,
-                    fontWeight: FontWeight.bold
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],

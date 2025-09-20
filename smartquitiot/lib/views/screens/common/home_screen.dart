@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../widgets/home_header.dart';
-import '../widgets/smoke_free_timer_card.dart';
-import '../widgets/stats_table_card.dart';
-import '../widgets/health_improvement_card.dart';
-import '../widgets/achievements_card.dart';
-import '../widgets/quit_plan_card.dart';
-import '../widgets/today_mission_card.dart';
-import '../widgets/analysis_card.dart';
-import '../widgets/community_trending_card.dart';
-import '../widgets/recent_news_card.dart';
-import 'ai_chat_welcome_screen.dart';
+import 'package:SmartQuitIoT/views/widgets/headers/home_header.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/smoke_free_timer_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/stats_table_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/health_improvement_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/achievements_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/quit_plan_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/today_mission_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/analysis_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/community_trending_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/recent_news_card.dart';
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

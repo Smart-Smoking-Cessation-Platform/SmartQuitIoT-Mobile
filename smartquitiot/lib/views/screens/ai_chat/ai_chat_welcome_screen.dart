@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'ai_chat_instructions_screen.dart';
-import '../widgets/ai_chat_welcome_content.dart';
+import 'package:SmartQuitIoT/views/widgets/ai/ai_chat_welcome_content.dart';
 
 class AiChatWelcomeScreen extends StatelessWidget {
   const AiChatWelcomeScreen({super.key});

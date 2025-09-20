@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 
-import 'diary_screen.dart';
+import 'package:SmartQuitIoT/views/screens/diary/diary_screen.dart';
 
 class QuitPlanScreen extends StatefulWidget {
   const QuitPlanScreen({super.key});
@@ -17,7 +17,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
     'On Set',
     'Peak Craving',
     'Subsiding',
-    'Maintenance'
+    'Maintenance',
   ];
 
   final stageDates = [
@@ -146,42 +146,46 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                         color: Colors.black,
                       ),
                     ),
-                    Builder(builder: (context) {
-                      String statusText;
-                      Color textColor;
-                      Color bgColor;
+                    Builder(
+                      builder: (context) {
+                        String statusText;
+                        Color textColor;
+                        Color bgColor;
 
-                      if (selectedIndex == 0) {
-                        statusText = "In Progress";
-                        textColor = Colors.white;
-                        bgColor = Colors.green.withOpacity(0.85);
-                      } else if (selectedIndex < 0) {
-                        statusText = "Completed";
-                        textColor = Colors.white;
-                        bgColor = Colors.grey.shade600.withOpacity(0.85);
-                      } else {
-                        statusText = "Upcoming";
-                        textColor = Colors.orange.shade800;
-                        bgColor = Colors.orange.shade100.withOpacity(0.5);
-                      }
+                        if (selectedIndex == 0) {
+                          statusText = "In Progress";
+                          textColor = Colors.white;
+                          bgColor = Colors.green.withOpacity(0.85);
+                        } else if (selectedIndex < 0) {
+                          statusText = "Completed";
+                          textColor = Colors.white;
+                          bgColor = Colors.grey.shade600.withOpacity(0.85);
+                        } else {
+                          statusText = "Upcoming";
+                          textColor = Colors.orange.shade800;
+                          bgColor = Colors.orange.shade100.withOpacity(0.5);
+                        }
 
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          statusText,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: textColor,
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
                           ),
-                        ),
-                      );
-                    }),
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            statusText,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
 
@@ -221,9 +225,10 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                             child: Text(
                               '$currentPercent%',
                               style: TextStyle(
-                                  color: currentColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12),
+                                color: currentColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                           // Target marker
@@ -243,9 +248,10 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                             child: Text(
                               '$targetPercent%',
                               style: const TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12),
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],
@@ -260,16 +266,18 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                     Text(
                       'Current: $currentPercent%',
                       style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: currentColor),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: currentColor,
+                      ),
                     ),
                     Text(
                       'Target: $targetPercent%',
                       style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
                     ),
                   ],
                 ),
@@ -281,14 +289,17 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                       const Text(
                         'Craving level:',
                         style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.bold),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         '4 / 6',
                         style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: currentColor),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: currentColor,
+                        ),
                       ),
                     ],
                   ),
@@ -299,14 +310,17 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                       const Text(
                         'No Smoking day:',
                         style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.bold),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         '5 / 2',
                         style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: currentColor),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: currentColor,
+                        ),
                       ),
                     ],
                   ),
@@ -332,16 +346,20 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Go to Diary pressed!')),
+                          const SnackBar(content: Text('Go to Diary pressed!')),
                         );
                         // TODO: Thêm navigation tới DiaryScreen
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => DiaryScreen()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => DiaryScreen()),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF00D09E),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -350,7 +368,13 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      child: const Text('Go to Diary', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+                      child: const Text(
+                        'Go to Diary',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -368,10 +392,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
       children: [
         const Text(
           'Missions',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 8),
         GridView.builder(
@@ -424,7 +445,9 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                   if (completed)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.yellow.shade400,
                         borderRadius: BorderRadius.circular(12),
@@ -457,7 +480,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
       '19/09',
       '20/09',
       '21/09',
-      '22/09'
+      '22/09',
     ];
 
     return SizedBox(
@@ -475,8 +498,9 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
               : isCompleted
               ? Colors.grey.shade300
               : Colors.white;
-          final textColor =
-          isCurrent || isCompleted ? Colors.white : Colors.black87;
+          final textColor = isCurrent || isCompleted
+              ? Colors.white
+              : Colors.black87;
 
           return Container(
             width: 60,
@@ -507,10 +531,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                 const SizedBox(height: 4),
                 Text(
                   dates[index],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: textColor,
-                  ),
+                  style: TextStyle(fontSize: 12, color: textColor),
                 ),
               ],
             ),

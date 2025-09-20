@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgets/chat_coach_list_item.dart';
-import '../widgets/chat_recent_item.dart';
-import '../widgets/chat_message_bubble.dart';
-import '../widgets/ai_chat_message_input.dart';
+import 'package:SmartQuitIoT/views/widgets/chat/chat_coach_list_item.dart';
+import 'package:SmartQuitIoT/views/widgets/lists/chat_recent_item.dart';
+import 'package:SmartQuitIoT/views/widgets/chat/chat_message_bubble.dart';
+import 'package:SmartQuitIoT/views/widgets/ai/ai_chat_message_input.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});

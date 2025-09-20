@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/all_achievements_view.dart';
-import '../widgets/completed_achievements_view.dart';
-import '../widgets/in_progress_achievements_view.dart';
+import 'package:SmartQuitIoT/views/widgets/achievements/all_achievements_view.dart';
+import 'package:SmartQuitIoT/views/widgets/achievements/completed_achievements_view.dart';
+import 'package:SmartQuitIoT/views/widgets/common/in_progress_achievements_view.dart';
 
 class AchievementScreen extends StatefulWidget {
   const AchievementScreen({super.key});

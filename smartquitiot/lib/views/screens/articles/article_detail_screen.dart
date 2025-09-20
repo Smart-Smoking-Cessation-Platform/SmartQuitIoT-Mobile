@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/article_stat_item.dart';
-import '../widgets/article_bullet_point.dart';
+import 'package:SmartQuitIoT/views/widgets/articles/article_stat_item.dart';
+import 'package:SmartQuitIoT/views/widgets/articles/article_bullet_point.dart';
 
 class ArticleDetailPage extends StatefulWidget {
   const ArticleDetailPage({super.key});

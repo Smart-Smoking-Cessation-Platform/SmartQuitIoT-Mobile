@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'loading_screen.dart';
+import 'package:SmartQuitIoT/views/screens/common/loading_screen.dart';
 
 class QRPaymentScreen extends StatelessWidget {
   final String selectedPlan;

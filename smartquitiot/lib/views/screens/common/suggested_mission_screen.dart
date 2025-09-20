@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
-import '../widgets/mission_header_card.dart';
-import '../widgets/mission_progress_card.dart';
-import '../widgets/mission_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/mission_header_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/mission_progress_card.dart';
 
 class SuggestedMissionsScreen extends StatefulWidget {
   const SuggestedMissionsScreen({super.key});

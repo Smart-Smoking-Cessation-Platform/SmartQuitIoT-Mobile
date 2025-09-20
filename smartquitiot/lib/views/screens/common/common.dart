@@ -8,7 +8,6 @@ export 'api_demo_screen.dart';
 export 'home_screen.dart';
 export 'loading_screen.dart';
 export 'notification_detail_screen.dart';
-export 'simple_home_screen.dart';
 export 'calendar_screen.dart';
 export 'craving_screen.dart';
 export 'suggested_mission_screen.dart';

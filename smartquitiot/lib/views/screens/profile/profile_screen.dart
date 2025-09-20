@@ -1,7 +1,7 @@
-import 'package:SmartQuitIoT/views/screens/edit_profile_screen.dart';
+import 'package:SmartQuitIoT/views/screens/profile/edit_profile_screen.dart';
 import 'package:flutter/material.dart';
-import '../widgets/profile_menu_item.dart';
-import '../widgets/profile_header_section.dart';
+import 'package:SmartQuitIoT/views/widgets/lists/profile_menu_item.dart';
+import 'package:SmartQuitIoT/views/widgets/headers/profile_header_section.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../widgets/question_widget.dart';
+import 'package:SmartQuitIoT/views/widgets/common/question_widget.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
   const QuestionnaireScreen({super.key});

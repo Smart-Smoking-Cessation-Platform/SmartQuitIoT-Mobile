@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../widgets/social_button.dart';
+import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/question_card.dart';
-import '../widgets/page_indicator.dart';
-import '../widgets/primary_button.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/question_card.dart';
+import 'package:SmartQuitIoT/views/widgets/common/page_indicator.dart';
+import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/auth_header.dart';
-import '../widgets/primary_button.dart';
+import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
+import 'package:SmartQuitIoT/views/widgets/headers/auth_header.dart';
+import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});

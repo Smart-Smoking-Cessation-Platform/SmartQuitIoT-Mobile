@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'article_detail_screen.dart'; // import file ArticleDetailPage của bạn
-import '../widgets/article_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/article_card.dart';
 
 class ArticleListPage extends StatelessWidget {
   const ArticleListPage({super.key});
@@ -67,5 +67,4 @@ class ArticleListPage extends StatelessWidget {
       ),
     );
   }
-
 }

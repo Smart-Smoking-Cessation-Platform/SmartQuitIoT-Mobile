@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'success_payment_screen.dart';
+import 'package:SmartQuitIoT/views/screens/payment/success_payment_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   final String selectedPlan;

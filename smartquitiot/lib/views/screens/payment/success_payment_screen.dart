@@ -1,8 +1,8 @@
 // ... các import không đổi
 import 'package:flutter/material.dart';
-import 'create_diary_screen.dart';
+import 'package:SmartQuitIoT/views/screens/create_diary_screen.dart';
 import 'premium_membership_screen.dart';
-import '../widgets/receipt_bottom_sheet.dart';
+import 'package:SmartQuitIoT/views/widgets/common/receipt_bottom_sheet.dart';
 
 class SuccessScreen extends StatefulWidget {
   final String selectedPlan;
@@ -212,13 +212,18 @@ class _SuccessScreenState extends State<SuccessScreen>
                                     // Navigate tới CreateDiaryScreen
                                     Navigator.pushReplacement(
                                       context,
-                                      MaterialPageRoute(builder: (context) => const CreateDiaryScreen()),
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const CreateDiaryScreen(),
+                                      ),
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 18,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -241,8 +246,11 @@ class _SuccessScreenState extends State<SuccessScreen>
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
                                   onPressed: () => _showReceipt(context),
-                                  icon: const Icon(Icons.receipt_long,
-                                      size: 20, color: Colors.black),
+                                  icon: const Icon(
+                                    Icons.receipt_long,
+                                    size: 20,
+                                    color: Colors.black,
+                                  ),
                                   label: const Text(
                                     'View Receipt',
                                     style: TextStyle(
@@ -254,9 +262,12 @@ class _SuccessScreenState extends State<SuccessScreen>
                                   style: OutlinedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     side: const BorderSide(
-                                        color: Colors.white, width: 1.5),
+                                      color: Colors.white,
+                                      width: 1.5,
+                                    ),
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 18),
+                                      vertical: 18,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -316,8 +327,9 @@ class _SuccessScreenState extends State<SuccessScreen>
 
   void _showReceipt(BuildContext context) {
     final plan = widget.selectedPlan == 'annual' ? 'Annual' : 'Monthly';
-    final amount =
-    widget.selectedPlan == 'annual' ? '900,000 VND' : '99,000 VND';
+    final amount = widget.selectedPlan == 'annual'
+        ? '900,000 VND'
+        : '99,000 VND';
     final method = _getPaymentTitle(widget.paymentMethod);
     final transactionId = 'PAY${DateTime.now().millisecondsSinceEpoch}';
     final date = DateTime.now().toString().substring(0, 19);
@@ -357,10 +369,7 @@ class _SuccessScreenState extends State<SuccessScreen>
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
-              color: Colors.black54,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.black54, fontSize: 14),
           ),
         ),
         Text(
