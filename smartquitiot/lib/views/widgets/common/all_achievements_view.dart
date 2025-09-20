@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'progress_card.dart';
+import '../progress_card.dart';
 import 'achievement_section.dart';
 
 class AllAchievementsView extends StatelessWidget {

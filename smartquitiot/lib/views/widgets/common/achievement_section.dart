@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'achievement_card.dart';
+import '../achievement_card.dart';
 
 class AchievementSection extends StatelessWidget {
   final String title;

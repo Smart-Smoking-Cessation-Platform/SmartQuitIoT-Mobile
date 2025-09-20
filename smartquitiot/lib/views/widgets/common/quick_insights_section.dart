@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'insight_item.dart';
+import '../insight_item.dart';
 
 class QuickInsightsSection extends StatelessWidget {
   final List<String> insights;
@@ -21,10 +21,7 @@ class QuickInsightsSection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.1),
-            color.withOpacity(0.05),
-          ],
+          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -42,11 +39,7 @@ class QuickInsightsSection extends StatelessWidget {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 20,
-                ),
+                child: Icon(icon, color: color, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
@@ -60,8 +53,8 @@ class QuickInsightsSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ...insights.map((insight) => 
-            Padding(
+          ...insights.map(
+            (insight) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: InsightItem(text: insight),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../common/social_icon_circle.dart';
 
 class SocialLoginButtons extends StatelessWidget {
   final VoidCallback? onFacebookTap;
@@ -19,14 +20,14 @@ class SocialLoginButtons extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Image.asset(
+        SocialIconCircle(
           asset: 'lib/assets/facebook.png',
           onTap: onFacebookTap ?? () {},
           background: backgroundColor ?? Colors.white,
           borderColor: borderColor ?? Colors.grey.shade300,
         ),
         const SizedBox(width: 16),
-        Image.asset(
+        SocialIconCircle(
           asset: 'lib/assets/google.png',
           onTap: onGoogleTap ?? () {},
           background: backgroundColor ?? Colors.white,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'completed_achievement_card.dart';
+import '../completed_achievement_card.dart';
 
 class CompletedAchievementsView extends StatelessWidget {
   final List<Map<String, dynamic>> milestoneAchievements;
