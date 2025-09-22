@@ -10,7 +10,7 @@ export 'in_progress_achievement_card.dart';
 export 'completed_achievement_card.dart';
 export 'last_week_notification_card.dart';
 export 'stage_progress_card.dart';
-export 'diary_entry_card.dart';
+export '../../screens/diary/diary_entry_card.dart';
 export 'stat_card.dart';
 export 'progress_card.dart';
 export '../../screens/quitplans/quit_plan_card.dart';

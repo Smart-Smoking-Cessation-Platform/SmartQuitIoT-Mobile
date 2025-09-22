@@ -1,7 +1,7 @@
 # SmartQuitIoT - AI-Powered Smoking Cessation Mobile Application
 
 <div align="center">
-  <img src="lib/assets/logo.png" alt="SmartQuitIoT Logo" width="200" height="200">
+  <img src="lib/assets/logo/logo.png" alt="SmartQuitIoT Logo" width="200" height="200">
   
   [![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev/)
   [![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev/)
