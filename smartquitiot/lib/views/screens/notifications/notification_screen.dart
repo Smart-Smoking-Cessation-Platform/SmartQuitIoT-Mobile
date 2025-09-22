@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/widgets/lists/notification_item.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/section_header.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/last_week_notification_card.dart';
-import 'package:SmartQuitIoT/views/screens/common/notification_detail_screen.dart';
+import 'package:SmartQuitIoT/views/screens/notifications//notification_detail_screen.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({Key? key}) : super(key: key);

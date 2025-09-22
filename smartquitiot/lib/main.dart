@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/utils/app_theme.dart';
@@ -25,8 +26,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Smoke Quit',
       theme: AppTheme.light(),
-      home: const SplashScreen(),
-
+      // home: const SplashScreen(),
+      home: const ProfileScreen(),
       routes: {
         '/welcome': (_) => const WelcomeScreen(),
         '/login': (_) => const LoginScreen(),

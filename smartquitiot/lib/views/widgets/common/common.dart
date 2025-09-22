@@ -2,4 +2,4 @@
 export 'page_indicator.dart';
 export 'social_icon_circle.dart';
 export 'stats_row.dart';
-export 'chat_coach_list_item.dart';
+
