@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
+import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -78,7 +80,12 @@ class SettingsScreen extends StatelessWidget {
                       _buildSettingItem(
                         icon: Icons.person_outline,
                         title: 'Profile',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                          );
+                        },
                       ),
                       _buildSettingItem(
                         icon: Icons.analytics_outlined,
@@ -88,7 +95,12 @@ class SettingsScreen extends StatelessWidget {
                       _buildSettingItem(
                         icon: Icons.notifications_outlined,
                         title: 'Notifications',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                          );
+                        },
                       ),
                       _buildSettingItem(
                         icon: Icons.card_membership_outlined,

@@ -55,7 +55,7 @@ class AnalysisCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Image.asset(
-                      'lib/assets/notification.png',
+                      'lib/assets/images/notification.png',
                       width: 16,
                       height: 16,
                     ),

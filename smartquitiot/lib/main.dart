@@ -6,7 +6,6 @@ import 'package:SmartQuitIoT/views/screens/authentication/login_screen.dart';
 import 'package:SmartQuitIoT/views/screens/onboarding/onboarding_screen.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/signup_screen.dart';
 import 'package:SmartQuitIoT/views/screens/onboarding/welcome_screen.dart';
-import 'package:SmartQuitIoT/views/screens/onboarding/questionnaire_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/_relaunch_screen.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/forgot_password_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
@@ -33,7 +32,6 @@ class MyApp extends StatelessWidget {
         '/signup': (_) => const SignUpScreen(),
         '/onboarding': (_) => OnboardingScreen(),
         '/home': (_) => const MainNavigationScreen(),
-        '/questionnaire': (_) => const QuestionnaireScreen(),
         '/relaunch': (_) => const RelaunchScreen(),
         '/forgot': (_) => const ForgotPasswordScreen(),
         '/debug-home': (_) => const DebugHomeScreen(),

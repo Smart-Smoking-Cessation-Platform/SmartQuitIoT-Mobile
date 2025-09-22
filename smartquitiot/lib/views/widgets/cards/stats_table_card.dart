@@ -79,21 +79,21 @@ class _StatsTableCardState extends State<StatsTableCard> {
     final List<Widget> cards = [
       _buildCard(
         child: InfoCard(
-          icon: 'lib/assets/calendar.png',
+          icon: 'lib/assets/images/calendar.png',
           title: 'QUIT DAY',
           value: '1 Day',
         ),
       ),
       _buildCard(
         child: InfoCard(
-          icon: 'lib/assets/salary.png',
+          icon: 'lib/assets/images/salary.png',
           title: 'MONEY SAVED',
           value: '45,000 VND',
         ),
       ),
       _buildCard(
         child: InfoCard(
-          icon: 'lib/assets/salary.png',
+          icon: 'lib/assets/images/salary.png',
           title: 'ANNUAL SAVED',
           value: '500,000 VND',
         ),

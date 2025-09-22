@@ -20,7 +20,7 @@ class WelcomeScreen extends StatelessWidget {
               Column(
                 children: [
                   // Logo từ assets
-                  Image.asset('lib/assets/logo.png', width: 120, height: 120),
+                  Image.asset('lib/assets/logo/logo-2.png', width: 120, height: 120),
                   const SizedBox(height: 24),
                   Text(
                     'SMART QUIT',
@@ -108,8 +108,8 @@ class WelcomeScreen extends StatelessWidget {
               // Divider đơn giản
               Row(
                 children: [
-                  Expanded(child: Container(height: 1.2, color: Colors.black)),
-                  Expanded(child: Container(height: 1.2, color: Colors.black)),
+                  Expanded(child: Container(height: 1, color: Colors.black)),
+                  Expanded(child: Container(height: 1, color: Colors.black)),
                 ],
               ),
 
@@ -125,7 +125,7 @@ class WelcomeScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'lib/assets/google.png',
+                          'lib/assets/images/google.png',
                           width: 20,
                           height: 20,
                         ),
@@ -151,7 +151,7 @@ class WelcomeScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'lib/assets/facebook.png',
+                          'lib/assets/images/facebook.png',
                           width: 20,
                           height: 20,
                         ),

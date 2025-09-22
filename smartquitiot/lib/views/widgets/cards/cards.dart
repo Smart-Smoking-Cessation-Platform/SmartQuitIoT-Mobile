@@ -23,5 +23,5 @@ export 'health_improvement_card.dart';
 export 'hero_timer_card.dart';
 export 'info_card.dart';
 export 'profile_health_card.dart';
-export 'question_card.dart';
+export '../../screens/questionaires/question_card.dart';
 export 'analysis_card.dart';

@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart'; // 👈 import NotificationScreen
 
@@ -53,7 +54,7 @@ class HomeHeader extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Image.asset(
-                        'lib/assets/notification.png',
+                        'lib/assets/images/notification.png',
                         width: 20,
                         height: 20,
                       ),
@@ -62,16 +63,26 @@ class HomeHeader extends StatelessWidget {
                   const SizedBox(width: 12),
 
                   // 👇 Icon settings (bạn có thể thêm onTap nếu muốn)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1FFF3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.settings,
-                      size: 20,
-                      color: Color(0xFF00D09E),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(), // 👈 screen setting của bạn
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1FFF3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.settings,
+                        size: 20,
+                        color: Color(0xFF00D09E),
+                      ),
                     ),
                   ),
                 ],

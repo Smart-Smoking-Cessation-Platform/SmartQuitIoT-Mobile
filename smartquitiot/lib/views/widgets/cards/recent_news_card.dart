@@ -22,22 +22,22 @@ class RecentNewsCard extends StatefulWidget {
     this.newsList = const [
       News(
         title: "How to customize your device settings for efficiency",
-        imageUrl: 'lib/assets/news.jpg',
+        imageUrl: 'lib/assets/images/news.jpg',
         category: 'Tech',
       ),
       News(
         title: "Nothing Phone 2 review: It’s a bit of a mixed bag",
-        imageUrl: 'lib/assets/news.jpg',
+        imageUrl: 'lib/assets/images/news.jpg',
         category: 'Review',
       ),
       News(
         title: "Lumen review: a breathalyzer for your health",
-        imageUrl: 'lib/assets/news.jpg',
+        imageUrl: 'lib/assets/images/news.jpg',
         category: 'Health',
       ),
       News(
         title: "Oppo A Series: Top budget phones in 2025",
-        imageUrl: 'lib/assets/news.jpg',
+        imageUrl: 'lib/assets/images/news.jpg',
         category: 'Gadget',
       ),
     ],

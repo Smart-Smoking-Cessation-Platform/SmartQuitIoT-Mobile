@@ -1,7 +1,10 @@
+import 'package:SmartQuitIoT/views/screens/questionaires/question_input_card.dart';
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/widgets/cards/question_card.dart';
+import 'package:SmartQuitIoT/views/screens/questionaires/question_card.dart';
 import 'package:SmartQuitIoT/views/widgets/common/page_indicator.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
+
+import '../questionaires/question_options_card.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -62,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: [
                       SizedBox(
                         height: size.height * 0.3,
-                        child: Image.asset('lib/assets/Group.png'),
+                        child: Image.asset('lib/assets/images/Group.png'),
                       ),
                       const SizedBox(height: 20),
                       const Text(
@@ -88,7 +91,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: [
                       SizedBox(
                         height: size.height * 0.3,
-                        child: Image.asset('lib/assets/health.png'),
+                        child: Image.asset('lib/assets/images/health.png'),
                       ),
                       const SizedBox(height: 20),
                       const Text(

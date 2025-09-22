@@ -30,7 +30,7 @@ class _RelaunchScreenState extends State<RelaunchScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Image.asset(
-                  'lib/assets/logo.png',
+                  'lib/assets/logo/logo-2.png',
                   width: 180,
                   height: 180,
                   fit: BoxFit.contain,

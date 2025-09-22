@@ -7,7 +7,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1FFF3), // Light green background
+      backgroundColor: const Color(0xFFF1FFF3), 
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -16,11 +16,11 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               const Spacer(),
 
-              // Logo và title
+              
               Column(
                 children: [
                   // Logo từ assets
-                  Image.asset('lib/assets/logo-2.png', width: 120, height: 120),
+                  Image.asset('lib/assets/logo/logo-2.png', width: 120, height: 120),
                   const SizedBox(height: 24),
                   Text(
                     'SMART QUIT',
@@ -36,7 +36,7 @@ class WelcomeScreen extends StatelessWidget {
 
               const SizedBox(height: 60),
 
-              // Cụm 1: Sign In và Sign Up buttons
+           
               Column(
                 children: [
                   // Sign In button
@@ -69,7 +69,7 @@ class WelcomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  // Sign Up button
+                  
                   Container(
                     width: double.infinity,
                     height: 50,
@@ -105,7 +105,7 @@ class WelcomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Divider đơn giản
+             
               Row(
                 children: [
                   Expanded(child: Container(height: 1.2, color: Colors.black)),
@@ -115,7 +115,7 @@ class WelcomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Cụm 2: Social login buttons
+            
               Column(
                 children: [
                   // Google Sign In
@@ -125,7 +125,7 @@ class WelcomeScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'lib/assets/google.png',
+                          'lib/assets/images/google.png',
                           width: 20,
                           height: 20,
                         ),
@@ -144,14 +144,14 @@ class WelcomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  // Facebook Sign In
+                 
                   SocialButton(
                     onTap: () => Navigator.pushNamed(context, '/onboarding'),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'lib/assets/facebook.png',
+                          'lib/assets/images/facebook.png',
                           width: 20,
                           height: 20,
                         ),
@@ -172,7 +172,7 @@ class WelcomeScreen extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              // Cụm 3: Forgot Password
+          
               Center(
                 child: GestureDetector(
                   onTap: () => Navigator.pushNamed(context, '/forgot'),
@@ -192,16 +192,14 @@ class WelcomeScreen extends StatelessWidget {
                             decorationColor: Colors.black87, // màu gạch
                             decorationStyle:
                                 TextDecorationStyle.solid, // kiểu gạch
-                            // không có spacing trực tiếp, nhưng dày hơn sẽ tạo cảm giác "cách ra"
-                          ),
+                          ),// ),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-
-              const Spacer(),
+             const Spacer(),
             ],
           ),
         ),
