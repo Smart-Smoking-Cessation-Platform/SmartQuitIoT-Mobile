@@ -1,4 +1,5 @@
 import 'package:SmartQuitIoT/views/screens/achievements/achievements.dart';
+import 'package:SmartQuitIoT/views/screens/badges/badges_screen.dart';
 import 'package:flutter/material.dart';
 
 class AchievementsCard extends StatelessWidget {

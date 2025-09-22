@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/widgets/ai/ai_chat_message_bubble.dart';
-import 'package:SmartQuitIoT/views/widgets/ai/ai_chat_message_input.dart';
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_message_bubble.dart';
+import 'ai_chat_message_input.dart';
 
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});

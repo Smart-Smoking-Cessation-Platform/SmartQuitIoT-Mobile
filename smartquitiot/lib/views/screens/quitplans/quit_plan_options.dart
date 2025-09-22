@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/screens/suggested_mission_screen.dart';
+import 'package:SmartQuitIoT/views/screens/missions/suggested_mission_screen.dart';
 
 class QuitPlanOptionsScreen extends StatelessWidget {
   const QuitPlanOptionsScreen({super.key});
@@ -138,7 +138,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const SuggestedMissionsScreen(),
+              builder: (context) => const SuggestedMissionScreen(),
             ),
           );
         } else {

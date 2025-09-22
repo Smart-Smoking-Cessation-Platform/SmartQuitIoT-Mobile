@@ -2,5 +2,4 @@
 export 'onboarding_screen.dart';
 export 'welcome_screen.dart';
 export 'questionnaire_screen.dart';
-export 'quit_plan_screen.dart';
-export 'quit_plan_options.dart';
+export '../quitplans/quit_plan_screen.dart';

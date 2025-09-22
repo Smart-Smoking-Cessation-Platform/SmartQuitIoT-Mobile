@@ -3,7 +3,7 @@ import 'home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/chat_screen.dart';
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_screen.dart';
 import 'package:SmartQuitIoT/views/screens/diary/diary_screen.dart';
-import 'package:SmartQuitIoT/views/screens/common/craving_screen.dart';
+import 'package:SmartQuitIoT/views/screens/posts/craving_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});

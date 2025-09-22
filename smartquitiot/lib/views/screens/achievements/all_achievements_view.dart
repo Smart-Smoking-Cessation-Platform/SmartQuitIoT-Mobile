@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/progress_card.dart';
-import 'package:SmartQuitIoT/views/widgets/achievements/achievement_section.dart';
+import 'package:SmartQuitIoT/views/screens/achievements/achievement_section.dart';
 
 class AllAchievementsView extends StatelessWidget {
   final List<Map<String, dynamic>> milestoneAchievements;

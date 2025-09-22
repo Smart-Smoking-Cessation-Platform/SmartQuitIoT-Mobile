@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/widgets/lists/notification_item.dart';
+import 'package:SmartQuitIoT/views/screens/notifications/notification_item.dart';
+import 'package:SmartQuitIoT/views/screens/notifications/notification_detail_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/section_header.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/last_week_notification_card.dart';
-import 'package:SmartQuitIoT/views/screens/notifications//notification_detail_screen.dart';
 
 class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({Key? key}) : super(key: key);
+  const NotificationsScreen({super.key});
 
   void _navigateToDetail(
-    BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-    Color iconColor,
-  ) {
+      BuildContext context,
+      String title,
+      String subtitle,
+      IconData icon,
+      Color iconColor,
+      ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -30,10 +30,8 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // đổi màu nền body
       backgroundColor: const Color(0xFFF1FFF3),
       appBar: AppBar(
-        // đổi header
         backgroundColor: const Color(0xFF00D09E),
         elevation: 0,
         leading: IconButton(
@@ -61,12 +59,9 @@ class NotificationsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Earlier section
               const SectionHeader(title: 'Earlier', subtitle: '251 Total'),
-
               const SizedBox(height: 16),
 
-              // Notification items
               NotificationItem(
                 icon: Icons.chat_bubble,
                 iconColor: Colors.blue,
@@ -137,12 +132,9 @@ class NotificationsScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 32),
-
-              // Last Week section
               const SectionHeader(title: 'Last Week', subtitle: '11 Total'),
               const SizedBox(height: 16),
 
-              // Last week notification
               LastWeekNotificationCard(
                 title: 'You have fulfilled daily vitamin dose.',
                 subtitle: 'You have taken 500mg of vitamins.',

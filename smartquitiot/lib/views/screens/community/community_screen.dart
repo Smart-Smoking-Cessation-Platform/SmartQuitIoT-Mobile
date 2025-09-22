@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/widgets/cards/post_card.dart';
+import 'package:SmartQuitIoT/views/screens/posts/post_card.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/community_profile_header.dart';
 import 'package:SmartQuitIoT/views/widgets/common/browse_by_section.dart';
-import 'package:SmartQuitIoT/views/widgets/modal/filter_posts_modal.dart';
+import 'package:SmartQuitIoT/views/screens/posts/filter_posts_modal.dart';
 
 void main() {
   runApp(MaterialApp(home: CommunityPage()));

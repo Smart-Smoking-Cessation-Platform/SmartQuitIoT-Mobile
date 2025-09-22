@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/screens/onboarding/quit_plan_options.dart';
-import 'package:SmartQuitIoT/views/widgets/common/diary_date_selector.dart';
+﻿import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_options.dart';
+import 'package:flutter/material.dart';
+import 'package:SmartQuitIoT/views/screens/diary/diary_date_selector.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/smoking_choice_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/mood_slider_card.dart';
 

@@ -1,6 +1,9 @@
+import 'package:SmartQuitIoT/views/screens/posts/post_screen.dart';
 import 'package:flutter/material.dart';
 
 class CreateNewPostPage extends StatefulWidget {
+  const CreateNewPostPage({super.key});
+
   @override
   _CreateNewPostPageState createState() => _CreateNewPostPageState();
 }
@@ -225,27 +228,4 @@ class _CreateNewPostPageState extends State<CreateNewPostPage> {
   }
 }
 
-// Import this class in the third file
-class PostContentPage extends StatefulWidget {
-  final String category;
 
-  const PostContentPage({Key? key, required this.category}) : super(key: key);
-
-  @override
-  _PostContentPageState createState() => _PostContentPageState();
-}
-
-class _PostContentPageState extends State<PostContentPage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Post Content - ${widget.category}')),
-      body: Center(
-        child: Text(
-          'Write your post about ${widget.category} here...',
-          style: TextStyle(fontSize: 18),
-        ),
-      ),
-    );
-  }
-}
