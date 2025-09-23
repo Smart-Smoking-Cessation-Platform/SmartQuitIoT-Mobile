@@ -16,7 +16,7 @@ export 'progress_card.dart';
 export '../../screens/quitplans/quit_plan_card.dart';
 export 'recent_news_card.dart';
 export 'smoke_free_timer_card.dart';
-export 'stats_table_card.dart';
+export '../../screens/stats_table/stats_table_card.dart';
 export '../../screens/missions/today_mission_card.dart';
 export 'community_trending_card.dart';
 export 'health_improvement_card.dart';

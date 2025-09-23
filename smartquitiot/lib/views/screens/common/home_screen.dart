@@ -2,7 +2,7 @@ import 'package:SmartQuitIoT/views/screens/achievements/achievements_card.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/home_header.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/smoke_free_timer_card.dart';
-import 'package:SmartQuitIoT/views/widgets/cards/stats_table_card.dart';
+import 'package:SmartQuitIoT/views/screens/stats_table/stats_table_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/health_improvement_card.dart';
 import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_card.dart';
 import 'package:SmartQuitIoT/views/screens/missions/today_mission_card.dart';
