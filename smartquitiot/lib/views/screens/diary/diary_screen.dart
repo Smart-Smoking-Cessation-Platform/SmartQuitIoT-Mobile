@@ -1,5 +1,6 @@
 import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'diary_history_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/progress_card.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/action_button.dart';
@@ -56,7 +57,11 @@ class _DiaryScreenState extends State<DiaryScreen> {
               subtitle: 'Day 24 of quit plan',
               progress: 0.8,
               progressText: '80%',
-              icon: Icons.track_changes,
+              icon: Lottie.asset(
+                'assets/animation.json',   // file json Lottie của bạn
+                width: 32,
+                height: 32,
+              ),
             ),
             const SizedBox(height: 24),
             ActionButton(

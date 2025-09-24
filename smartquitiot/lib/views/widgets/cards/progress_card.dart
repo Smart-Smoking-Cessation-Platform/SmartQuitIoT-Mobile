@@ -5,7 +5,10 @@ class ProgressCard extends StatelessWidget {
   final String subtitle;
   final double progress;
   final String progressText;
-  final IconData icon;
+
+  /// Icon giờ nhận Widget → có thể truyền Icon, Lottie, Image…
+  final Widget icon;
+
   final Color? backgroundColor;
   final Color? progressColor;
 
@@ -52,7 +55,7 @@ class ProgressCard extends StatelessWidget {
                   color: progColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: progColor, size: 32),
+                child: icon, // hiển thị icon/widget bạn truyền vào
               ),
               const SizedBox(width: 16),
               Expanded(
