@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/progress_card.dart';
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_section.dart';
+import 'package:lottie/lottie.dart';
 
 class AllAchievementsView extends StatelessWidget {
   final List<Map<String, dynamic>> milestoneAchievements;
@@ -44,7 +45,9 @@ class AllAchievementsView extends StatelessWidget {
                 '$completedCount of $totalAchievements achievements completed',
             progress: progress,
             progressText: '${(progress * 100).toInt()}%',
-            icon: Icons.emoji_events,
+            icon: Lottie.asset(
+              'lib/assets/animations/event.json',   
+            )
           ),
           const SizedBox(height: 24),
           AchievementSection(

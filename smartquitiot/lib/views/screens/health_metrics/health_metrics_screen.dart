@@ -1,30 +1,32 @@
-﻿// screens/health_metrics_screen.dart
+﻿import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
+import 'package:SmartQuitIoT/views/screens/health_metrics/diary_metric_screen.dart';
+import 'package:SmartQuitIoT/views/screens/health_metrics/health_improvement_screen.dart';
 import 'package:flutter/material.dart';
-
-import '../../widgets/cards/progress_card.dart';
+import 'green_progress_circle_card.dart';
 import 'connect_button.dart';
-import 'diary_metric_screen.dart';
 import 'health_chart.dart';
-import 'health_improvement_screen.dart';
-
 
 class HealthMetricsScreen extends StatefulWidget {
+  const HealthMetricsScreen({Key? key}) : super(key: key);
+
   @override
-  _HealthMetricsScreenState createState() => _HealthMetricsScreenState();
+  State<HealthMetricsScreen> createState() => _HealthMetricsScreenState();
 }
 
 class _HealthMetricsScreenState extends State<HealthMetricsScreen>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+
   bool isConnected = false;
   bool isConnecting = false;
-  late AnimationController _animationController;
+  double progress = 0.75;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: Duration(milliseconds: 2000),
       vsync: this,
+      duration: const Duration(seconds: 2),
     );
   }
 
@@ -34,32 +36,40 @@ class _HealthMetricsScreenState extends State<HealthMetricsScreen>
     super.dispose();
   }
 
-  void _connectDevice() async {
+  void _connectDevice() {
     setState(() {
-      isConnecting = true;
+      isConnected = !isConnected;
     });
-    _animationController.repeat();
+  }
 
-    // Simulate connection delay
-    await Future.delayed(Duration(seconds: 2));
+  void _navigateToChart(BuildContext context, String type) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DiaryMetricsScreen(),
+      ),
+    );
+  }
 
-    setState(() {
-      isConnecting = false;
-      isConnected = true;
-    });
-    _animationController.stop();
-
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Kết nối thiết bị IoT thành công!',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  Widget _buildHealthImprovementButton() {
+    return ElevatedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HealthImprovementScreen(),
+          ),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF00D09E),
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: const Text(
+        'Health Improvement',
+        style: TextStyle(
+            fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
       ),
     );
   }
@@ -67,205 +77,103 @@ class _HealthMetricsScreenState extends State<HealthMetricsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF00E676),
-              Color(0xFF00C853),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Icon(Icons.arrow_back, color: Colors.white, size: 24),
-                    SizedBox(width: 16),
-                    Text(
-                      'Health Metrics',
-                      style: TextStyle(
+      backgroundColor: const Color(0xFF00D09E),
+      body: SafeArea(
+        bottom: false, // bỏ padding bottom của SafeArea để tránh xanh lộ ra
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  // Arrow back với navigate
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
+                    onPressed: () {
+                      // Nếu muốn quay lại màn trước:
+                      // Navigator.pop(context);
+                      // Nếu muốn đi về HomeScreen cố định:
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HomeScreen(), // thay bằng màn Home của bạn
+                        ),
+                      );
+                    },
+                  ),
+                  const Spacer(),
+                  const Text(
+                    'Health Metrics',
+                    style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Color(0xFFF0F8F0),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600),
                   ),
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        // Progress and Money Cards
-                        ProgressCard(
-                          title: '',
-                          subtitle: '',
-                          progress: 2.3,
-                          progressText: '',
-                          icon: Text("lib/assets/money.json"),
-                        ),
-
-                        SizedBox(height: 20),
-
-                        // Connect Button
-                        ConnectButton(
-                          isConnected: isConnected,
-                          isConnecting: isConnecting,
-                          animationController: _animationController,
-                          onPressed: _connectDevice,
-                        ),
-                        SizedBox(height: 20),
-
-                        // Charts (only show when connected)
-                        if (isConnected) ...[
-                          HealthChart(
-                            title: 'Sleep Hours',
-                            onTap: () => _navigateToChart(context, 'Sleep'),
-                          ),
-                          SizedBox(height: 16),
-                          HealthChart(
-                            title: 'Heart Rate',
-                            onTap: () => _navigateToChart(context, 'Heart Rate'),
-                          ),
-                          SizedBox(height: 16),
-                          HealthChart(
-                            title: 'Steps',
-                            onTap: () => _navigateToChart(context, 'Steps'),
-                          ),
-                          SizedBox(height: 16),
-                          HealthChart(
-                            title: 'Confidence',
-                            onTap: () => _navigateToChart(context, 'Confidence'),
-                          ),
-                        ],
-
-                        // Health Improvement Button
-                        SizedBox(height: 20),
-                        _buildHealthImprovementButton(),
-                      ],
-                    ),
-                  ),
-                ),
+                  const Spacer(),
+                  const SizedBox(width: 22),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNav(),
-    );
-  }
-
-  Widget _buildHealthImprovementButton() {
-    return Container(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HealthImprovementScreen(),
             ),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF00C853),
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          elevation: 2,
-        ),
-        child: Text(
-          'Xem đề xuất cải thiện sức khỏe',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+
+            // Content trắng
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                color: Colors.white,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      GreenProgressCircleCard(
+                        title: 'Saving Progress',
+                        subtitle: 'Your progress this year',
+                        progress: progress,
+                        annualSave: '\$1200',
+                        monthlySave: '\$100',
+                      ),
+                      const SizedBox(height: 20),
+                      ConnectButton(
+                        isConnected: isConnected,
+                        isConnecting: isConnecting,
+                        animationController: _animationController,
+                        onPressed: _connectDevice,
+                      ),
+                      const SizedBox(height: 20),
+                      if (isConnected) ...[
+                        HealthChart(
+                          title: 'Sleep Hours',
+                          onTap: () => _navigateToChart(context, 'Sleep'),
+                        ),
+                        const SizedBox(height: 16),
+                        HealthChart(
+                          title: 'Heart Rate',
+                          onTap: () => _navigateToChart(context, 'Heart Rate'),
+                        ),
+                        const SizedBox(height: 16),
+                        HealthChart(
+                          title: 'Steps',
+                          onTap: () => _navigateToChart(context, 'Steps'),
+                        ),
+                        const SizedBox(height: 16),
+                        HealthChart(
+                          title: 'Confidence',
+                          onTap: () => _navigateToChart(context, 'Confidence'),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      _buildHealthImprovementButton(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(25),
-          topRight: Radius.circular(25),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildNavItem(Icons.home, true),
-          _buildNavItem(Icons.favorite, false),
-          _buildNavItem(Icons.directions_run, false),
-          _buildNavItem(Icons.water_drop, false),
-          _buildNavItem(Icons.person, false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, bool isSelected) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isSelected ? Color(0xFF00C853).withOpacity(0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(
-        icon,
-        color: isSelected ? Color(0xFF00C853) : Colors.grey,
-        size: 24,
-      ),
-    );
-  }
-
-  void _navigateToChart(BuildContext context, String type) {
-    if (type == 'Heart Rate') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DiaryMetricsScreen(),
-        ),
-      );
-    } else {
-      // For other charts, you can create different screens or show different content
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Đang xem biểu đồ $type'),
-          backgroundColor: Color(0xFF00C853),
-        ),
-      );
-    }
   }
 }

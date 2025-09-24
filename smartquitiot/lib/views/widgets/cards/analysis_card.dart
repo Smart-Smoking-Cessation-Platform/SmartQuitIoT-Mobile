@@ -47,19 +47,6 @@ class AnalysisCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1FFF3),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Image.asset(
-                      'lib/assets/images/notification.png',
-                      width: 16,
-                      height: 16,
-                    ),
-                  ),
                 ],
               ),
             ],

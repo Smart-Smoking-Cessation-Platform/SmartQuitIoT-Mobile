@@ -24,7 +24,7 @@ class ConnectButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: isConnected
               ? Colors.grey[400]
-              : Color(0xFF00C853),
+              :  Color(0xFF00D09E),
           foregroundColor: Colors.white,
           padding: EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -59,9 +59,9 @@ class ConnectButton extends StatelessWidget {
             ],
             Text(
               isConnecting
-                  ? 'Đang kết nối...'
+                  ? 'Connecting...'
                   : isConnected
-                  ? 'Đã kết nối IoT device'
+                  ? 'Connected to IoT device'
                   : 'Connect IoT device',
               style: TextStyle(
                 fontSize: 16,
