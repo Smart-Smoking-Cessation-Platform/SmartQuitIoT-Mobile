@@ -1,3 +1,5 @@
+import 'package:SmartQuitIoT/views/screens/health_metrics/health_improvement_screen.dart';
+import 'package:SmartQuitIoT/views/screens/health_metrics/health_metrics_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'animated_streak.dart';
@@ -54,7 +56,14 @@ class _StatsTableCardState extends State<StatsTableCard>
                   Padding(
                     padding: const EdgeInsets.only(right: 7),
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HealthMetricsScreen(),
+                          ),
+                        );
+                      },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(50, 30),
