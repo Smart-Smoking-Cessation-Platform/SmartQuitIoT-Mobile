@@ -722,32 +722,8 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
     }
   }
 
-  void _saveDiary() async {
-    // Hiển thị loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      // TODO: Thêm API call ở đây
-      // await saveDiaryToApi(
-      //   date: selectedDate,
-      //   hasSmoked: hasSmoked,
-      //   cigarettesSmoked: cigarettesSmoked,
-      //   moneySpent: moneySpent,
-      //   cravingLevel: cravingLevel,
-      //   moodLevel: moodLevel,
-      //   confidenceLevel: confidenceLevel,
-      //   anxietyLevel: anxietyLevel,
-      //   notes: notesController.text,
-      // );
-
-      // Dismiss loading
-      Navigator.of(context).pop();
-
-      // Thông báo lưu thành công
+  void _saveDiary() {
+      // Show success and go back to HomeScreen
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Diary saved successfully!'),
@@ -758,29 +734,14 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
           ),
         ),
       );
-
-      // Navigate về HomeScreen và xoá history
+      // Navigate to HomeScreen and remove all previous routes
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-      );
-    } catch (e) {
-      // Dismiss loading nếu lỗi
-      Navigator.of(context).pop();
-
-      // Thông báo lỗi
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to save diary: $e'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+            (Route<dynamic> route) => false, // This predicate removes all routes
       );
     }
   }
 
-}
+
+
