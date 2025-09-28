@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset('lib/assets/logo/logo-2.png', width: 200, height: 200),
+                Image.asset('lib/assets/logo/logo-2.png', width: 300, height: 300),
                 const SizedBox(height: 20),
                 Text(
                   'SmartQuit',
