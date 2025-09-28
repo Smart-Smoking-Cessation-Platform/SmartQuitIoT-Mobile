@@ -723,25 +723,24 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
   }
 
   void _saveDiary() {
-      // Show success and go back to HomeScreen
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Diary saved successfully!'),
-          backgroundColor: const Color(0xFF4CAF50),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+    // Show success
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Diary saved successfully!'),
+        backgroundColor: const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
-      );
-      // Navigate to HomeScreen and remove all previous routes
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-            (Route<dynamic> route) => false, // This predicate removes all routes
-      );
-    }
+      ),
+    );
+
+    Navigator.popUntil(context, (route) {
+      return route.settings.name == '/main';
+    });
   }
+
+}
 
 
 

@@ -21,6 +21,9 @@ class BadgesScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF00D09E), // 👈 hardcoded color
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(
+          color: Colors.white, // 👈 màu của mũi tên back
+        ),
       ),
       body: Column(
         children: [
@@ -42,7 +45,7 @@ class BadgesScreen extends StatelessWidget {
               children: [
                 // 👇 Replace Icon with PNG image Achievement
                 Image.asset(
-                  'lib/assets/Achievement.png', // local path in assets folder
+                  'lib/assets/images/Achievement.png', // local path in assets folder
                   height: 110,
                   width: 110,
                 ),

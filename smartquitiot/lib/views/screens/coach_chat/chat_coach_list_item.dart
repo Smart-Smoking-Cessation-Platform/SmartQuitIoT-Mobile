@@ -38,7 +38,7 @@ class ChatCoachListItem extends StatelessWidget {
                     radius: 28,
                     backgroundImage: NetworkImage(coach['avatar']),
                   ),
-                  if (coach['isOnline'])
+                  if (coach['isOnline'] == true)
                     Positioned(
                       bottom: 0,
                       right: 0,
@@ -72,7 +72,7 @@ class ChatCoachListItem extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        if (coach['isOnline'])
+                        if (coach['isOnline'] == true)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,

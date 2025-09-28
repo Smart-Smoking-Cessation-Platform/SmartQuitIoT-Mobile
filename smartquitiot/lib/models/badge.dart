@@ -48,7 +48,7 @@ class BadgeData {
           'Reduced risk of heart attack',
           'Improved blood circulation',
         ],
-        imagePath: 'lib/assets/Achievement.png', // 👈 sample image
+        imagePath: 'lib/assets/images/Achievement.png', // 👈 sample image
       ),
       Badge(
         id: '2',
@@ -66,7 +66,7 @@ class BadgeData {
           'Whiter teeth',
           'Significant money savings',
         ],
-        imagePath: 'lib/assets/Achievement.png', // 👈 sample image
+        imagePath: 'lib/assets/images/Achievement.png', // 👈 sample image
       ),
       Badge(
         id: '3',
@@ -83,7 +83,7 @@ class BadgeData {
           'Significant boost in energy',
           'Better blood circulation',
         ],
-        imagePath: 'lib/assets/Achievement.png', // 👈 sample image
+        imagePath: 'lib/assets/images/Achievement.png', // 👈 sample image
       ),
       // ... add more badges similarly with imagePath
     ];

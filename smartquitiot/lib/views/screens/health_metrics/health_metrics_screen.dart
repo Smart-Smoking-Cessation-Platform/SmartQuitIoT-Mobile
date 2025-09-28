@@ -91,17 +91,10 @@ class _HealthMetricsScreenState extends State<HealthMetricsScreen>
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
                     onPressed: () {
-                      // Nếu muốn quay lại màn trước:
-                      // Navigator.pop(context);
-                      // Nếu muốn đi về HomeScreen cố định:
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const HomeScreen(), // thay bằng màn Home của bạn
-                        ),
-                      );
+                      Navigator.pop(context); // quay về màn trước, giữ nguyên bottom nav bar
                     },
                   ),
+
                   const Spacer(),
                   const Text(
                     'Health Metrics',

@@ -1,3 +1,5 @@
+import 'package:SmartQuitIoT/views/screens/health_metrics/health_improvement_screen.dart';
+import 'package:SmartQuitIoT/views/screens/health_metrics/health_metrics_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
@@ -36,7 +38,14 @@ class HealthImprovementCard extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HealthImprovementScreen(), 
+                    ),
+                  );
+                },
                 child: const Text(
                   'View More',
                   style: TextStyle(

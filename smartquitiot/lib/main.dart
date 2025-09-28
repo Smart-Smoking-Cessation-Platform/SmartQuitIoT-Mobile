@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
         '/forgot': (_) => const ForgotPasswordScreen(),
         '/debug-home': (_) => const DebugHomeScreen(),
         '/api-demo': (_) => const ApiDemoScreen(),
+        '/main': (_) => const HomeScreen()
       },
     );
   }

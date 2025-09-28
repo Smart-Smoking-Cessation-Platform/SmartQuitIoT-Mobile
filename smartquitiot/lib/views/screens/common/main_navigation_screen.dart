@@ -1,7 +1,7 @@
 import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_screen.dart';
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'package:SmartQuitIoT/views/screens/ai_chat/chat_screen.dart';
+import 'package:SmartQuitIoT/views/screens/coach_chat/chat_screen.dart';
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_screen.dart';
 import 'package:SmartQuitIoT/views/screens/diary/diary_screen.dart';
 
