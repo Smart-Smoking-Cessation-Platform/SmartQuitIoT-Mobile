@@ -23,15 +23,22 @@ class AiChatMessageInput extends StatelessWidget {
             controller: controller,
             decoration: InputDecoration(
               hintText: hintText,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(25),
-                borderSide: BorderSide.none,
-              ),
               filled: true,
-              fillColor: const Color(0xFFF5F5F5),
+              fillColor: Colors.white, // nền trắng bên trong
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 12,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(25),
+                borderSide: const BorderSide(color: Color(0xFF00D09E)), // viền xanh
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(25),
+                borderSide: const BorderSide(
+                  color: Color(0xFF00D09E),
+                  width: 2,
+                ),
               ),
             ),
             onSubmitted: onSubmitted,

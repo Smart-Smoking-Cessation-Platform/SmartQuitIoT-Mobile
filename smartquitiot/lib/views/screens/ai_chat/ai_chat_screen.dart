@@ -44,7 +44,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         ),
         title: SizedBox(
           height: 40,
-          child: Image.asset('lib/assets/logo.png', fit: BoxFit.contain),
+          child: Image.asset('lib/assets/logo/logo-2.png', fit: BoxFit.contain),
         ),
         centerTitle: true,
         actions: [

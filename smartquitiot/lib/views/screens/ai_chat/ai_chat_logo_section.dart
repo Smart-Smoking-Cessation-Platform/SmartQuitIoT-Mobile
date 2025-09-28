@@ -12,7 +12,7 @@ class AiChatLogoSection extends StatelessWidget {
       child: SizedBox(
         width: width,
         height: height,
-        child: Image.asset('lib/assets/logo.png'),
+        child: Image.asset('lib/assets/logo/logo-2.png'),
       ),
     );
   }

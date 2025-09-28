@@ -58,7 +58,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
               progress: 0.8,
               progressText: '80%',
               icon: Lottie.asset(
-                'assets/animation.json',   // file json Lottie của bạn
+                'lib/assets/animations/diary.json',   // file json Lottie của bạn
                 width: 32,
                 height: 32,
               ),
@@ -67,6 +67,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
             ActionButton(
               text: 'Entry new diary',
               icon: Icons.add_circle_outline,
+              height: 72,
               onTap: () {
                 Navigator.push(
                   context,

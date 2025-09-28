@@ -31,7 +31,7 @@ class AiChatWelcomeContent extends StatelessWidget {
 
   Widget _buildLogoSection() {
     return Image.asset(
-      'lib/assets/logo.png',
+      'lib/assets/logo/logo-2.png',
       width: 220,
       height: 200,
       fit: BoxFit.cover,

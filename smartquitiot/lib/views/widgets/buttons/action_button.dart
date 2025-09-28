@@ -12,6 +12,8 @@ class ActionButton extends StatelessWidget {
   final double borderRadius;
   final EdgeInsetsGeometry? padding;
   final bool isLoading;
+  final Gradient? gradient;
+  final MainAxisAlignment mainAxisAlignment;
 
   const ActionButton({
     super.key,
@@ -26,37 +28,43 @@ class ActionButton extends StatelessWidget {
     this.borderRadius = 16,
     this.padding,
     this.isLoading = false,
+    this.gradient,
+    this.mainAxisAlignment = MainAxisAlignment.start,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final Color baseColor = backgroundColor ?? const Color(0xFF00D09E);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(borderRadius),
       onTap: isLoading ? null : onTap,
       child: Container(
         width: width ?? double.infinity,
         height: height,
-        padding: padding ?? const EdgeInsets.all(20),
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              backgroundColor ?? const Color(0xFF00D09E),
-              _darkenColor(backgroundColor ?? const Color(0xFF00D09E), 0.1),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: gradient ??
+              LinearGradient(
+                colors: [
+                  baseColor,
+                  _darkenColor(baseColor, 0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
           borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: [
             BoxShadow(
-              color: (backgroundColor ?? const Color(0xFF00D09E)).withOpacity(
-                0.3,
-              ),
+              color: baseColor.withOpacity(0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
+          mainAxisAlignment: mainAxisAlignment,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (icon != null) ...[
               Container(
@@ -76,6 +84,7 @@ class ActionButton extends StatelessWidget {
             Expanded(
               child: Text(
                 text,
+                textAlign: TextAlign.start,
                 style: TextStyle(
                   color: textColor ?? Colors.white,
                   fontSize: 18,
@@ -90,14 +99,12 @@ class ActionButton extends StatelessWidget {
                 size: 20,
               )
             else
-              SizedBox(
+              const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    textColor ?? Colors.white,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
           ],

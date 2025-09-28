@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/screens/diary/diary_date_selector.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/smoking_choice_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/mood_slider_card.dart';
-
+import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
 class CreateDiaryScreen extends StatefulWidget {
   const CreateDiaryScreen({super.key});
 
@@ -395,7 +395,7 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
             moneySpent.toInt(),
             (value) => setState(() => moneySpent = value.toDouble()),
             Icons.attach_money,
-            const Color(0xFF2196F3),
+            const Color(0xFFE91E63),
           ),
         ],
       ),
@@ -723,25 +723,24 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
   }
 
   void _saveDiary() {
-    if (hasSmoked) {
-      // Navigate to quit plan options if user has smoked
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const QuitPlanOptionsScreen()),
-      );
-    } else {
-      // Show success and go back
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Diary saved successfully!'),
-          backgroundColor: const Color(0xFF4CAF50),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+    // Show success
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Diary saved successfully!'),
+        backgroundColor: const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
-      );
-      Navigator.pop(context);
-    }
+      ),
+    );
+
+    Navigator.popUntil(context, (route) {
+      return route.settings.name == '/main';
+    });
   }
+
 }
+
+
+
