@@ -45,7 +45,7 @@ class PremiumMembershipScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 40),
               child: Center(
                 child: Image.asset(
-                  'lib/assets/membership.png',
+                  'lib/assets/images/membership.png',
                   width: 300,
                   height: 300,
                   fit: BoxFit.contain,
