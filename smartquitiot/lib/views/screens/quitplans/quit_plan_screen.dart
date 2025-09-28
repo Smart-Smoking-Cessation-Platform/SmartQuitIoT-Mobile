@@ -424,7 +424,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
               child: Row(
                 children: [
                   Image.asset(
-                    'lib/assets/gold-cup.png',
+                    'lib/assets/images/gold-cup.png',
                     width: 28,
                     height: 28,
                     color: completed ? null : Colors.grey.shade400,
@@ -449,7 +449,7 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.yellow.shade400,
+                        color: Colors.yellow.shade700,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
