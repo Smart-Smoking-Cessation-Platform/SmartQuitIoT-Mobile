@@ -1,8 +1,7 @@
-﻿// file: stat_item.dart
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class StatItem extends StatelessWidget {
-  final Widget icon; // <-- giờ nhận Widget thay vì Icon
+  final Widget icon; // nhận Widget (Lottie / Icon)
   final String title;
   final String value;
 
@@ -16,8 +15,9 @@ class StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min, // ⬅️ giúp không overflow
       children: [
-        icon, // Lottie hoặc Icon
+        icon,
         const SizedBox(height: 8),
         Text(
           title,

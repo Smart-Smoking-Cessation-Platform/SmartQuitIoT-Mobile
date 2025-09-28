@@ -93,12 +93,14 @@ class _StatsTableCardState extends State<StatsTableCard>
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
                 physics: const NeverScrollableScrollPhysics(),
+                // ⬅️ quan trọng: giúp cell cao hơn để tránh overflow
+                childAspectRatio: 0.75,
                 children: [
                   StatItem(
                     icon: Lottie.asset(
                       'lib/assets/animations/calendar.json',
-                      width: 50,
-                      height: 50,
+                      width: 45,
+                      height: 45,
                     ),
                     title: 'QUIT DAY',
                     value: '1 Day',
@@ -106,8 +108,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                   StatItem(
                     icon: Lottie.asset(
                       'lib/assets/animations/money.json',
-                      width: 50,
-                      height: 50,
+                      width: 45,
+                      height: 45,
                     ),
                     title: 'MONEY SAVED',
                     value: '45,000 VND',
@@ -115,8 +117,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                   StatItem(
                     icon: Lottie.asset(
                       'lib/assets/animations/money-2.json',
-                      width: 50,
-                      height: 50,
+                      width: 45,
+                      height: 45,
                     ),
                     title: 'ANNUAL SAVED',
                     value: '500,000 VND',
@@ -124,8 +126,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                   StatItem(
                     icon: Lottie.asset(
                       'lib/assets/animations/heart.json',
-                      width: 50,
-                      height: 50,
+                      width: 45,
+                      height: 45,
                     ),
                     title: 'HEART RATE',
                     value: '72 bpm',
@@ -133,8 +135,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                   StatItem(
                     icon: Lottie.asset(
                       'lib/assets/animations/walking-steps.json',
-                      width: 50,
-                      height: 50,
+                      width: 45,
+                      height: 45,
                     ),
                     title: 'STEPS',
                     value: '5,432 steps',
@@ -142,8 +144,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                   StatItem(
                     icon: Lottie.asset(
                       'lib/assets/animations/weather-night.json',
-                      width: 50,
-                      height: 50,
+                      width: 45,
+                      height: 45,
                     ),
                     title: 'SLEEP',
                     value: '7h 30m',
