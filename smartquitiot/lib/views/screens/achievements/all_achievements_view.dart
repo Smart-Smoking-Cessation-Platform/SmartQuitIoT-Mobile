@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/screens/achievements/achievement_progress_card.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/progress_card.dart';
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_section.dart';
@@ -39,15 +40,15 @@ class AllAchievementsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ProgressCard(
+          AchievementProgressCard(
             title: 'Achievement Progress',
-            subtitle:
-                '$completedCount of $totalAchievements achievements completed',
-            progress: progress,
-            progressText: '${(progress * 100).toInt()}%',
-            icon: Lottie.asset(
-              'lib/assets/animations/event.json',   
-            )
+            subtitle: '$completedCount of $totalAchievements achievements completed',
+            percent: progress, // đổi từ progress → percent
+            icon: SizedBox(
+              width: 56,
+              height: 56,
+              child: Lottie.asset('lib/assets/animations/event.json'),
+            ),
           ),
           const SizedBox(height: 24),
           AchievementSection(
