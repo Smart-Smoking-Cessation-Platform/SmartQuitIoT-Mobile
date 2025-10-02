@@ -12,6 +12,11 @@ import 'package:SmartQuitIoT/views/screens/authentication/forgot_password_screen
 import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/api_demo_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
+
+import 'l10n/app_localizations.dart';
+
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -26,7 +31,19 @@ class MyApp extends StatelessWidget {
       title: 'Smoke Quit',
       theme: AppTheme.light(),
       home: const SplashScreen(),
-      // home: const ProfileScreen(),
+
+      localizationsDelegates: const [
+        AppLocalizations.delegate, 
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'), 
+        Locale('vi'), 
+      ],
+      locale: const Locale('en'), 
+
       routes: {
         '/welcome': (_) => const WelcomeScreen(),
         '/login': (_) => const LoginScreen(),
@@ -37,7 +54,7 @@ class MyApp extends StatelessWidget {
         '/forgot': (_) => const ForgotPasswordScreen(),
         '/debug-home': (_) => const DebugHomeScreen(),
         '/api-demo': (_) => const ApiDemoScreen(),
-        '/main': (_) => const HomeScreen()
+        '/main': (_) => const HomeScreen(),
       },
     );
   }
