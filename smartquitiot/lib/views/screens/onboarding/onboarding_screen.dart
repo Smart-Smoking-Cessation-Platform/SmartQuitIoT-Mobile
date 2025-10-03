@@ -1,9 +1,9 @@
 import 'package:SmartQuitIoT/views/screens/questionaires/question_input_card.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:SmartQuitIoT/views/screens/questionaires/question_card.dart';
 import 'package:SmartQuitIoT/views/widgets/common/page_indicator.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
-
 import '../questionaires/question_options_card.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -33,10 +33,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             alignment: Alignment.center,
             child: Text(
               _currentIndex == 0
-                  ? 'Welcome To SmartQuit'
+                  ? 'welcome_to_smartquit'.tr()
                   : _currentIndex == 1
-                  ? "Let’s Talk About Your Smoking Status"
-                  : "Questions",
+                  ? "talk_smoking_status".tr()
+                  : "questions".tr(),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -68,9 +68,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Image.asset('lib/assets/images/Group.png'),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Are You Ready To Save Your Life?',
-                        style: TextStyle(
+                      Text(
+                        'ready_to_save'.tr(),
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -94,9 +94,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Image.asset('lib/assets/images/health.png'),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Tell us about your smoking habits so we can help you better.',
-                        style: TextStyle(
+                      Text(
+                        'tell_smoking_habits'.tr(),
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -115,29 +115,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: ListView(
                     children: [
                       QuestionInputCard(
-                        question: 'How Long Have You Smoked?',
+                        question: 'how_long_smoked'.tr(),
                         controller: TextEditingController(),
-                        hintText: 'Nhập thông tin...',
+                        hintText: 'input_hint'.tr(),
                       ),
                       QuestionInputCard(
-                        question:
-                            'How Much Does It Cost To Buy A Pack Of Cigarettes?',
+                        question: 'cost_per_pack'.tr(),
                         controller: TextEditingController(),
-                        hintText: 'Nhập thông tin...',
+                        hintText: 'input_hint'.tr(),
                       ),
                       QuestionInputCard(
-                        question: 'How Many Cigarettes In A Pack?',
+                        question: 'cigarettes_per_pack'.tr(),
                         controller: TextEditingController(),
-                        hintText: 'Nhập thông tin...',
+                        hintText: 'input_hint'.tr(),
                       ),
                       QuestionOptionsCard(
-                        question:
-                            'How Soon After Waking Do You Smoke Your First Cigarette?',
+                        question: 'first_cigarette_time'.tr(),
                         options: [
-                          '5 minutes',
-                          '5–10 minutes',
-                          '31–60 minutes',
-                          'Other',
+                          '5_minutes'.tr(),
+                          '5_10_minutes'.tr(),
+                          '31_60_minutes'.tr(),
+                          'other'.tr(),
                         ],
                       ),
                     ],
@@ -153,34 +151,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: ListView(
                     children: [
                       QuestionOptionsCard(
-                        question:
-                            'How Many Cigarettes Do You Smoke Per Day On Average?',
-                        options: ['1–10', '11–20', '21–30', '30+'],
+                        question: 'cigarettes_per_day'.tr(),
+                        options: [
+                          '1_10'.tr(),
+                          '11_20'.tr(),
+                          '21_30'.tr(),
+                          '30_plus'.tr(),
+                        ],
                       ),
                       QuestionOptionsCard(
-                        question:
-                            'Do You Find It Difficult To Refrain From Smoking In Places Where It Is Forbidden?',
-                        options: ['Yes', 'No'],
+                        question: 'difficult_refrain'.tr(),
+                        options: ['yes'.tr(), 'no'.tr()],
                       ),
                       QuestionOptionsCard(
-                        question: 'Which Cigarette Would You Hate To Give Up?',
-                        options: ['First in the morning', 'Any other'],
+                        question: 'hate_to_give_up'.tr(),
+                        options: ['first_in_morning'.tr(), 'any_other'.tr()],
                       ),
                       QuestionOptionsCard(
-                        question:
-                            'Do You Smoke More Frequently In The Morning?',
-                        options: ['Yes', 'No'],
+                        question: 'smoke_more_morning'.tr(),
+                        options: ['yes'.tr(), 'no'.tr()],
                       ),
                       QuestionOptionsCard(
-                        question:
-                            'Do You Smoke Even If You Are Sick In Bed Most Of The Day?',
-                        options: ['Yes', 'No'],
+                        question: 'smoke_even_sick'.tr(),
+                        options: ['yes'.tr(), 'no'.tr()],
                       ),
                       const SizedBox(height: 40),
                       PrimaryButton(
-                        text: 'Finish',
+                        text: 'finish'.tr(),
                         onPressed: () {
-                          // Navigate sang màn hình chính
                           Navigator.pushNamed(context, '/relaunch');
                         },
                         width: 200,

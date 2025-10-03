@@ -12,37 +12,37 @@ import 'package:SmartQuitIoT/views/screens/authentication/forgot_password_screen
 import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/api_demo_screen.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:easy_localization/easy_localization.dart';
 
-import 'l10n/app_localizations.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
 
-
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('en'), Locale('vi')],
+      path: 'lib/assets/translations',
+      fallbackLocale: const Locale('en'),
+      startLocale: const Locale('en'),
+      child: const ProviderScope(child: MyApp()),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Smoke Quit',
       theme: AppTheme.light(),
       home: const SplashScreen(),
 
-      localizationsDelegates: const [
-        AppLocalizations.delegate, 
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en'), 
-        Locale('vi'), 
-      ],
-      locale: const Locale('en'), 
+      // easy_localization tự động inject localizationsDelegates
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
 
       routes: {
         '/welcome': (_) => const WelcomeScreen(),

@@ -2,6 +2,7 @@ import 'package:SmartQuitIoT/views/screens/health_metrics/health_improvement_scr
 import 'package:SmartQuitIoT/views/screens/health_metrics/health_metrics_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:easy_localization/easy_localization.dart'; // thêm vào
 import 'animated_streak.dart';
 import 'stat_item.dart';
 
@@ -49,9 +50,12 @@ class _StatsTableCardState extends State<StatsTableCard>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Dashboard',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    'dashboard.title'.tr(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(right: 7),
@@ -60,7 +64,7 @@ class _StatsTableCardState extends State<StatsTableCard>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => HealthMetricsScreen(),
+                            builder: (context) => const HealthMetricsScreen(),
                           ),
                         );
                       },
@@ -68,9 +72,9 @@ class _StatsTableCardState extends State<StatsTableCard>
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(50, 30),
                       ),
-                      child: const Text(
-                        'View More',
-                        style: TextStyle(
+                      child: Text(
+                        'dashboard.view_more'.tr(),
+                        style: const TextStyle(
                           color: Color(0xFF00D09E),
                           fontWeight: FontWeight.bold,
                         ),
@@ -93,7 +97,6 @@ class _StatsTableCardState extends State<StatsTableCard>
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
                 physics: const NeverScrollableScrollPhysics(),
-                // ⬅️ quan trọng: giúp cell cao hơn để tránh overflow
                 childAspectRatio: 0.75,
                 children: [
                   StatItem(
@@ -102,8 +105,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                       width: 45,
                       height: 45,
                     ),
-                    title: 'QUIT DAY',
-                    value: '1 Day',
+                    title: 'dashboard.quit_day'.tr(),
+                    value: 'dashboard.quit_day_value'.tr(),
                   ),
                   StatItem(
                     icon: Lottie.asset(
@@ -111,8 +114,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                       width: 45,
                       height: 45,
                     ),
-                    title: 'MONEY SAVED',
-                    value: '45,000 VND',
+                    title: 'dashboard.money_saved'.tr(),
+                    value: 'dashboard.money_saved_value'.tr(),
                   ),
                   StatItem(
                     icon: Lottie.asset(
@@ -120,8 +123,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                       width: 45,
                       height: 45,
                     ),
-                    title: 'ANNUAL SAVED',
-                    value: '500,000 VND',
+                    title: 'dashboard.annual_saved'.tr(),
+                    value: 'dashboard.annual_saved_value'.tr(),
                   ),
                   StatItem(
                     icon: Lottie.asset(
@@ -129,8 +132,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                       width: 45,
                       height: 45,
                     ),
-                    title: 'HEART RATE',
-                    value: '72 bpm',
+                    title: 'dashboard.heart_rate'.tr(),
+                    value: 'dashboard.heart_rate_value'.tr(),
                   ),
                   StatItem(
                     icon: Lottie.asset(
@@ -138,8 +141,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                       width: 45,
                       height: 45,
                     ),
-                    title: 'STEPS',
-                    value: '5,432 steps',
+                    title: 'dashboard.steps'.tr(),
+                    value: 'dashboard.steps_value'.tr(),
                   ),
                   StatItem(
                     icon: Lottie.asset(
@@ -147,8 +150,8 @@ class _StatsTableCardState extends State<StatsTableCard>
                       width: 45,
                       height: 45,
                     ),
-                    title: 'SLEEP',
-                    value: '7h 30m',
+                    title: 'dashboard.sleep'.tr(),
+                    value: 'dashboard.sleep_value'.tr(),
                   ),
                 ],
               ),
@@ -168,9 +171,9 @@ class _StatsTableCardState extends State<StatsTableCard>
                   onPressed: () {
                     // TODO: kết nối IoT device
                   },
-                  child: const Text(
-                    'Connect to IoT Device',
-                    style: TextStyle(
+                  child: Text(
+                    'dashboard.connect_iot'.tr(),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),

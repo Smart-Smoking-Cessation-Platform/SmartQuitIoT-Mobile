@@ -1,27 +1,10 @@
-import 'package:SmartQuitIoT/l10n/app_localizations.dart';
 import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:easy_localization/easy_localization.dart';
 
-class HomeHeader extends StatefulWidget {
+class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
-
-  @override
-  State<HomeHeader> createState() => _HomeHeaderState();
-}
-
-class _HomeHeaderState extends State<HomeHeader> {
-  Locale _currentLocale = const Locale('en'); // default
-
-  void _changeLanguage(Locale locale) {
-    setState(() {
-      _currentLocale = locale;
-    });
-
-    // ⚠️ Nếu bạn muốn thay đổi toàn app thì phải wrap MaterialApp bằng Provider/InheritedWidget
-    // rồi update locale. Đây demo trong header thôi.
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +20,7 @@ class _HomeHeaderState extends State<HomeHeader> {
             children: [
               const SizedBox(height: 4),
               Text(
-                AppLocalizations.of(context)?.helloUser ?? 'Hello, User...',
+                'welcome'.tr(), // hoặc 'helloUser'.tr()
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -107,25 +90,27 @@ class _HomeHeaderState extends State<HomeHeader> {
                     onTap: () {
                       showDialog(
                         context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("Select Language"),
+                        builder: (dialogContext) => AlertDialog(
+                          title: Text(
+                            'select_language'.tr(),
+                          ), // Thêm vào file json
                           content: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               ListTile(
                                 leading: const Text("🇺🇸"),
                                 title: const Text("English"),
-                                onTap: () {
-                                  _changeLanguage(const Locale('en'));
-                                  Navigator.pop(context);
+                                onTap: () async {
+                                  await context.setLocale(const Locale('en'));
+                                  Navigator.pop(dialogContext);
                                 },
                               ),
                               ListTile(
                                 leading: const Text("🇻🇳"),
                                 title: const Text("Tiếng Việt"),
-                                onTap: () {
-                                  _changeLanguage(const Locale('vi'));
-                                  Navigator.pop(context);
+                                onTap: () async {
+                                  await context.setLocale(const Locale('vi'));
+                                  Navigator.pop(dialogContext);
                                 },
                               ),
                             ],
@@ -140,7 +125,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        _currentLocale.languageCode == 'en' ? "🇺🇸" : "🇻🇳",
+                        context.locale.languageCode == 'en' ? "🇺🇸" : "🇻🇳",
                         style: const TextStyle(fontSize: 18),
                       ),
                     ),

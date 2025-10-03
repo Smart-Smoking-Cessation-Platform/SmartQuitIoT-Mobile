@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:SmartQuitIoT/views/screens/articles/article_list_screen.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class News {
-  final String title;
+  final String titleKey; // key cho title
   final String imageUrl;
-  final String category;
+  final String categoryKey; // key cho category
 
   const News({
-    required this.title,
+    required this.titleKey,
     required this.imageUrl,
-    required this.category,
+    required this.categoryKey,
   });
 }
 
@@ -21,24 +22,24 @@ class RecentNewsCard extends StatefulWidget {
     super.key,
     this.newsList = const [
       News(
-        title: "How to customize your device settings for efficiency",
+        titleKey: "title_news1",
         imageUrl: 'lib/assets/images/news.jpg',
-        category: 'Tech',
+        categoryKey: 'category_tech',
       ),
       News(
-        title: "Nothing Phone 2 review: It’s a bit of a mixed bag",
+        titleKey: "title_news2",
         imageUrl: 'lib/assets/images/news.jpg',
-        category: 'Review',
+        categoryKey: 'category_review',
       ),
       News(
-        title: "Lumen review: a breathalyzer for your health",
+        titleKey: "title_news3",
         imageUrl: 'lib/assets/images/news.jpg',
-        category: 'Health',
+        categoryKey: 'category_health',
       ),
       News(
-        title: "Oppo A Series: Top budget phones in 2025",
+        titleKey: "title_news4",
         imageUrl: 'lib/assets/images/news.jpg',
-        category: 'Gadget',
+        categoryKey: 'category_gadget',
       ),
     ],
   });
@@ -73,9 +74,9 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Recent News',
-                style: TextStyle(
+              Text(
+                'recent_news'.tr(),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -83,7 +84,6 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
               ),
               TextButton(
                 onPressed: () {
-                  /// 👇 Điều hướng tới ArticleListPage
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -91,9 +91,9 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
                     ),
                   );
                 },
-                child: const Text(
-                  'View More',
-                  style: TextStyle(
+                child: Text(
+                  'view_more'.tr(),
+                  style: const TextStyle(
                     color: Color(0xFF00D09E),
                     fontWeight: FontWeight.w500,
                   ),
@@ -188,7 +188,7 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                news.category,
+                news.categoryKey.tr(),
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -204,7 +204,7 @@ class _RecentNewsCardState extends State<RecentNewsCard> {
             left: 12,
             right: 12,
             child: Text(
-              news.title,
+              news.titleKey.tr(),
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

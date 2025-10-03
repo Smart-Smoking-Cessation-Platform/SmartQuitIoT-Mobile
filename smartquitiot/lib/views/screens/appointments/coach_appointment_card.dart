@@ -1,16 +1,16 @@
 ﻿import 'package:flutter/material.dart';
-// import your coach list screen
+import 'package:easy_localization/easy_localization.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/coach_list_screen.dart';
 
 class CoachAppointmentCard extends StatefulWidget {
-  final String title;
-  final String subtitle;
+  final String titleKey;
+  final String subtitleKey;
   final IconData icon;
 
   const CoachAppointmentCard({
     super.key,
-    this.title = 'Need support?',
-    this.subtitle = 'Book a consultation with our coach',
+    this.titleKey = 'coach_card.title',
+    this.subtitleKey = 'coach_card.subtitle',
     this.icon = Icons.video_call_rounded,
   });
 
@@ -42,9 +42,7 @@ class _CoachAppointmentCardState extends State<CoachAppointmentCard> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => CoachListScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => CoachListScreen()),
         );
       },
       child: AnimatedContainer(
@@ -102,7 +100,7 @@ class _CoachAppointmentCardState extends State<CoachAppointmentCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.title,
+            widget.titleKey.tr(), // lấy từ easy_localization
             style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -111,7 +109,7 @@ class _CoachAppointmentCardState extends State<CoachAppointmentCard> {
           ),
           const SizedBox(height: 4),
           Text(
-            widget.subtitle,
+            widget.subtitleKey.tr(), // lấy từ easy_localization
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 14,

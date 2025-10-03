@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class QuitPlanCard extends StatelessWidget {
   final double progress; // 0.0 - 1.0
-  final String stage; // Stage hiện tại, ví dụ "Craving"
+  final String stage; // Stage hiện tại
 
-  const QuitPlanCard({super.key, this.progress = 0.5, this.stage = "Craving"});
+  const QuitPlanCard({super.key, this.progress = 0.5, this.stage = "craving"});
 
   @override
   Widget build(BuildContext context) {
@@ -12,8 +13,13 @@ class QuitPlanCard extends StatelessWidget {
     const Color progressColorStart = Color(0xFF00D09E);
     const Color progressColorEnd = Color(0xFF3FCF8E);
 
-    // Danh sách các step
-    final List<String> steps = ['Preparation', 'Week 1', 'Week 2', 'Success'];
+    // Danh sách các step sử dụng localization
+    final List<String> steps = [
+      'preparation'.tr(),
+      'week_1'.tr(),
+      'week_2'.tr(),
+      'success'.tr(),
+    ];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -48,10 +54,10 @@ class QuitPlanCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Quit Plan',
-                  style: TextStyle(
+                  'quit_plan'.tr(),
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
@@ -73,9 +79,12 @@ class QuitPlanCard extends StatelessWidget {
                   minimumSize: const Size(0, 32),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
-                  'Create Now',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                child: Text(
+                  'create_now'.tr(),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -96,7 +105,7 @@ class QuitPlanCard extends StatelessWidget {
                 const Icon(Icons.bolt, size: 16, color: Color(0xFF00D09E)),
                 const SizedBox(width: 6),
                 Text(
-                  stage,
+                  stage.tr(),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -113,9 +122,9 @@ class QuitPlanCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Progress',
-                style: TextStyle(
+              Text(
+                'progress_label'.tr(),
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: Colors.black87,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/auth_header.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
@@ -34,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Header
-              const AuthHeader(title: 'Hello!', height: 120),
+              AuthHeader(title: 'hello'.tr(), height: 120),
 
               const SizedBox(height: 24),
 
@@ -46,15 +47,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     CustomTextField(
                       controller: _email,
-                      label: 'Email',
-                      hint: 'example@example.com',
+                      label: 'email'.tr(),
+                      hint: 'email_hint'.tr(),
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
                     CustomTextField(
                       controller: _password,
-                      label: 'Password',
-                      hint: '••••••••',
+                      label: 'password'.tr(),
+                      hint: 'password_hint'.tr(),
                       obscure: _obscure,
                       onToggle: () => setState(() => _obscure = !_obscure),
                     ),
@@ -62,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Sign In Button
                     PrimaryButton(
-                      text: 'Sign In',
+                      text: 'sign_in'.tr(),
                       onPressed: () => Navigator.pushReplacementNamed(
                         context,
                         '/onboarding',
@@ -75,9 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: TextButton(
                         onPressed: () =>
                             Navigator.pushNamed(context, '/forgot'),
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(
+                        child: Text(
+                          'forgot_password'.tr(),
+                          style: const TextStyle(
                             color: Color(0xFF00D09E),
                             fontWeight: FontWeight.w600,
                           ),
@@ -103,16 +104,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () =>
                             Navigator.pushNamed(context, '/signup'),
                         child: RichText(
-                          text: const TextSpan(
-                            text: "Doesn't have account yet? ",
-                            style: TextStyle(
+                          text: TextSpan(
+                            text: "no_account".tr(),
+                            style: const TextStyle(
                               color: Colors.black54,
                               fontSize: 14,
                             ),
                             children: [
                               TextSpan(
-                                text: 'Sign Up',
-                                style: TextStyle(
+                                text: 'sign_up'.tr(),
+                                style: const TextStyle(
                                   color: Color(0xFF00D09E),
                                   fontWeight: FontWeight.bold,
                                 ),
