@@ -11,22 +11,21 @@ class _RelaunchScreenState extends State<RelaunchScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 1000), () {
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed('/main');
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF00D09E), // nền xanh SmartQuit
+      backgroundColor: const Color(0xFF00D09E),
       body: SafeArea(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo SmartQuit
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Image.asset(
@@ -37,7 +36,6 @@ class _RelaunchScreenState extends State<RelaunchScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              // Text Welcome
               const Text(
                 'Welcome To SmartQuit',
                 style: TextStyle(

@@ -49,12 +49,12 @@ class MyApp extends ConsumerWidget {
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignUpScreen(),
         '/onboarding': (_) => OnboardingScreen(),
-        '/home': (_) => const MainNavigationScreen(),
+        '/home': (_) => const HomeScreen(),
         '/relaunch': (_) => const RelaunchScreen(),
         '/forgot': (_) => const ForgotPasswordScreen(),
         '/debug-home': (_) => const DebugHomeScreen(),
         '/api-demo': (_) => const ApiDemoScreen(),
-        '/main': (_) => const HomeScreen(),
+        '/main': (_) => const MainNavigationScreen(),
       },
     );
   }

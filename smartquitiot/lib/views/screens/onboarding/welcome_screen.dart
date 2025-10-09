@@ -115,10 +115,14 @@ class WelcomeScreen extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Container(height: 1.2, color: Colors.black),
+                        child: Container(height: 1.2, color: Colors.grey.withOpacity(0.5)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('or'.tr(), style: TextStyle(color: Colors.grey.withOpacity(0.8))),
                       ),
                       Expanded(
-                        child: Container(height: 1.2, color: Colors.black),
+                        child: Container(height: 1.2, color: Colors.grey.withOpacity(0.5)),
                       ),
                     ],
                   ),
@@ -129,8 +133,7 @@ class WelcomeScreen extends StatelessWidget {
                   Column(
                     children: [
                       SocialButton(
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/onboarding'),
+                        onTap: () {},
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -155,8 +158,7 @@ class WelcomeScreen extends StatelessWidget {
                       const SizedBox(height: 12),
 
                       SocialButton(
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/onboarding'),
+                        onTap: () {},
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -199,11 +201,7 @@ class WelcomeScreen extends StatelessWidget {
                               style: const TextStyle(
                                 color: Colors.black87,
                                 fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                decoration: TextDecoration.underline,
-                                decorationThickness: 2,
-                                decorationColor: Colors.black87,
-                                decorationStyle: TextDecorationStyle.solid,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
@@ -253,10 +251,6 @@ class WelcomeScreen extends StatelessWidget {
                 },
                 child: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1FFF3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                   child: Text(
                     context.locale.languageCode == 'en' ? "🇺🇸" : "🇻🇳",
                     style: const TextStyle(fontSize: 20),

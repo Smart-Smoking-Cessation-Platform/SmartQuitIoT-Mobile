@@ -1,6 +1,6 @@
 ﻿{
   "app_title": "Smoke Quit",
-  "welcome": "Welcome",
+  "welcome": "Welcome, {}!",
   "login": "Login",
   "signup": "Sign Up",
   "select_language": "Select Language",
@@ -14,6 +14,9 @@
   "hello": "Hello!",
   "email": "Email",
   "email_hint": "example@example.com",
+  "username": "Username or email",
+  "username_hint": "Enter your username or email",
+  "signing_in": "Signing In...",
   "password": "Password",
   "password_hint": "••••••••",
   "no_account": "Doesn't have account yet? ",
