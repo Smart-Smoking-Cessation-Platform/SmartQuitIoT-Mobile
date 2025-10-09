@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:easy_localization/easy_localization.dart';
 
-// import các màn hình của bạn
-
+import 'home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/coach_chat/chat_screen.dart';
 import 'package:SmartQuitIoT/views/screens/diary/diary_screen.dart';
 import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_screen.dart';
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_screen.dart';
 import 'package:SmartQuitIoT/views/screens/leaderboard/leaderboard_screen.dart';
-
-import 'home_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -27,18 +25,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const DiaryScreen(),
     const QuitPlanScreen(),
     const AchievementScreen(),
-    const LeaderboardScreen()
+    const LeaderboardScreen(),
   ];
 
-  /// Danh sách đường dẫn Lottie cho từng tab
   final List<String> lottiePaths = [
-    'lib/assets/animations/home.json',        // Home
-    'lib/assets/animations/chat.json',        // Chat
-    'lib/assets/animations/diary.json',       // Diary
-    'lib/assets/animations/craving.json',     // Craving
+    'lib/assets/animations/home.json',
+    'lib/assets/animations/chat.json',
+    'lib/assets/animations/diary.json',
+    'lib/assets/animations/craving.json',
     'lib/assets/animations/trophy.json',
-    'lib/assets/animations/leaderboard.json' // Achievements
-// Achievements
+    'lib/assets/animations/leaderboard.json',
+  ];
+
+  /// Key song ngữ cho từng tab
+  final List<String> lottieLabels = [
+    'home',
+    'chat',
+    'diary',
+    'craving',
+    'achievements',
+    'leaderboard',
   ];
 
   @override
@@ -50,35 +56,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         selectedItemColor: const Color(0xFF00D09E),
         unselectedItemColor: Colors.grey,
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: [
-          _buildLottieNavItem(0, 'Home'),
-          _buildLottieNavItem(1, 'Chat'),
-          _buildLottieNavItem(2, 'Diary'),
-          _buildLottieNavItem(3, 'Craving'),
-          _buildLottieNavItem(4, 'Achievements'),
-          _buildLottieNavItem(5, 'Leaderboard'),
-        ],
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: List.generate(lottiePaths.length, (index) {
+          return BottomNavigationBarItem(
+            icon: SizedBox(
+              height: 30,
+              width: 30,
+              child: Lottie.asset(
+                lottiePaths[index],
+                animate: _currentIndex == index,
+              ),
+            ),
+            label: lottieLabels[index].tr(), // <-- dùng easy_localization
+          );
+        }),
       ),
-    );
-  }
-
-  /// Hàm tạo BottomNavigationBarItem với Lottie
-  BottomNavigationBarItem _buildLottieNavItem(int index, String label) {
-    return BottomNavigationBarItem(
-      icon: SizedBox(
-        height: 30,
-        width: 30,
-        child: Lottie.asset(
-          lottiePaths[index],
-          animate: _currentIndex == index,
-        ),
-      ),
-      label: label,
     );
   }
 }

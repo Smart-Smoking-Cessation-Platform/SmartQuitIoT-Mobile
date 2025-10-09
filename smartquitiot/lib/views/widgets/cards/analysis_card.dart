@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:easy_localization/easy_localization.dart';
 
 class AnalysisCard extends StatelessWidget {
   const AnalysisCard({super.key});
@@ -27,9 +28,9 @@ class AnalysisCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Analysis',
-                style: TextStyle(
+              Text(
+                'analysis_title'.tr(),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -39,9 +40,9 @@ class AnalysisCard extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () {},
-                    child: const Text(
-                      'View More',
-                      style: TextStyle(
+                    child: Text(
+                      'view_more'.tr(),
+                      style: const TextStyle(
                         color: Color(0xFF00D09E),
                         fontWeight: FontWeight.w500,
                       ),
@@ -63,27 +64,27 @@ class AnalysisCard extends StatelessWidget {
             child: Column(
               children: [
                 // ===== Line Chart =====
-                const Text(
-                  'Cigarette Consumption Trend',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                Text(
+                  'cig_trend'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(height: 120, child: _AnimatedLineChart()),
+                SizedBox(height: 160, child: _AnimatedLineChart()),
                 const SizedBox(height: 16),
 
                 // ===== Bar Chart =====
-                const Text(
-                  'Weekly Activities',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                Text(
+                  'weekly_activity'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(height: 120, child: _AnimatedBarChart()),
                 const SizedBox(height: 16),
 
                 // ===== Pie Chart =====
-                const Text(
-                  'Daily Habit Proportion',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                Text(
+                  'daily_habit'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(height: 160, child: _AnimatedPieChart()),
@@ -105,9 +106,12 @@ class AnalysisCard extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              child: const Text(
-                'Explore',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              child: Text(
+                'explore'.tr(),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -146,8 +150,6 @@ class _LineChartPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final path = Path();
-
-    // Fake data minh họa: hút thuốc
     final data = [2, 3, 5, 4, 6, 5, 7, 6, 8, 7, 6, 5, 4, 3, 2];
     final maxData = data.reduce(max);
 
@@ -197,7 +199,7 @@ class _BarChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.blueAccent;
-    final data = [3, 5, 2, 6, 4, 7, 5]; // fake data hoạt động tuần
+    final data = [3, 5, 2, 6, 4, 7, 5];
     final maxData = data.reduce(max);
     final barWidth = size.width / data.length;
 
@@ -255,8 +257,6 @@ class _PieChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-
-    // Fake data thói quen
     final data = [0.3, 0.4, 0.3];
     final colors = [Colors.green, Colors.redAccent, Colors.orange];
     double startAngle = -pi / 2;

@@ -1,7 +1,7 @@
 import 'package:SmartQuitIoT/views/screens/health_metrics/health_improvement_screen.dart';
-import 'package:SmartQuitIoT/views/screens/health_metrics/health_metrics_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:easy_localization/easy_localization.dart'; // 👈 thêm
 
 class HealthImprovementCard extends StatelessWidget {
   const HealthImprovementCard({super.key});
@@ -29,9 +29,9 @@ class HealthImprovementCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Health Improvement',
-                style: TextStyle(
+              Text(
+                'health_improvement.title'.tr(),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -42,13 +42,13 @@ class HealthImprovementCard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const HealthImprovementScreen(), 
+                      builder: (context) => const HealthImprovementScreen(),
                     ),
                   );
                 },
-                child: const Text(
-                  'View More',
-                  style: TextStyle(
+                child: Text(
+                  'health_improvement.view_more'.tr(),
+                  style: const TextStyle(
                     color: Color(0xFF00D09E),
                     fontWeight: FontWeight.w500,
                   ),
@@ -63,19 +63,19 @@ class HealthImprovementCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildProgressCircle(
-                title: 'Pulse rate',
+                title: 'health_improvement.pulse_rate'.tr(),
                 progress: 0.7,
                 icon: Icons.favorite,
                 gradientColors: [Colors.redAccent, Colors.pink],
               ),
               _buildProgressCircle(
-                title: 'Oxygen levels',
+                title: 'health_improvement.oxygen_levels'.tr(),
                 progress: 0.6,
                 icon: Icons.air,
                 gradientColors: [Colors.blueAccent, Colors.cyan],
               ),
               _buildProgressCircle(
-                title: 'CO Levels',
+                title: 'health_improvement.co_levels'.tr(),
                 progress: 0.4,
                 icon: Icons.warning,
                 gradientColors: [Colors.orange, Colors.deepOrange],
@@ -94,7 +94,7 @@ class HealthImprovementCard extends StatelessWidget {
     required List<Color> gradientColors,
   }) {
     return SizedBox(
-      width: 90, // fix width để 3 card bằng nhau
+      width: 90,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -141,8 +141,8 @@ class HealthImprovementCard extends StatelessWidget {
               title,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.bold, // 👈 bold
-                color: gradientColors.last, // 👈 đồng bộ màu
+                fontWeight: FontWeight.bold,
+                color: gradientColors.last,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,

@@ -78,7 +78,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       CustomTextField(
                         controller: _email,
                         hint: 'example@email.com',
-                        keyboardType: TextInputType.emailAddress,
+                        keyboardType: TextInputType.emailAddress, label: '',
                       ),
                     ],
                   ),

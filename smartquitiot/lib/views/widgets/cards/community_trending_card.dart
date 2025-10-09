@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:SmartQuitIoT/views/screens/community/community.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class CommunityPost {
   final String authorName;
@@ -93,9 +94,9 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Community - Trending',
-                style: TextStyle(
+              Text(
+                'community_trending'.tr(),
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -108,9 +109,9 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
                     MaterialPageRoute(builder: (context) => CommunityPage()),
                   );
                 },
-                child: const Text(
-                  'View More',
-                  style: TextStyle(
+                child: Text(
+                  'view_more'.tr(),
+                  style: const TextStyle(
                     color: Color(0xFF00D09E),
                     fontWeight: FontWeight.w500,
                   ),

@@ -1,5 +1,6 @@
 import 'package:SmartQuitIoT/views/screens/achievements/achievements_card.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/coach_appointment_card.dart';
+import 'package:SmartQuitIoT/views/screens/common/common.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/home_header.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/smoke_free_timer_card.dart';

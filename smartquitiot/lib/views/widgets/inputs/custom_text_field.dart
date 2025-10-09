@@ -2,76 +2,104 @@ import 'package:flutter/material.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
-  final String? label;
+  final String label;
   final String hint;
-  final TextInputType? keyboardType;
   final bool obscure;
   final VoidCallback? onToggle;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
 
   const CustomTextField({
     super.key,
     required this.controller,
-    this.label,
+    required this.label,
     required this.hint,
-    this.keyboardType,
     this.obscure = false,
     this.onToggle,
+    this.keyboardType,
+    this.validator,
   });
 
   @override
   Widget build(BuildContext context) {
+    const greenBorderColor = Color(0xFF00D09E);
+    final BorderRadius borderRadius = BorderRadius.circular(12.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            label ?? '',
+        RichText(
+          text: TextSpan(
+            text: label,
             style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
               color: Colors.black87,
+              fontSize: 14,
             ),
+            children: const [
+              TextSpan(
+                text: ' *',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
-        TextField(
+        const SizedBox(height: 8),
+        TextFormField(
           controller: controller,
-          keyboardType: keyboardType,
           obscureText: obscure,
+          keyboardType: keyboardType,
+          validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: const Color(0xFF00D09E).withOpacity(0.3),
-                width: 1.5,
-              ),
-            ),
+            hintStyle: const TextStyle(color: Colors.grey),
+            filled: true,
+            fillColor: Colors.white,
+            // 1. Border khi không focus
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: const Color(0xFF00D09E).withOpacity(0.3),
-                width: 1.5,
+              borderRadius: borderRadius, // Dùng giá trị đã đồng nhất
+              borderSide: const BorderSide(
+                color: greenBorderColor,
+                width: 1.0,
               ),
             ),
+            // 2. Border khi focus
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF00D09E), width: 2),
+                borderRadius: borderRadius, // Dùng giá trị đã đồng nhất
+                borderSide: const BorderSide(
+                  color: greenBorderColor,
+                  width: 2.0,
+                )
+            ),
+            // Các border khác (lỗi,...)
+            border: OutlineInputBorder(
+              borderRadius: borderRadius, // Dùng giá trị đã đồng nhất
+            ),
+            // Thêm border khi có lỗi để đảm bảo bo cong
+            errorBorder: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1.0,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: borderRadius,
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 2.0,
+              ),
             ),
             suffixIcon: onToggle != null
                 ? IconButton(
-                    icon: Icon(
-                      obscure ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF00D09E),
-                      size: 20,
-                    ),
-                    onPressed: onToggle,
-                  )
+              icon: Icon(
+                obscure ? Icons.visibility_off : Icons.visibility,
+              ),
+              onPressed: onToggle,
+            )
                 : null,
           ),
         ),

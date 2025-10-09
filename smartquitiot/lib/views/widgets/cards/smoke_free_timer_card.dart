@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class SmokeFreeTimerCard extends StatelessWidget {
   const SmokeFreeTimerCard({super.key});
@@ -20,13 +21,13 @@ class SmokeFreeTimerCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center, // 👈 center tất cả
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Text canh giữa
-          const Text(
-            'Time Smoke Free:',
-            textAlign: TextAlign.center, // 👈 chắc chắn nằm giữa
-            style: TextStyle(
+          // Tiêu đề
+          Text(
+            'time_smoke_free'.tr(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -35,7 +36,7 @@ class SmokeFreeTimerCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Row icon + timer
+          // Icon + Timer
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -55,10 +56,10 @@ class SmokeFreeTimerCard extends StatelessWidget {
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: const [
-                    _TimeColumn(value: '1', label: 'Days'),
-                    _TimeColumn(value: '17', label: 'Hours'),
-                    _TimeColumn(value: '35', label: 'Minutes'),
+                  children: [
+                    _TimeColumn(value: '1', label: 'days'.tr()),
+                    _TimeColumn(value: '17', label: 'hours'.tr()),
+                    _TimeColumn(value: '35', label: 'minutes'.tr()),
                   ],
                 ),
               ),
@@ -70,7 +71,6 @@ class SmokeFreeTimerCard extends StatelessWidget {
   }
 }
 
-/// Widget con để hiển thị số và chữ
 class _TimeColumn extends StatelessWidget {
   final String value;
   final String label;

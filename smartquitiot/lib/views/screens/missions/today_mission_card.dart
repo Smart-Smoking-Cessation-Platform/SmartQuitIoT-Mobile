@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class Mission {
-  final String title;
-  final String description;
+  final String titleKey;
+  final String descriptionKey;
   final IconData icon;
 
   const Mission({
-    required this.title,
-    required this.description,
+    required this.titleKey,
+    required this.descriptionKey,
     this.icon = Icons.self_improvement,
   });
 }
@@ -19,28 +20,27 @@ class TodayMissionCard extends StatelessWidget {
     super.key,
     this.missions = const [
       Mission(
-        title: "Meditation",
-        description:
-            "Meditation is an act of control, willing to anything, preparing to do.",
+        titleKey: "mission_meditation_title",
+        descriptionKey: "mission_meditation_desc",
       ),
       Mission(
-        title: "Drink Water",
-        description: "Drink at least 8 glasses of water today.",
+        titleKey: "mission_drink_water_title",
+        descriptionKey: "mission_drink_water_desc",
         icon: Icons.local_drink,
       ),
       Mission(
-        title: "Short Walk",
-        description: "Take a 15-minute walk to refresh your mind.",
+        titleKey: "mission_short_walk_title",
+        descriptionKey: "mission_short_walk_desc",
         icon: Icons.directions_walk,
       ),
       Mission(
-        title: "Read Article",
-        description: "Read one article related to health or mindfulness.",
+        titleKey: "mission_read_article_title",
+        descriptionKey: "mission_read_article_desc",
         icon: Icons.article,
       ),
       Mission(
-        title: "Stretching",
-        description: "Do 5 minutes of stretching to relax your body.",
+        titleKey: "mission_stretching_title",
+        descriptionKey: "mission_stretching_desc",
         icon: Icons.accessibility_new,
       ),
     ],
@@ -69,9 +69,9 @@ class TodayMissionCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Today\'s Mission',
-                style: TextStyle(
+              Text(
+                'today_mission'.tr(),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -81,9 +81,9 @@ class TodayMissionCard extends StatelessWidget {
                 onTap: () {
                   // TODO: Thêm hành động khi nhấn View More
                 },
-                child: const Text(
-                  'View More',
-                  style: TextStyle(
+                child: Text(
+                  'view_more'.tr(),
+                  style: const TextStyle(
                     color: Color(0xFF00D09E),
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -127,16 +127,16 @@ class TodayMissionCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            mission.title,
+                            mission.titleKey.tr(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
-                              fontWeight: FontWeight.bold, // bold cho dễ nhìn
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            mission.description,
+                            mission.descriptionKey.tr(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
