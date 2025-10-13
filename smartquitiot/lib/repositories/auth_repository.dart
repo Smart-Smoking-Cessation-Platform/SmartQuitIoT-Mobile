@@ -89,6 +89,10 @@ class AuthRepository {
     }
   }
 
+  Future<void> forgotPassword(String email) async {
+    await _authService.forgotPassword(email);
+  }
+
   Future<bool> isAuthenticated() async {
     return await _tokenStorageService.isLoggedIn();
   }

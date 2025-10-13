@@ -75,6 +75,8 @@ class AuthViewModel extends StateNotifier<AuthState> {
   }
 
 
+
+
   /// Đăng nhập với username/email và password
   Future<bool> login(String usernameOrEmail, String password) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -91,6 +93,18 @@ class AuthViewModel extends StateNotifier<AuthState> {
         username: username,
         error: null,
       );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> forgotPassword(String email) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _authRepository.forgotPassword(email);
+      state = state.copyWith(isLoading: false);
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

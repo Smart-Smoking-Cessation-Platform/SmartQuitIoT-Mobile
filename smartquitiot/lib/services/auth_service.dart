@@ -112,6 +112,28 @@ class AuthService {
     }
   }
 
+  Future<void> forgotPassword(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/password/forgot'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        throw AuthException(ErrorResponse.fromJson(errorData).message);
+      }
+    } on http.ClientException {
+      throw AuthException('Network error. Please check your connection.');
+    } on FormatException {
+      throw AuthException('Invalid response format from server.');
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Failed to request OTP: ${e.toString()}');
+    }
+  }
+
 
   Future<void> logout(String accessToken) async {
     try {
