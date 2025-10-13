@@ -28,25 +28,29 @@ class CustomTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        RichText(
-          text: TextSpan(
-            text: label,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-              fontSize: 14,
-            ),
-            children: const [
-              TextSpan(
-                text: ' *',
-                style: TextStyle(
-                  color: Colors.red,
+        if (label.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: RichText(
+              text: TextSpan(
+                text: label,
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  fontSize: 14,
                 ),
+                children: const [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,

@@ -10,19 +10,65 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final TextEditingController _email = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  bool _isButtonEnabled = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_updateButtonState);
+  }
 
   @override
   void dispose() {
-    _email.dispose();
+    _emailController.removeListener(_updateButtonState);
+    _emailController.dispose();
     super.dispose();
   }
 
-  void _sendResetLink() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const OtpScreen()),
-    );
+  bool _isEmailValid(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  void _updateButtonState() {
+    if (mounted) {
+      setState(() {
+        _isButtonEnabled = _formKey.currentState?.validate() ?? false;
+      });
+    }
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    if (!_isEmailValid(value)) {
+      return 'Invalid email format';
+    }
+    return null;
+  }
+
+  Future<void> _sendResetLink() async {
+    if (_isButtonEnabled && !_isLoading) {
+      setState(() => _isLoading = true);
+
+      try {
+
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => OtpScreen(email: _emailController.text)),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
   }
 
   @override
@@ -34,7 +80,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
               Container(
                 height: 120,
                 decoration: const BoxDecoration(color: Color(0xFF00D09E)),
@@ -49,7 +94,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 32),
 
               // Card input email
@@ -68,57 +112,61 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'Enter your email to reset your password',
-                        style: TextStyle(fontSize: 14, color: Colors.black87),
-                      ),
-                      CustomTextField(
-                        controller: _email,
-                        hint: 'example@email.com',
-                        keyboardType: TextInputType.emailAddress, label: '',
-                      ),
-                    ],
+                  child: Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        CustomTextField(
+                          controller: _emailController,
+                          label: 'Enter your email to reset your password',
+                          hint: 'example@email.com',
+                          keyboardType: TextInputType.emailAddress,
+                          validator: _validateEmail,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-
               const SizedBox(height: 32),
 
-              // Send Reset Link Button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _sendResetLink,
+                    onPressed: (_isButtonEnabled && !_isLoading) ? _sendResetLink : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00D09E),
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey.shade300,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
                       ),
                     ),
-                    child: const Text(
-                      'Send OTP',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    child: _isLoading
+                        ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 3,
                       ),
+                    )
+                        : const Text(
+                      'Send OTP',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
 
-              // Back to login
               Center(
                 child: TextButton(
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, '/login'),
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
                   child: const Text(
                     'Back to Login',
                     style: TextStyle(
@@ -128,7 +176,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 32),
             ],
           ),
