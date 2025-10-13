@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/utils/notification_helper.dart';
+import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 
-class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({super.key});
+class ResetPasswordScreen extends ConsumerStatefulWidget {
+  final String resetToken;
+  const ResetPasswordScreen({super.key, required this.resetToken});
 
   @override
-  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
@@ -48,39 +51,46 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter a password.';
-    }
+    if (value == null || value.isEmpty) return 'Please enter a password.';
     final regex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$');
-    if (!regex.hasMatch(value)) {
-      return 'Must be 8+ chars with uppercase, lowercase, number, & special char.';
-    }
+    if (!regex.hasMatch(value)) return 'Must be 8+ chars with uppercase, lowercase, number, & special char.';
     return null;
   }
 
   String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please confirm your password.';
-    }
-    if (value != _passwordController.text) {
-      return 'Passwords do not match.';
-    }
+    if (value == null || value.isEmpty) return 'Please confirm your password.';
+    if (value != _passwordController.text) return 'Passwords do not match.';
     return null;
   }
 
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate() || _isLoading) return;
+
     setState(() => _isLoading = true);
+
     try {
-      await Future.delayed(const Duration(seconds: 2));
+      final success = await ref
+          .read(authViewModelProvider.notifier)
+          .resetPassword(widget.resetToken, _passwordController.text);
+
       if (mounted) {
-        NotificationHelper.showTopNotification(
-          context,
-          title: "Success",
-          message: "Your password has been reset successfully. Please log in again.",
-        );
-        await Future.delayed(const Duration(milliseconds: 2000));
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        if (success) {
+          NotificationHelper.showTopNotification(
+            context,
+            title: "Success",
+            message: "Your password has been reset successfully. Please log in again.",
+          );
+          await Future.delayed(const Duration(milliseconds: 2000));
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        } else {
+          final error = ref.read(authViewModelProvider).error;
+          NotificationHelper.showTopNotification(
+            context,
+            title: "Error",
+            message: error ?? "Failed to reset password. Please try again.",
+            isError: true,
+          );
+        }
       }
     } finally {
       if (mounted) {
@@ -103,7 +113,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       autofillHints: const [AutofillHints.newPassword],
       decoration: InputDecoration(
         labelText: label,
-        // FIX #2: ĐỔI MÀU LABEL THÀNH MÀU ĐEN
         labelStyle: const TextStyle(color: Colors.black87),
         floatingLabelStyle: const TextStyle(color: Color(0xFF00D09E)),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -141,7 +150,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
               Container(
                 height: 120,
                 decoration: const BoxDecoration(color: Color(0xFF00D09E)),
@@ -150,8 +158,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Card input passwords
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
@@ -200,8 +206,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Reset Password Button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SizedBox(

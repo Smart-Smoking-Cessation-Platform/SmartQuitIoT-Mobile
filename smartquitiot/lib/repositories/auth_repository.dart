@@ -76,6 +76,14 @@ class AuthRepository {
     }
   }
 
+  Future<String> verifyOtp(String email, String otp) async {
+    return await _authService.verifyOtp(email, otp);
+  }
+
+  Future<void> resetPassword(String resetToken, String newPassword) async {
+    await _authService.resetPassword(resetToken, newPassword);
+  }
+
   Future<void> logout() async {
     try {
       final accessToken = await _tokenStorageService.getAccessToken();
@@ -87,6 +95,10 @@ class AuthRepository {
       await _tokenStorageService.clearTokens();
       throw AuthException('Logout failed: ${e.toString()}');
     }
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await _authService.forgotPassword(email);
   }
 
   Future<bool> isAuthenticated() async {

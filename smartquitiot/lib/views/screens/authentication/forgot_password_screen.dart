@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'otp_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:SmartQuitIoT/utils/notification_helper.dart';
+import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
+import 'package:SmartQuitIoT/views/screens/authentication/otp_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   bool _isButtonEnabled = false;
@@ -41,12 +44,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return null;
-    }
-    if (!_isEmailValid(value)) {
-      return 'Invalid email format';
-    }
+    if (value == null || value.isEmpty) return null;
+    if (!_isEmailValid(value)) return 'Invalid email format';
     return null;
   }
 
@@ -55,13 +54,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       setState(() => _isLoading = true);
 
       try {
+        final success = await ref
+            .read(authViewModelProvider.notifier)
+            .forgotPassword(_emailController.text);
 
-        await Future.delayed(const Duration(seconds: 2));
         if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => OtpScreen(email: _emailController.text)),
-          );
+          if (success) {
+            NotificationHelper.showTopNotification(
+              context,
+              title: "Success",
+              message: "An OTP has been sent to your email. Please check.",
+            );
+            await Future.delayed(const Duration(milliseconds: 1500));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => OtpScreen(email: _emailController.text)),
+            );
+          } else {
+            final error = ref.read(authViewModelProvider).error;
+            NotificationHelper.showTopNotification(
+              context,
+              title: "Error",
+              message: error ?? "An unknown error occurred.",
+              isError: true,
+            );
+          }
         }
       } finally {
         if (mounted) {
@@ -95,8 +112,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Card input email
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
@@ -131,7 +146,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SizedBox(
@@ -163,7 +177,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.pushReplacementNamed(context, '/login'),

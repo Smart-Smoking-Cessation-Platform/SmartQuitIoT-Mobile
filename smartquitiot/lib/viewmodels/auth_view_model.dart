@@ -74,6 +74,18 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> resetPassword(String resetToken, String newPassword) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _authRepository.resetPassword(resetToken, newPassword);
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
 
   /// Đăng nhập với username/email và password
   Future<bool> login(String usernameOrEmail, String password) async {
@@ -95,6 +107,30 @@ class AuthViewModel extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
+    }
+  }
+
+  Future<bool> forgotPassword(String email) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _authRepository.forgotPassword(email);
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<String?> verifyOtp(String email, String otp) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final resetToken = await _authRepository.verifyOtp(email, otp);
+      state = state.copyWith(isLoading: false);
+      return resetToken;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return null;
     }
   }
 
