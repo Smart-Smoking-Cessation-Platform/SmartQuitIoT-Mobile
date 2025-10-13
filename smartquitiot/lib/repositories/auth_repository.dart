@@ -80,6 +80,10 @@ class AuthRepository {
     return await _authService.verifyOtp(email, otp);
   }
 
+  Future<void> resetPassword(String resetToken, String newPassword) async {
+    await _authService.resetPassword(resetToken, newPassword);
+  }
+
   Future<void> logout() async {
     try {
       final accessToken = await _tokenStorageService.getAccessToken();

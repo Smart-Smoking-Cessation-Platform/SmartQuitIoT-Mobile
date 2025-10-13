@@ -159,6 +159,29 @@ class AuthService {
     }
   }
 
+  Future<void> resetPassword(String resetToken, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/reset'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'resetToken': resetToken,
+          'newPassword': newPassword,
+        }),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        throw AuthException(ErrorResponse.fromJson(errorData).message);
+      }
+    } on http.ClientException {
+      throw AuthException('Network error. Please check your connection.');
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Failed to reset password: ${e.toString()}');
+    }
+  }
+
 
   Future<void> logout(String accessToken) async {
     try {

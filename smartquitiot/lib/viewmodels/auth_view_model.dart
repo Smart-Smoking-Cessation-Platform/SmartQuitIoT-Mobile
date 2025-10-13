@@ -74,7 +74,17 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-
+  Future<bool> resetPassword(String resetToken, String newPassword) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _authRepository.resetPassword(resetToken, newPassword);
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
 
 
   /// Đăng nhập với username/email và password
