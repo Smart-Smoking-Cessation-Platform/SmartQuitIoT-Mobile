@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
+import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
       body: SafeArea(
@@ -133,7 +135,10 @@ class WelcomeScreen extends StatelessWidget {
                   Column(
                     children: [
                       SocialButton(
-                        onTap: () {},
+                        // SỬA LỖI 3: Sửa lại cú pháp và logic gọi ViewModel
+                        onTap: () async {
+                          await ref.read(authViewModelProvider.notifier).loginWithGoogle();
+                        },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

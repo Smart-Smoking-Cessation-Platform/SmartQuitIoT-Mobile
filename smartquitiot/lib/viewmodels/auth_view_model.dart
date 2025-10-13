@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-
 import '../models/auth/auth_state.dart';
 import '../repositories/auth_repository.dart';
 
@@ -86,6 +85,26 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
+  // lib/viewmodels/auth_view_model.dart
+
+  Future<bool> loginWithGoogle() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      print('[AuthViewModel] Calling repository...');
+      final response = await _authRepository.loginWithGoogle();
+
+      // ... logic decode token và cập nhật state ...
+
+      print('[AuthViewModel] Login Google Success!');
+      return true;
+    } catch (e) {
+      // CHỖ NÀY CŨNG RẤT QUAN TRỌNG
+      print('[AuthViewModel] !!!! CATCHING ERROR from Repository !!!!');
+      print('[AuthViewModel] Error message: $e');
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
 
   /// Đăng nhập với username/email và password
   Future<bool> login(String usernameOrEmail, String password) async {

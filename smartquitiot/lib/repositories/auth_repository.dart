@@ -1,5 +1,8 @@
 // repositories/auth_repository.dart
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
 import '../core/errors/exception.dart';
 import '../models/auth/login_request.dart';
 import '../models/auth/login_response.dart';
@@ -11,6 +14,7 @@ import '../services/token_storage_service.dart';
 class AuthRepository {
   final AuthService _authService;
   final TokenStorageService _tokenStorageService;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   AuthRepository({
     AuthService? authService,
@@ -94,6 +98,46 @@ class AuthRepository {
     } catch (e) {
       await _tokenStorageService.clearTokens();
       throw AuthException('Logout failed: ${e.toString()}');
+    }
+  }
+
+  Future<Map<String, dynamic>> loginWithGoogle() async {
+    try {
+      print('[AuthRepository] Step 1: Starting Google authenticate...');
+      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate(
+          scopeHint: ['email', 'profile']
+      );
+
+      if (googleUser == null) {
+        print('[AuthRepository] Step 2: User cancelled login.');
+        throw Exception('Google sign-in was cancelled');
+      }
+
+      print('[AuthRepository] Step 2: Got Google User: ${googleUser.email}');
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        print('[AuthRepository] Step 3: FAILED to get idToken.');
+        throw Exception('Failed to get Google ID Token');
+      }
+
+      print('[AuthRepository] Step 3: Got idToken. Sending to AuthService...');
+      // Dòng print dưới đây sẽ cho chúng ta thấy token trông như thế nào
+      // print('[AuthRepository] Token: ${idToken.substring(0, 30)}...'); // In ra 30 ký tự đầu
+
+      final result = await _authService.loginWithGoogle(idToken);
+      print('[AuthRepository] Step 4: Got SUCCESS response from backend.');
+      return result;
+
+    } catch (e) {
+      // ĐÂY LÀ CHỖ QUAN TRỌNG NHẤT
+      print('[AuthRepository] !!!! CATCHING ERROR !!!!');
+      print('[AuthRepository] Error type: ${e.runtimeType}');
+      print('[AuthRepository] Error message: $e');
+
+      await _googleSignIn.signOut();
+      rethrow;
     }
   }
 

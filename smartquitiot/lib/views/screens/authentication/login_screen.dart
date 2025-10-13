@@ -151,7 +151,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 8),
                       const AuthDivider(),
                       const SizedBox(height: 24),
-                      const SocialLoginButtons(),
+                       SocialLoginButtons(
+                        onGoogleTap: () async {
+                          await ref.read(authViewModelProvider.notifier).loginWithGoogle();
+                        },
+                      ),
                       const SizedBox(height: 24),
                       Center(
                         child: TextButton(
