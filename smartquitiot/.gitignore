@@ -47,3 +47,7 @@ app.*.map.json
 #cusror
 /cursor-rules
 .cursorrules
+
+# ... other ignored files
+# Environment variables
+*.env
