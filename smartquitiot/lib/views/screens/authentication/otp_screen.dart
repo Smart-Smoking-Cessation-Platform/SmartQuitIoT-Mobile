@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'reset_password_screen.dart';
-import 'package:SmartQuitIoT/utils/notification_helper.dart'; // 1. IMPORT HELPER MỚI
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:SmartQuitIoT/utils/notification_helper.dart';
+import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
+import 'package:SmartQuitIoT/views/screens/authentication/reset_password_screen.dart';
 
-class OtpScreen extends StatefulWidget {
+class OtpScreen extends ConsumerStatefulWidget {
   final String email;
   const OtpScreen({super.key, required this.email});
 
   @override
-  State<OtpScreen> createState() => _OtpScreenState();
+  ConsumerState<OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> {
+class _OtpScreenState extends ConsumerState<OtpScreen> {
   final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isButtonEnabled = false;
@@ -46,51 +48,56 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
+  // --- HÀM ĐÃ ĐƯỢC CẬP NHẬT ---
   Future<void> _verifyOtp() async {
     if (!_isButtonEnabled || _isLoading) return;
 
     setState(() => _isLoading = true);
 
     try {
-      await Future.delayed(const Duration(seconds: 2));
-      String otp = _controllers.map((e) => e.text).join();
+      final otp = _controllers.map((e) => e.text).join();
+      final resetToken = await ref
+          .read(authViewModelProvider.notifier)
+          .verifyOtp(widget.email, otp);
 
       if (mounted) {
-        // 2. THAY THẾ LOGIC THÔNG BÁO
-        if (otp == '123456') {
-          // Hiển thị thông báo thành công
+        if (resetToken != null) {
+          // 1. HIỂN THỊ THÔNG BÁO THÀNH CÔNG
           NotificationHelper.showTopNotification(
             context,
             title: "Success",
             message: "OTP verified successfully. Please set your new password.",
           );
 
-          // Chờ một chút để người dùng đọc thông báo rồi mới chuyển trang
+          // 2. CHỜ MỘT CHÚT ĐỂ NGƯỜI DÙNG ĐỌC THÔNG BÁO
           await Future.delayed(const Duration(milliseconds: 1500));
 
+          // 3. ĐIỀU HƯỚNG SANG MÀN HÌNH TIẾP THEO
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ResetPasswordScreen()),
+            MaterialPageRoute(builder: (_) => ResetPasswordScreen(resetToken: resetToken)),
           );
         } else {
-          // Hiển thị thông báo lỗi
+          // Logic xử lý lỗi giữ nguyên
+          final error = ref.read(authViewModelProvider).error;
           NotificationHelper.showTopNotification(
             context,
-            title: "Error",
-            message: "Invalid OTP. Please try again.",
+            title: "Verification Failed",
+            message: error ?? "An unknown error occurred.",
             isError: true,
           );
         }
       }
     } finally {
       if (mounted) {
+        // Tắt loading sau khi hoàn tất (dù thành công hay thất bại)
         setState(() => _isLoading = false);
       }
     }
   }
 
   Widget _buildOtpField(int index) {
-    // ... (Phần này giữ nguyên, không thay đổi)
+    // Phần này giữ nguyên, không thay đổi
     return SizedBox(
       width: 50,
       height: 60,
@@ -131,7 +138,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ... (Phần UI build giữ nguyên, không thay đổi)
+    // Phần UI build giữ nguyên, không thay đổi
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
       body: SafeArea(
@@ -192,30 +199,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: List.generate(6, (index) => _buildOtpField(index)),
                       ),
-                      const SizedBox(height: 24),
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.center,
-                      //   children: [
-                      //     Text(
-                      //       "Didn't receive the code? ",
-                      //       style: TextStyle(color: Colors.grey.shade600),
-                      //     ),
-                      //     TextButton(
-                      //       onPressed: _isLoading ? null : () {
-                      //         ScaffoldMessenger.of(context).showSnackBar(
-                      //           const SnackBar(content: Text('Resending OTP...')),
-                      //         );
-                      //       },
-                      //       child: const Text(
-                      //         'Resend',
-                      //         style: TextStyle(
-                      //           color: Color(0xFF00D09E),
-                      //           fontWeight: FontWeight.bold,
-                      //         ),
-                      //       ),
-                      //     ),
-                      //   ],
-                      // ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

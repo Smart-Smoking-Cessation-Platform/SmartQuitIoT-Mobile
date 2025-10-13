@@ -112,6 +112,18 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
+  Future<String?> verifyOtp(String email, String otp) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final resetToken = await _authRepository.verifyOtp(email, otp);
+      state = state.copyWith(isLoading: false);
+      return resetToken;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return null;
+    }
+  }
+
   /// Đăng xuất người dùng
   Future<void> logout() async {
     state = state.copyWith(isLoading: true, error: null);

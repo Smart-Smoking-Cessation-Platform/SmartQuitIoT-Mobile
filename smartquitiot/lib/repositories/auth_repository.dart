@@ -76,6 +76,10 @@ class AuthRepository {
     }
   }
 
+  Future<String> verifyOtp(String email, String otp) async {
+    return await _authService.verifyOtp(email, otp);
+  }
+
   Future<void> logout() async {
     try {
       final accessToken = await _tokenStorageService.getAccessToken();

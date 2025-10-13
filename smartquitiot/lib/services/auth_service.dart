@@ -134,6 +134,31 @@ class AuthService {
     }
   }
 
+  Future<String> verifyOtp(String email, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'otp': otp}),
+      ).timeout(const Duration(seconds: 30));
+
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return responseData['resetToken'] as String;
+      } else {
+        throw AuthException(ErrorResponse.fromJson(responseData).message);
+      }
+    } on http.ClientException {
+      throw AuthException('Network error. Please check your connection.');
+    } on FormatException {
+      throw AuthException('Invalid response format from server.');
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Failed to verify OTP: ${e.toString()}');
+    }
+  }
+
 
   Future<void> logout(String accessToken) async {
     try {

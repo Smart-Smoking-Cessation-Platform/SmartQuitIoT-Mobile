@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/utils/notification_helper.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({super.key});
+
+  final String resetToken;
+
+  const ResetPasswordScreen({super.key, required this.resetToken});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
