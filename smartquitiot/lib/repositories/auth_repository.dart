@@ -101,45 +101,44 @@ class AuthRepository {
     }
   }
 
-  Future<Map<String, dynamic>> loginWithGoogle() async {
+  Future<LoginResponse> loginWithGoogle() async {
     try {
-      print('[AuthRepository] Step 1: Starting Google authenticate...');
-      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate(
-          scopeHint: ['email', 'profile']
+      print('[AuthRepository] Step 1: Starting Google Sign-In...');
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate(
+        scopeHint: [
+          'openid',
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile',
+        ],
       );
-
       if (googleUser == null) {
-        print('[AuthRepository] Step 2: User cancelled login.');
-        throw Exception('Google sign-in was cancelled');
+        print('[AuthRepository] User cancelled sign-in');
+        throw AuthException('Google sign-in cancelled');
       }
-
-      print('[AuthRepository] Step 2: Got Google User: ${googleUser.email}');
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
-
+      print('[AuthRepository] Got Google user: ${googleUser.email}');
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
       if (idToken == null) {
-        print('[AuthRepository] Step 3: FAILED to get idToken.');
-        throw Exception('Failed to get Google ID Token');
+        throw AuthException('Failed to get Google ID Token');
       }
+      print('[AuthRepository] Sending ID token to backend...');
+      final responseData = await _authService.loginWithGoogle(idToken);
+      final loginResponse = LoginResponse.fromJson(responseData);
 
-      print('[AuthRepository] Step 3: Got idToken. Sending to AuthService...');
-      // Dòng print dưới đây sẽ cho chúng ta thấy token trông như thế nào
-      // print('[AuthRepository] Token: ${idToken.substring(0, 30)}...'); // In ra 30 ký tự đầu
-
-      final result = await _authService.loginWithGoogle(idToken);
-      print('[AuthRepository] Step 4: Got SUCCESS response from backend.');
-      return result;
-
+      await _tokenStorageService.saveTokens(
+        loginResponse.accessToken,
+        loginResponse.refreshToken,
+      );
+      print('[AuthRepository] Login successful!');
+      return loginResponse;
     } catch (e) {
-      // ĐÂY LÀ CHỖ QUAN TRỌNG NHẤT
-      print('[AuthRepository] !!!! CATCHING ERROR !!!!');
-      print('[AuthRepository] Error type: ${e.runtimeType}');
-      print('[AuthRepository] Error message: $e');
-
-      await _googleSignIn.signOut();
-      rethrow;
+      print('[AuthRepository] ERROR during Google sign-in: $e');
+      await GoogleSignIn.instance.signOut();
+      throw AuthException('Google login failed: ${e.toString()}');
     }
   }
+
+
 
   Future<void> forgotPassword(String email) async {
     await _authService.forgotPassword(email);

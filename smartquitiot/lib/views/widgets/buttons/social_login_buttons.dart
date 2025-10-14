@@ -20,12 +20,12 @@ class SocialLoginButtons extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SocialIconCircle(
-          asset: 'lib/assets/images/facebook.png',
-          onTap: onFacebookTap ?? () {},
-          background: backgroundColor ?? Colors.white,
-          borderColor: borderColor ?? Colors.grey.shade300,
-        ),
+        // SocialIconCircle(
+        //   asset: 'lib/assets/images/facebook.png',
+        //   onTap: onFacebookTap ?? () {},
+        //   background: backgroundColor ?? Colors.white,
+        //   borderColor: borderColor ?? Colors.grey.shade300,
+        // ),
         const SizedBox(width: 16),
         SocialIconCircle(
           asset: 'lib/assets/images/google.png',

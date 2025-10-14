@@ -9,6 +9,7 @@ import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 import '../../../models/auth/auth_state.dart';
+import '../../../utils/notification_helper.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -57,19 +58,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
       if (previous?.error != next.error && next.error != null) {
-        SnackBarHelper.showError(context, next.error!);
+        NotificationHelper.showTopNotification(
+          context,
+          title: 'Failed',
+          message: 'Login Failed!',
+          isError: true,
+        );
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
       if (next.isAuthenticated && previous?.isAuthenticated == false) {
-        SnackBarHelper.showSuccess(context, 'Login successful!');
+        NotificationHelper.showTopNotification(
+          context,
+          title: 'Success',
+          message: 'Login successful!',
+        );
+
         if (mounted) {
           final isFirstLogin = next.isFirstLogin ?? false;
-          if (isFirstLogin) {
-            Navigator.pushReplacementNamed(context, '/onboarding');
-          } else {
-            Navigator.pushReplacementNamed(context, '/relaunch');
-          }
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (isFirstLogin) {
+              Navigator.pushReplacementNamed(context, '/onboarding');
+            } else {
+              Navigator.pushReplacementNamed(context, '/relaunch');
+            }
+          });
         }
       }
     });
@@ -151,11 +164,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 8),
                       const AuthDivider(),
                       const SizedBox(height: 24),
-                       SocialLoginButtons(
-                        onGoogleTap: () async {
-                          await ref.read(authViewModelProvider.notifier).loginWithGoogle();
-                        },
-                      ),
+                       Padding(
+                         padding: const EdgeInsets.only(right: 10),
+                         child: SocialLoginButtons(
+                          onGoogleTap: () async {
+                            await ref.read(authViewModelProvider.notifier).loginWithGoogle();
+                          },
+                                               ),
+                       ),
                       const SizedBox(height: 24),
                       Center(
                         child: TextButton(
