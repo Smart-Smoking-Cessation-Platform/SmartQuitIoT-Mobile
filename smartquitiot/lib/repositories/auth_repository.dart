@@ -1,5 +1,8 @@
 // repositories/auth_repository.dart
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
 import '../core/errors/exception.dart';
 import '../models/auth/login_request.dart';
 import '../models/auth/login_response.dart';
@@ -11,6 +14,7 @@ import '../services/token_storage_service.dart';
 class AuthRepository {
   final AuthService _authService;
   final TokenStorageService _tokenStorageService;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   AuthRepository({
     AuthService? authService,
@@ -96,6 +100,45 @@ class AuthRepository {
       throw AuthException('Logout failed: ${e.toString()}');
     }
   }
+
+  Future<LoginResponse> loginWithGoogle() async {
+    try {
+      print('[AuthRepository] Step 1: Starting Google Sign-In...');
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate(
+        scopeHint: [
+          'openid',
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile',
+        ],
+      );
+      if (googleUser == null) {
+        print('[AuthRepository] User cancelled sign-in');
+        throw AuthException('Google sign-in cancelled');
+      }
+      print('[AuthRepository] Got Google user: ${googleUser.email}');
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        throw AuthException('Failed to get Google ID Token');
+      }
+      print('[AuthRepository] Sending ID token to backend...');
+      final responseData = await _authService.loginWithGoogle(idToken);
+      final loginResponse = LoginResponse.fromJson(responseData);
+
+      await _tokenStorageService.saveTokens(
+        loginResponse.accessToken,
+        loginResponse.refreshToken,
+      );
+      print('[AuthRepository] Login successful!');
+      return loginResponse;
+    } catch (e) {
+      print('[AuthRepository] ERROR during Google sign-in: $e');
+      await GoogleSignIn.instance.signOut();
+      throw AuthException('Google login failed: ${e.toString()}');
+    }
+  }
+
+
 
   Future<void> forgotPassword(String email) async {
     await _authService.forgotPassword(email);

@@ -1,38 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 
-class SplashScreen extends ConsumerStatefulWidget {
+import '../onboarding/welcome_screen.dart';
+
+// Sửa thành StatelessWidget hoặc StatefulWidget bình thường
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAuthAndNavigate();
-    });
+    _navigateToWelcome();
   }
 
-  Future<void> _checkAuthAndNavigate() async {
+  Future<void> _navigateToWelcome() async {
     await Future.delayed(const Duration(seconds: 2));
-    await ref.read(authViewModelProvider.notifier).checkAuthStatus();
-    final isAuthenticated = await ref.read(authViewModelProvider.notifier).checkAuthStatus();
     if (mounted) {
-      if (isAuthenticated) {
-        Navigator.pushReplacementNamed(context, '/main');
-      } else {
-        Navigator.pushReplacementNamed(context, '/welcome');
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Phần UI này giữ nguyên 100%
     return Scaffold(
       backgroundColor: const Color(0xFF00D09E),
       body: Container(

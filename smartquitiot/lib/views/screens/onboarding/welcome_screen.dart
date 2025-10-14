@@ -1,12 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
+import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(authViewModelProvider, (previous, next) {
+      if (next.error != null && previous?.error == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        ref.read(authViewModelProvider.notifier).clearError();
+      }
+
+      if (next.isAuthenticated && (previous == null || !previous.isAuthenticated)) {
+        if (next.isFirstLogin == true) {
+          Navigator.of(context).pushReplacementNamed('/onboarding');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      }
+    });
+
+    final isLoading = ref.watch(authViewModelProvider.select((state) => state.isLoading));
+
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
       body: SafeArea(
@@ -54,7 +79,7 @@ class WelcomeScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(25),
                         ),
                         child: ElevatedButton(
-                          onPressed: () =>
+                          onPressed: isLoading ? null : () =>
                               Navigator.pushNamed(context, '/login'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
@@ -88,7 +113,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         ),
                         child: OutlinedButton(
-                          onPressed: () =>
+                          onPressed: isLoading ? null : () =>
                               Navigator.pushNamed(context, '/signup'),
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.transparent,
@@ -132,8 +157,22 @@ class WelcomeScreen extends StatelessWidget {
                   /// Social login
                   Column(
                     children: [
+                      // SocialButton(
+                      //   onTap: () async {
+                      //     // Dòng code này sẽ xóa sạch cache đăng nhập Google
+                      //     await GoogleSignIn.instance.signOut();
+                      //     await GoogleSignIn.instance.disconnect();
+                      //     print('--- ĐÃ ĐĂNG XUẤT HOÀN TOÀN KHỎI GOOGLE ---');
+                      //     ScaffoldMessenger.of(context).showSnackBar(
+                      //       SnackBar(content: Text('Đã reset Google Sign-In!')),
+                      //     );
+                      //   },
+                      //   child: Text('Reset Google Sign-In'),
+                      // ),
                       SocialButton(
-                        onTap: () {},
+                        onTap: isLoading
+                            ? () {}
+                            : () => ref.read(authViewModelProvider.notifier).loginWithGoogle(),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -157,28 +196,30 @@ class WelcomeScreen extends StatelessWidget {
 
                       const SizedBox(height: 12),
 
-                      SocialButton(
-                        onTap: () {},
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              'lib/assets/images/facebook.png',
-                              width: 20,
-                              height: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'sign_in_facebook'.tr(),
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // NÚT FACEBOOK BỊ VÔ HIỆU HÓA
+                      // Maybe in the future....
+                      // SocialButton(
+                      //   onTap: () {},
+                      //   child: Row(
+                      //     mainAxisAlignment: MainAxisAlignment.center,
+                      //     children: [
+                      //       Image.asset(
+                      //         'lib/assets/images/facebook.png',
+                      //         width: 20,
+                      //         height: 20,
+                      //       ),
+                      //       const SizedBox(width: 12),
+                      //       Text(
+                      //         'sign_in_facebook'.tr(),
+                      //         style: TextStyle(
+                      //           color: Colors.black87,
+                      //           fontSize: 16,
+                      //           fontWeight: FontWeight.w500,
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                     ],
                   ),
 
@@ -187,7 +228,7 @@ class WelcomeScreen extends StatelessWidget {
                   /// Forgot Password
                   Center(
                     child: GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/forgot'),
+                      onTap: isLoading ? null : () => Navigator.pushNamed(context, '/forgot'),
                       child: RichText(
                         text: TextSpan(
                           text: '${'forgot_password'.tr()} ',
@@ -215,7 +256,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ),
 
-            /// Language Switcher (top-right corner)
+            /// Language Switcher (vẫn giữ nguyên)
             Positioned(
               top: 16,
               right: 16,

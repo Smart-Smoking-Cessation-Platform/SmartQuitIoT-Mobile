@@ -134,6 +134,10 @@ class AuthService {
     }
   }
 
+
+
+
+
   Future<String> verifyOtp(String email, String otp) async {
     try {
       final response = await http.post(
@@ -179,6 +183,25 @@ class AuthService {
     } catch (e) {
       if (e is AuthException) rethrow;
       throw AuthException('Failed to reset password: ${e.toString()}');
+    }
+  }
+
+  Future<Map<String, dynamic>> loginWithGoogle(String idToken) async {
+    final url = Uri.parse('$_baseUrl/google');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken}),
+      );
+      final responseBody = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return responseBody;
+      } else {
+        throw Exception(responseBody['message'] ?? 'Failed to login with Google');
+      }
+    } catch (e) {
+      throw Exception('An error occurred: ${e.toString()}');
     }
   }
 

@@ -1,4 +1,4 @@
-package com.example.smartquitiot
+package com.sep490.smartquitiot
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterFragmentActivity

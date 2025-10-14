@@ -51,3 +51,6 @@ app.*.map.json
 # ... other ignored files
 # Environment variables
 *.env
+
+# Google Services config file
+/android/app/google-services.json

@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-
 import '../models/auth/auth_state.dart';
 import '../repositories/auth_repository.dart';
+import '../models/auth/login_response.dart';
+
 
 class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
@@ -51,6 +52,24 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> loginWithGoogle() async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      final response = await _authRepository.loginWithGoogle();
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: true,
+        isFirstLogin: response.firstLogin,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
   Future<bool> checkAuthStatus() async {
     try {
       final isAuthenticated = await _authRepository.isAuthenticated();
@@ -85,7 +104,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
       return false;
     }
   }
-
 
   /// Đăng nhập với username/email và password
   Future<bool> login(String usernameOrEmail, String password) async {

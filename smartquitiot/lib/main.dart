@@ -1,6 +1,7 @@
 import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/splash_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/utils/app_theme.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/login_screen.dart';
@@ -13,10 +14,15 @@ import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/api_demo_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  await GoogleSignIn.instance.initialize(
+    serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'],
+  );
 
   runApp(
     EasyLocalization(
