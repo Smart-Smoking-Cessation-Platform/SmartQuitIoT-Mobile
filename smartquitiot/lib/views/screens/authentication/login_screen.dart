@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../utils/snackbar_helper.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/auth_header.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
 import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
-import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
-import '../../../models/auth/auth_state.dart';
+import '../../../models/state/auth_state.dart';
 import '../../../utils/notification_helper.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -48,7 +48,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!success && mounted) {
       final error = ref.read(authViewModelProvider).error;
       if (error != null) {
-        SnackBarHelper.showError(context, error);
+        NotificationHelper.showTopNotification(
+          context,
+          title: 'Login Failed',
+          message: error,
+          isError: true,
+        );
         ref.read(authViewModelProvider.notifier).clearError();
       }
     }
@@ -56,12 +61,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authViewModelProvider, (previous, next) {
-      if (previous?.error != next.error && next.error != null) {
+    ref.listen<AuthState>(authViewModelProvider, (previous, next) async {
+      if (next.error != null && previous?.error != next.error) {
         NotificationHelper.showTopNotification(
           context,
-          title: 'Failed',
-          message: 'Login Failed!',
+          title: 'Login Failed',
+          message: next.error!,
           isError: true,
         );
         ref.read(authViewModelProvider.notifier).clearError();
@@ -73,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           title: 'Success',
           message: 'Login successful!',
         );
-
+        await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
           final isFirstLogin = next.isFirstLogin ?? false;
           Future.delayed(const Duration(milliseconds: 800), () {

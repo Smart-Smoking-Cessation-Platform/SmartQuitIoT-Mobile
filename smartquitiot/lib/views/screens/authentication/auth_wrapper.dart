@@ -2,9 +2,10 @@
 import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:SmartQuitIoT/models/auth/auth_state.dart';
+import 'package:SmartQuitIoT/models/state/auth_state.dart';
 import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 
+import '../../../providers/auth_provider.dart';
 import '../onboarding/onboarding_screen.dart';
 
 

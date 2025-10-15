@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import '../models/auth/auth_state.dart';
+import '../models/state/auth_state.dart';
 import '../repositories/auth_repository.dart';
-import '../models/auth/login_response.dart';
+
 
 
 class AuthViewModel extends StateNotifier<AuthState> {
@@ -105,7 +105,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  /// Đăng nhập với username/email và password
   Future<bool> login(String usernameOrEmail, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -152,7 +151,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  /// Đăng xuất người dùng
   Future<void> logout() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -169,17 +167,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  // Getters để UI dễ dàng truy cập
   bool? get isFirstLogin => state.isFirstLogin;
   String? get username => state.username;
 }
 
-// Providers (giữ nguyên)
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository();
-});
-
-final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>((ref) {
-  final authRepository = ref.watch(authRepositoryProvider);
-  return AuthViewModel(authRepository);
-});

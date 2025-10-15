@@ -5,6 +5,8 @@ import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
 import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../../providers/auth_provider.dart';
+
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 

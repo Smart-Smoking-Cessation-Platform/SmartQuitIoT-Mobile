@@ -1,4 +1,4 @@
-﻿import 'account.dart';
+﻿import '../account.dart';
 
 class RegisterResponse {
   final int id;

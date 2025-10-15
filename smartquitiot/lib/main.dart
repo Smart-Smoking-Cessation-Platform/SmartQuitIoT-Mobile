@@ -1,5 +1,6 @@
 import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/splash_screen.dart';
+import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +44,8 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Smoke Quit',
       theme: AppTheme.light(),
-      home: const SplashScreen(),
+      // home: const SplashScreen(),
+      home: const PremiumMembershipScreen(),
 
       // easy_localization tự động inject localizationsDelegates
       localizationsDelegates: context.localizationDelegates,
