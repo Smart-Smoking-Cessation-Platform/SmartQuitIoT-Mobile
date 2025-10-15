@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/state/membership_state.dart';
 import '../../../providers/membership_provider.dart';
-// SỬA Ở ĐÂY: Import màn hình chọn kỳ hạn
 import 'plan_selection_screen.dart';
-// import 'payment_options_screen.dart'; // Dòng này có thể không cần nữa
 
 class PremiumMembershipScreen extends ConsumerWidget {
   const PremiumMembershipScreen({super.key});

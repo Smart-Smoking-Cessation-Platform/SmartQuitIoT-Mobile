@@ -1,8 +1,10 @@
 ﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'token_storage_service.dart';
 
 class MembershipApiService {
+  final TokenStorageService _tokenStorageService = TokenStorageService();
   final String _baseUrl = dotenv.env['API_MEMBERSHIP_URL'] ?? 'http://10.0.2.2:8080/api/membership-packages';
   Future<http.Response> getMembershipPackages() async {
     final uri = Uri.parse(_baseUrl);
@@ -32,10 +34,16 @@ class MembershipApiService {
   }) async {
     final uri = Uri.parse('$_baseUrl/create-payment-link');
     try {
+      final accessToken = await _tokenStorageService.getAccessToken();
+
+      if (accessToken == null) {
+        throw Exception('No access token found — user not logged in');
+      }
       final response = await http.post(
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $accessToken',
         },
         body: json.encode({
           'membershipPackageId': packageId,
@@ -44,7 +52,7 @@ class MembershipApiService {
       );
       return response;
     } catch (e) {
-      print('Network error creating payment link: $e');
+      print('❌ Network error creating payment link: $e');
       rethrow;
     }
   }

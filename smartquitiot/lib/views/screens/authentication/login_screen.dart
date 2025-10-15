@@ -79,17 +79,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           message: 'Login successful!',
         );
         await Future.delayed(const Duration(seconds: 1));
-        if (mounted) {
-          final isFirstLogin = next.isFirstLogin ?? false;
-          Future.delayed(const Duration(milliseconds: 800), () {
-            if (isFirstLogin) {
-              Navigator.pushReplacementNamed(context, '/onboarding');
-            } else {
-              Navigator.pushReplacementNamed(context, '/relaunch');
-            }
-          });
-        }
+        if (!mounted) return;
+        final isFirstLogin = next.isFirstLogin ?? false;
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (!mounted) return;
+          if (isFirstLogin) {
+            Navigator.pushReplacementNamed(context, '/onboarding');
+          } else {
+            Navigator.pushReplacementNamed(context, '/main');
+          }
+        });
       }
+
     });
 
     final authState = ref.watch(authViewModelProvider);

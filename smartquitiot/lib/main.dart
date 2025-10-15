@@ -1,26 +1,34 @@
-import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
-import 'package:SmartQuitIoT/views/screens/common/splash_screen.dart';
-import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:SmartQuitIoT/utils/app_theme.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:app_links/app_links.dart';
+
+// Screens
+import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
+import 'package:SmartQuitIoT/views/screens/common/splash_screen.dart';
+import 'package:SmartQuitIoT/views/screens/payment/payment_success_screen.dart';
+import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/login_screen.dart';
-import 'package:SmartQuitIoT/views/screens/onboarding/onboarding_screen.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/signup_screen.dart';
+import 'package:SmartQuitIoT/views/screens/authentication/forgot_password_screen.dart';
+import 'package:SmartQuitIoT/views/screens/onboarding/onboarding_screen.dart';
 import 'package:SmartQuitIoT/views/screens/onboarding/welcome_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/_relaunch_screen.dart';
-import 'package:SmartQuitIoT/views/screens/authentication/forgot_password_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/api_demo_screen.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:SmartQuitIoT/utils/app_theme.dart';
 
-void main() async {
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
   await GoogleSignIn.instance.initialize(
     serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'],
   );
@@ -36,18 +44,77 @@ void main() async {
   );
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  StreamSubscription<Uri>? _linkSubscription;
+  late AppLinks _appLinks;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) async {
+      if (uri != null) {
+        debugPrint('Deep link nhận được (stream): $uri');
+        await Future.delayed(const Duration(milliseconds: 300));
+        _onDeepLink(uri);
+      }
+    });
+
+    final initialUri = await _appLinks.getInitialLink();
+    if (initialUri != null) {
+      debugPrint('🔥 Deep link nhận được (initial): $initialUri');
+      await Future.delayed(const Duration(milliseconds: 300));
+      _onDeepLink(initialUri);
+    }
+  }
+
+  /// Xử lý deeplink
+  void _onDeepLink(Uri uri) {
+    final navigator = navigatorKey.currentState;
+
+    if (navigator == null) {
+      debugPrint("⚠️ Navigator chưa sẵn sàng, bỏ qua deeplink $uri");
+      return;
+    }
+
+    if (uri.pathSegments.contains('success')) {
+      debugPrint('Thanh toán thành công');
+      navigator.pushNamedAndRemoveUntil('/payment-success', (_) => false);
+    } else if (uri.pathSegments.contains('failed')) {
+      debugPrint('Thanh toán thất bại');
+      ScaffoldMessenger.of(navigator.context).showSnackBar(
+        const SnackBar(content: Text('Payment failed')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Smoke Quit',
       theme: AppTheme.light(),
-      // home: const SplashScreen(),
-      home: const PremiumMembershipScreen(),
+      home: const SplashScreen(),
 
-      // easy_localization tự động inject localizationsDelegates
+      // Easy Localization
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       locale: context.locale,
@@ -63,6 +130,8 @@ class MyApp extends ConsumerWidget {
         '/debug-home': (_) => const DebugHomeScreen(),
         '/api-demo': (_) => const ApiDemoScreen(),
         '/main': (_) => const MainNavigationScreen(),
+        '/payment-success': (_) => const PaymentSuccessScreen(),
+        '/premium': (_) => const PremiumMembershipScreen(),
       },
     );
   }
