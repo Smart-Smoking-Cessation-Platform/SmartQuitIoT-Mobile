@@ -1,5 +1,6 @@
 ﻿import 'package:riverpod/riverpod.dart';
 
+import '../models/payment_link_data.dart';
 import '../models/state/membership_state.dart';
 import '../repositories/membership_repository.dart';
 
@@ -23,6 +24,22 @@ class MembershipViewModel extends StateNotifier<MembershipState> {
         state: ViewState.error,
         errorMessage: e.toString(),
       );
+    }
+  }
+
+  Future<PaymentLinkData?> createPaymentLink({
+    required int packageId,
+    required int duration,
+  }) async {
+    try {
+      final paymentData = await _repository.createPaymentLink(
+        packageId: packageId,
+        duration: duration,
+      );
+      return paymentData;
+    } catch (e) {
+      print('Error in ViewModel creating payment link: $e');
+      return null;
     }
   }
 }

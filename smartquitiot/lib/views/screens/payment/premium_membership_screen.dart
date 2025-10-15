@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/state/membership_state.dart';
 import '../../../providers/membership_provider.dart';
-import 'payment_options_screen.dart';
+// SỬA Ở ĐÂY: Import màn hình chọn kỳ hạn
+import 'plan_selection_screen.dart';
+// import 'payment_options_screen.dart'; // Dòng này có thể không cần nữa
 
 class PremiumMembershipScreen extends ConsumerWidget {
   const PremiumMembershipScreen({super.key});
@@ -68,7 +70,7 @@ class PremiumMembershipScreen extends ConsumerWidget {
                           final dividerColor = isPremium ? Colors.white.withOpacity(0.3) : Colors.black12;
 
                           return Stack(
-                            clipBehavior: Clip.none, // Cho phép ribbon tràn ra ngoài
+                            clipBehavior: Clip.none,
                             children: [
                               Container(
                                 margin: const EdgeInsets.only(bottom: 16),
@@ -81,7 +83,6 @@ class PremiumMembershipScreen extends ConsumerWidget {
                                   )
                                       : null,
                                   image: isPremium
-                                  // *** MỚI: Thêm họa tiết chìm ***
                                       ? const DecorationImage(
                                     image: AssetImage('lib/assets/images/card_pattern.png'),
                                     fit: BoxFit.cover,
@@ -103,18 +104,16 @@ class PremiumMembershipScreen extends ConsumerWidget {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(20),
-                                    onTap: isFree ? null : () => _navigateToPayment(context, pkg.name),
+                                    // SỬA Ở ĐÂY: Gọi hàm điều hướng mới
+                                    onTap: isFree ? null : () => _navigateToPlanSelection(context, pkg.id, pkg.name),
                                     child: Stack(
                                       children: [
-                                        // *** MỚI: Thêm vệt sáng lấp lánh ***
                                         if (isPremium) _buildGlossySheen(),
-
                                         Padding(
                                           padding: const EdgeInsets.all(24.0),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              if (isPremium) const SizedBox(height: 20),
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +148,6 @@ class PremiumMembershipScreen extends ConsumerWidget {
                                   ),
                                 ),
                               ),
-                              // if (isPremium) _buildBestValueRibbon(),
                             ],
                           );
                         }).toList(),
@@ -210,40 +208,6 @@ class PremiumMembershipScreen extends ConsumerWidget {
     );
   }
 
-  // Widget _buildBestValueRibbon() {
-  //   return Positioned(
-  //     top: -4,
-  //     right: -4,
-  //     child: Container(
-  //       width: 80,
-  //       height: 80,
-  //       decoration: BoxDecoration(
-  //         borderRadius: const BorderRadius.only(topRight: Radius.circular(20)),
-  //         boxShadow: [
-  //           BoxShadow(
-  //             color: Colors.black.withOpacity(0.3),
-  //             blurRadius: 10,
-  //             offset: const Offset(-5, 5),
-  //           )
-  //         ],
-  //       ),
-  //       // child: ClipPath(
-  //       //   clipper: RibbonClipper(),
-  //       //   child: Container(
-  //       //     color: const Color(0xFFC08427),
-  //       //     child: const Center(
-  //       //       child: Padding(
-  //       //         padding: EdgeInsets.only(top: 25.0, right: 10),
-  //       //       ),
-  //       //     ),
-  //       //   ),
-  //       // ),
-  //     ),
-  //   );
-  // }
-
-
-  // *** WIDGET MỚI: Xây dựng vệt sáng ***
   Widget _buildGlossySheen() {
     return Positioned.fill(
       child: ClipRRect(
@@ -271,23 +235,16 @@ class PremiumMembershipScreen extends ConsumerWidget {
     );
   }
 
-  void _navigateToPayment(BuildContext context, String plan) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => PaymentOptionsScreen(selectedPlan: plan)));
+  // SỬA Ở ĐÂY: Thay thế hàm cũ bằng hàm điều hướng mới
+  void _navigateToPlanSelection(BuildContext context, int packageId, String packageName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlanSelectionScreen(
+          packageId: packageId,
+          packageName: packageName,
+        ),
+      ),
+    );
   }
 }
-
-// *** CLASS MỚI: CustomClipper để tạo hình dải băng đẹp hơn ***
-// class RibbonClipper extends CustomClipper<Path> {
-//   @override
-//   Path getClip(Size size) {
-//     final path = Path();
-//     path.moveTo(size.width, 0);
-//     path.lineTo(0, size.height);
-//     path.lineTo(size.width, size.height);
-//     path.close();
-//     return path;
-//   }
-//
-//   @override
-//   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-// }
