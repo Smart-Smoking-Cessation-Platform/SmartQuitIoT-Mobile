@@ -1,16 +1,18 @@
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../core/errors/exception.dart';
-import '../models/auth/common/error_response.dart';
-import '../models/auth/login_request.dart';
-import '../models/auth/login_response.dart';
-import '../models/auth/register_request.dart';
-import '../models/auth/register_response.dart';
-
+import '../models/response/error_response.dart';
+import '../models/request/login_request.dart';
+import '../models/response/login_response.dart';
+import '../models/request/register_request.dart';
+import '../models/response/register_response.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://10.0.2.2:8080/api/auth';
-  static const String _accountsBaseUrl = 'http://10.0.2.2:8080/api/accounts';
+  static final String _baseUrl =
+      dotenv.env['API_AUTH_URL'] ?? 'http://10.0.2.2:8080/api/auth';
+  static final String _accountsBaseUrl =
+      dotenv.env['API_ACCOUNTS_URL'] ?? 'http://10.0.2.2:8080/api/accounts';
   static const Duration _timeout = Duration(seconds: 30);
 
   /// Register a new user
@@ -44,25 +46,21 @@ class AuthService {
     }
   }
 
-
   /// Login with username and password
   Future<LoginResponse> login(LoginRequest request) async {
     try {
       final response = await http
           .post(
-            Uri.parse('$_baseUrl/member'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode(request.toJson()),
-          )
+        Uri.parse('$_baseUrl/member'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(request.toJson()),
+      )
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         return LoginResponse.fromJson(data);
       } else {
-        // Handle error response
         final Map<String, dynamic> errorData = jsonDecode(response.body);
         final errorResponse = ErrorResponse.fromJson(errorData);
         throw AuthException(errorResponse.message);
@@ -72,9 +70,7 @@ class AuthService {
     } on FormatException {
       throw AuthException('Invalid response format from server.');
     } catch (e) {
-      if (e is AuthException) {
-        rethrow;
-      }
+      if (e is AuthException) rethrow;
       throw AuthException('Login failed: ${e.toString()}');
     }
   }
@@ -84,12 +80,10 @@ class AuthService {
     try {
       final response = await http
           .post(
-            Uri.parse('$_baseUrl/refresh'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({'refreshToken': refreshToken}),
-          )
+        Uri.parse('$_baseUrl/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      )
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -105,20 +99,20 @@ class AuthService {
     } on FormatException {
       throw AuthException('Invalid response format from server.');
     } catch (e) {
-      if (e is AuthException) {
-        rethrow;
-      }
+      if (e is AuthException) rethrow;
       throw AuthException('Token refresh failed: ${e.toString()}');
     }
   }
 
   Future<void> forgotPassword(String email) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/password/forgot'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
-      ).timeout(const Duration(seconds: 30));
+      )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
@@ -134,17 +128,15 @@ class AuthService {
     }
   }
 
-
-
-
-
   Future<String> verifyOtp(String email, String otp) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/verify-otp'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'otp': otp}),
-      ).timeout(const Duration(seconds: 30));
+      )
+          .timeout(const Duration(seconds: 30));
 
       final Map<String, dynamic> responseData = jsonDecode(response.body);
 
@@ -165,14 +157,16 @@ class AuthService {
 
   Future<void> resetPassword(String resetToken, String newPassword) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/reset'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'resetToken': resetToken,
           'newPassword': newPassword,
         }),
-      ).timeout(const Duration(seconds: 30));
+      )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
@@ -198,29 +192,28 @@ class AuthService {
       if (response.statusCode == 200) {
         return responseBody;
       } else {
-        throw Exception(responseBody['message'] ?? 'Failed to login with Google');
+        throw Exception(
+          responseBody['message'] ?? 'Failed to login with Google',
+        );
       }
     } catch (e) {
       throw Exception('An error occurred: ${e.toString()}');
     }
   }
 
-
   Future<void> logout(String accessToken) async {
     try {
       await http
           .post(
-            Uri.parse('$_baseUrl/logout'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          )
+        Uri.parse('$_baseUrl/logout'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      )
           .timeout(_timeout);
     } catch (e) {
       // Logout errors are usually not critical
-      // We can ignore them and just clear local storage
     }
   }
 }
-

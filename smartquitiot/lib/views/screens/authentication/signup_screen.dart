@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../utils/notification_helper.dart';
 import '../../../utils/snackbar_helper.dart';
 import '../../../viewmodels/auth_view_model.dart';
 import '../../widgets/buttons/primary_button.dart';
@@ -97,12 +99,24 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     if (mounted) {
       if (success) {
-        SnackBarHelper.showSuccess(context, 'Registration successful! Please log in.');
-        Navigator.pushReplacementNamed(context, '/login');
+        NotificationHelper.showTopNotification(
+          context,
+          title: "Registration Successful",
+          message: "Please log in to begin using our services.",
+        );
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       } else {
         final error = ref.read(authViewModelProvider).error;
         if (error != null) {
-          SnackBarHelper.showError(context, error);
+          NotificationHelper.showTopNotification(
+            context,
+            title: "Login Failed",
+            message: error,
+            isError: true,
+          );
           ref.read(authViewModelProvider.notifier).clearError();
         }
       }
@@ -313,8 +327,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter a password';
                               }
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
+                              final passwordRegex = RegExp(
+                                  r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$');
+                              if (!passwordRegex.hasMatch(value)) {
+                                return 'Password needs 8+ chars, with uppercase, lowercase, number & special character.';
                               }
                               return null;
                             },
@@ -334,7 +350,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 return 'Passwords do not match';
                               }
                               return null;
-                            },
+                              },
                           ),
                           const SizedBox(height: 32),
                           authState.isLoading

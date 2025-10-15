@@ -5,6 +5,8 @@ import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/otp_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 
+import '../../../providers/auth_provider.dart';
+
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 

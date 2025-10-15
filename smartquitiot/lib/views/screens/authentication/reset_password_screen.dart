@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/utils/notification_helper.dart';
 import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 
+import '../../../providers/auth_provider.dart';
+
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   final String resetToken;
   const ResetPasswordScreen({super.key, required this.resetToken});

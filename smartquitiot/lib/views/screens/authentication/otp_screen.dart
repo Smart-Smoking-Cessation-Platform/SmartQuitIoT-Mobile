@@ -5,6 +5,8 @@ import 'package:SmartQuitIoT/utils/notification_helper.dart';
 import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/reset_password_screen.dart';
 
+import '../../../providers/auth_provider.dart';
+
 class OtpScreen extends ConsumerStatefulWidget {
   final String email;
   const OtpScreen({super.key, required this.email});

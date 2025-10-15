@@ -4,10 +4,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../core/errors/exception.dart';
-import '../models/auth/login_request.dart';
-import '../models/auth/login_response.dart';
-import '../models/auth/register_request.dart';
-import '../models/auth/register_response.dart';
+import '../models/request/login_request.dart';
+import '../models/response/login_response.dart';
+import '../models/request/register_request.dart';
+import '../models/response/register_response.dart';
 import '../services/auth_service.dart';
 import '../services/token_storage_service.dart';
 
@@ -19,8 +19,8 @@ class AuthRepository {
   AuthRepository({
     AuthService? authService,
     TokenStorageService? tokenStorageService,
-  })  : _authService = authService ?? AuthService(),
-        _tokenStorageService = tokenStorageService ?? TokenStorageService();
+  }) : _authService = authService ?? AuthService(),
+       _tokenStorageService = tokenStorageService ?? TokenStorageService();
 
   Future<RegisterResponse> register({
     required String username,
@@ -104,13 +104,14 @@ class AuthRepository {
   Future<LoginResponse> loginWithGoogle() async {
     try {
       print('[AuthRepository] Step 1: Starting Google Sign-In...');
-      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate(
-        scopeHint: [
-          'openid',
-          'https://www.googleapis.com/auth/userinfo.email',
-          'https://www.googleapis.com/auth/userinfo.profile',
-        ],
-      );
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
+          .authenticate(
+            scopeHint: [
+              'openid',
+              'https://www.googleapis.com/auth/userinfo.email',
+              'https://www.googleapis.com/auth/userinfo.profile',
+            ],
+          );
       if (googleUser == null) {
         print('[AuthRepository] User cancelled sign-in');
         throw AuthException('Google sign-in cancelled');
@@ -137,8 +138,6 @@ class AuthRepository {
       throw AuthException('Google login failed: ${e.toString()}');
     }
   }
-
-
 
   Future<void> forgotPassword(String email) async {
     await _authService.forgotPassword(email);
