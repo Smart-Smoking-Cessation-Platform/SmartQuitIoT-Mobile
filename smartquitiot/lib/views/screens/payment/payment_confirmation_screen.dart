@@ -111,6 +111,29 @@ class PaymentConfirmationScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
+            // SizedBox(
+            //   width: double.infinity,
+            //   child: OutlinedButton.icon(
+            //     icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent),
+            //     label: const Text(
+            //       'Cancel Payment',
+            //       style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+            //     ),
+            //     style: OutlinedButton.styleFrom(
+            //       padding: const EdgeInsets.symmetric(vertical: 16),
+            //       side: const BorderSide(color: Colors.redAccent),
+            //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            //     ),
+            //     onPressed: () {
+            //       // // ✅ Nếu bạn muốn chỉ quay về
+            //       // Navigator.pop(context);
+            //       // ✅ Nếu bạn muốn gọi API BE để cancel thật:
+            //
+            //       ref.read(paymentViewModelProvider.notifier).cancelPayment(paymentData.orderCode);
+            //     },
+            //   ),
+            // ),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

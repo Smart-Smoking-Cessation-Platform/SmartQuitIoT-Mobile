@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:SmartQuitIoT/providers/membership_provider.dart';
+import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,25 +82,75 @@ class _MyAppState extends ConsumerState<MyApp> {
     }
   }
 
-  /// Xử lý deeplink
-  void _onDeepLink(Uri uri) {
+  void _onDeepLink(Uri uri) async {
     final navigator = navigatorKey.currentState;
+    if (navigator == null) return;
 
-    if (navigator == null) {
-      debugPrint("⚠️ Navigator chưa sẵn sàng, bỏ qua deeplink $uri");
-      return;
+    final path = uri.pathSegments.join('/');
+    final params = uri.queryParameters;
+    final code = params['code'] ?? '';
+    final id = params['id'] ?? '';
+    final cancelStr = params['cancel'] ?? 'false';
+    final cancel = cancelStr.toLowerCase() == 'true';
+    final statusStr = params['status'] ?? '';
+    final orderCodeNum = int.tryParse(params['orderCode'] ?? '') ?? 0;
+
+    String membershipStatus;
+    if (cancel || !(path.contains('success') || statusStr.toUpperCase() == 'PAID' || statusStr.toUpperCase() == 'SUCCESS')) {
+      membershipStatus = 'UNAVAILABLE';
+    } else {
+      membershipStatus = 'AVAILABLE';
     }
 
-    if (uri.pathSegments.contains('success')) {
-      debugPrint('Thanh toán thành công');
-      navigator.pushNamedAndRemoveUntil('/payment-success', (_) => false);
-    } else if (uri.pathSegments.contains('failed')) {
-      debugPrint('Thanh toán thất bại');
+    final Map<String, dynamic> body = {
+      'code': code,
+      'id': id,
+      'cancel': cancel,
+      'status': statusStr,
+      'orderCode': orderCodeNum,
+    };
+
+    debugPrint('🔗 Deep link received: $uri');
+    debugPrint('➡︎ Sending process body: $body');
+
+    showDialog(
+      context: navigator.context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    try {
+      await ref.read(membershipViewModelProvider.notifier).processPaymentResult(body);
+    } catch (e) {
+      debugPrint('Error processing payment result: $e');
+    }
+
+    navigator.pop();
+
+    if (cancel) {
+      navigator.pushNamedAndRemoveUntil(
+        '/payment-cancel',
+            (_) => false,
+        arguments: body,
+      );
+    } else if (membershipStatus == 'AVAILABLE') {
+      navigator.pushNamedAndRemoveUntil(
+        '/payment-success',
+            (_) => false,
+        arguments: body,
+      );
+    } else {
       ScaffoldMessenger.of(navigator.context).showSnackBar(
-        const SnackBar(content: Text('Payment failed')),
+        SnackBar(content: Text('Payment failed for order: $orderCodeNum')),
       );
     }
   }
+
+
 
   @override
   void dispose() {
@@ -131,6 +183,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         '/api-demo': (_) => const ApiDemoScreen(),
         '/main': (_) => const MainNavigationScreen(),
         '/payment-success': (_) => const PaymentSuccessScreen(),
+        '/payment-cancel': (_) => const PaymentCancelScreen(),
         '/premium': (_) => const PremiumMembershipScreen(),
       },
     );

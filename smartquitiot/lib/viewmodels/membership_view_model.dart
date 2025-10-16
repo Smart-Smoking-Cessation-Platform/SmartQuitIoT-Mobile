@@ -42,4 +42,23 @@ class MembershipViewModel extends StateNotifier<MembershipState> {
       return null;
     }
   }
+
+  // viewmodels/membership_viewmodel.dart
+  Future<void> processPaymentResult(Map<String, dynamic> body) async {
+    state = state.copyWith(state: ViewState.loading);
+    try {
+      final result = await _repository.processPaymentResult(body);
+      state = state.copyWith(
+        state: ViewState.success,
+        activeSubscription: result,
+      );
+    } catch (e) {
+      print('Error processing payment result: $e');
+      state = state.copyWith(
+        state: ViewState.error,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
 }

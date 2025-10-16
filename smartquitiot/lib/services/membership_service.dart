@@ -56,6 +56,32 @@ class MembershipApiService {
       rethrow;
     }
   }
+
+  Future<http.Response> processPayment(Map<String, dynamic> body) async {
+    final uri = Uri.parse('$_baseUrl/process');
+    try {
+      final accessToken = await _tokenStorageService.getAccessToken();
+
+      if (accessToken == null) {
+        throw Exception('No access token found — user not logged in');
+      }
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: json.encode(body),
+      );
+      return response;
+    } catch (e) {
+      print('❌ Network error processing payment: $e');
+      rethrow;
+    }
+  }
+
+
 }
 
 

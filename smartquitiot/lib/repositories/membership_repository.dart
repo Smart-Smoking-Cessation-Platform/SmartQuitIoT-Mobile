@@ -1,4 +1,7 @@
-﻿import '../models/response/payment_link_response.dart';
+﻿import 'dart:convert';
+
+import '../models/membership_subscription.dart';
+import '../models/response/payment_link_response.dart';
 import 'package:flutter/foundation.dart';
 import '../models/membership_package.dart';
 import '../models/plan_option.dart';
@@ -24,6 +27,21 @@ class MembershipRepository {
     } catch (e) {
       print('Error in repository: $e');
       throw Exception('Failed to fetch membership packages: $e');
+    }
+  }
+
+  Future<MembershipSubscription?> processPaymentResult(Map<String, dynamic> body) async {
+    try {
+      final response = await _apiService.processPayment(body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return MembershipSubscription.fromJson(data);
+      } else {
+        throw Exception('Failed to process payment. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error in repository processing payment: $e');
+      rethrow;
     }
   }
 
@@ -72,3 +90,4 @@ List<MembershipPackage> _parsePackages(String responseBody) {
     throw Exception('API returned an error: ${apiResponse.message}');
   }
 }
+
