@@ -1,5 +1,4 @@
-﻿
-class ServerException implements Exception {
+﻿class ServerException implements Exception {
   final String message;
   ServerException(this.message);
 
@@ -15,6 +14,22 @@ class NetworkException implements Exception {
 class AuthException implements Exception {
   final String message;
   AuthException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+class PostException implements Exception {
+  final String message;
+  PostException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+class NewsException implements Exception {
+  final String message;
+  NewsException(this.message);
 
   @override
   String toString() => message;

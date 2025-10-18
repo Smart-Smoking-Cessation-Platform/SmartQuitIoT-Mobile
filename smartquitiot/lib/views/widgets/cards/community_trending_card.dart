@@ -1,78 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:SmartQuitIoT/views/screens/community/community.dart';
+import 'package:SmartQuitIoT/views/screens/posts/post_list_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:SmartQuitIoT/models/post.dart';
+import 'package:SmartQuitIoT/providers/post_provider.dart';
+import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
 
-class CommunityPost {
-  final String authorName;
-  final String authorAvatar;
-  final String timeAgo;
-  final String title;
-  final String imageUrl;
-  final int likes;
-  final int comments;
-  final int shares;
-
-  const CommunityPost({
-    required this.authorName,
-    required this.authorAvatar,
-    required this.timeAgo,
-    required this.title,
-    required this.imageUrl,
-    required this.likes,
-    required this.comments,
-    required this.shares,
-  });
-}
-
-class CommunityTrendingCard extends StatefulWidget {
-  final List<CommunityPost> posts;
-
-  const CommunityTrendingCard({
-    super.key,
-    this.posts = const [
-      CommunityPost(
-        authorName: 'Alice Smith',
-        authorAvatar: 'https://picsum.photos/100',
-        timeAgo: '2h ago',
-        title: '5 Tips to Quit Smoking in 2025',
-        imageUrl: 'lib/assets/images/news.jpg',
-        likes: 120,
-        comments: 34,
-        shares: 12,
-      ),
-      CommunityPost(
-        authorName: 'John Doe',
-        authorAvatar: 'https://picsum.photos/101',
-        timeAgo: '5h ago',
-        title: 'Healthy Morning Routine to Boost Energy',
-        imageUrl: 'lib/assets/images/news.jpg',
-        likes: 89,
-        comments: 21,
-        shares: 5,
-      ),
-      CommunityPost(
-        authorName: 'Emma Johnson',
-        authorAvatar: 'https://picsum.photos/102',
-        timeAgo: '1d ago',
-        title: 'Meditation Techniques for Busy People',
-        imageUrl: 'lib/assets/images/news.jpg',
-        likes: 200,
-        comments: 50,
-        shares: 30,
-      ),
-    ],
-  });
+class CommunityTrendingCard extends ConsumerStatefulWidget {
+  const CommunityTrendingCard({super.key});
 
   @override
-  State<CommunityTrendingCard> createState() => _CommunityTrendingCardState();
+  ConsumerState<CommunityTrendingCard> createState() =>
+      _CommunityTrendingCardState();
 }
 
-class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
+class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
   final PageController _pageController = PageController(viewportFraction: 0.8);
 
   @override
   Widget build(BuildContext context) {
+    final postsAsync = ref.watch(latestPostsProvider);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -106,7 +55,9 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CommunityPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const PostListScreen(),
+                    ),
                   );
                 },
                 child: Text(
@@ -121,153 +72,214 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
           ),
           const SizedBox(height: 12),
 
-          // ====== PageView ======
-          SizedBox(
-            height: 260,
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: widget.posts.length,
-              itemBuilder: (context, index) {
-                final post = widget.posts[index];
-                return AnimatedBuilder(
-                  animation: _pageController,
-                  builder: (context, child) {
-                    double value = 1.0;
-                    if (_pageController.hasClients &&
-                        _pageController.position.haveDimensions) {
-                      final page =
-                          _pageController.page ??
-                          _pageController.initialPage.toDouble();
-                      double diff = (page - index).abs();
-                      value = (1 - (diff * 0.1)).clamp(0.9, 1.0).toDouble();
-                    }
-                    return Transform.scale(scale: value, child: child);
-                  },
-                  child: _buildPostCard(post),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
+          // ====== Content ======
+          postsAsync.when(
+            data: (posts) {
+              if (posts.isEmpty) {
+                return _buildEmptyState();
+              }
 
-          // ====== SmoothPageIndicator ======
-          Center(
-            child: SmoothPageIndicator(
-              controller: _pageController,
-              count: widget.posts.length,
-              effect: ExpandingDotsEffect(
-                activeDotColor: const Color(0xFF00D09E),
-                dotColor: Colors.grey.shade300,
-                dotHeight: 8,
-                dotWidth: 8,
-                spacing: 6,
-              ),
-            ),
+              return Column(
+                children: [
+                  // ====== PageView ======
+                  SizedBox(
+                    height: 260,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: posts.length,
+                      itemBuilder: (context, index) {
+                        final post = posts[index];
+                        return AnimatedBuilder(
+                          animation: _pageController,
+                          builder: (context, child) {
+                            double value = 1.0;
+                            if (_pageController.hasClients &&
+                                _pageController.position.haveDimensions) {
+                              final page =
+                                  _pageController.page ??
+                                  _pageController.initialPage.toDouble();
+                              double diff = (page - index).abs();
+                              value = (1 - (diff * 0.1))
+                                  .clamp(0.9, 1.0)
+                                  .toDouble();
+                            }
+                            return Transform.scale(scale: value, child: child);
+                          },
+                          child: _buildPostCard(post),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ====== SmoothPageIndicator ======
+                  Center(
+                    child: SmoothPageIndicator(
+                      controller: _pageController,
+                      count: posts.length,
+                      effect: ExpandingDotsEffect(
+                        activeDotColor: const Color(0xFF00D09E),
+                        dotColor: Colors.grey.shade300,
+                        dotHeight: 8,
+                        dotWidth: 8,
+                        spacing: 6,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+            loading: () => _buildLoadingState(),
+            error: (error, stack) => _buildErrorState(error.toString()),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPostCard(CommunityPost post) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 4),
+  Widget _buildPostCard(Post post) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostDetailScreen(postId: post.id),
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              post.imageUrl,
-              height: 260,
-              width: double.infinity,
-              fit: BoxFit.cover,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 4),
             ),
-          ),
-
-          // Gradient overlay
-          Container(
-            height: 260,
-            decoration: BoxDecoration(
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Image
+            ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.4), Colors.transparent],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
+              child: post.thumbnail != null && post.thumbnail!.isNotEmpty
+                  ? Image.network(
+                      post.thumbnail!,
+                      height: 260,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          'lib/assets/images/news.jpg',
+                          height: 260,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    )
+                  : Image.asset(
+                      'lib/assets/images/news.jpg',
+                      height: 260,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+            ),
+
+            // Gradient overlay
+            Container(
+              height: 260,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [Colors.black.withOpacity(0.4), Colors.transparent],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
               ),
             ),
-          ),
 
-          // Post content
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 12,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.white,
+            // Post content
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    post.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundImage: NetworkImage(post.authorAvatar),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        post.authorName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundImage:
+                            post.account.avatarUrl != null &&
+                                post.account.avatarUrl!.isNotEmpty
+                            ? NetworkImage(post.account.avatarUrl!)
+                            : null,
+                        child:
+                            post.account.avatarUrl == null ||
+                                post.account.avatarUrl!.isEmpty
+                            ? const Icon(
+                                Icons.person,
+                                size: 16,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          post.account.displayName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Text(
-                      post.timeAgo,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
+                      Text(
+                        _formatTimeAgo(post.createdAt),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    _buildAction(Icons.favorite_border, post.likes),
-                    const SizedBox(width: 12),
-                    _buildAction(Icons.chat_bubble_outline, post.comments),
-                    const SizedBox(width: 12),
-                    _buildAction(Icons.share_outlined, post.shares),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _buildAction(Icons.favorite_border, post.likeCount),
+                      const SizedBox(width: 12),
+                      _buildAction(
+                        Icons.chat_bubble_outline,
+                        post.comments?.length ?? 0,
+                      ),
+                      const SizedBox(width: 12),
+                      _buildAction(
+                        Icons.share_outlined,
+                        0,
+                      ), // Share count not available in API
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -284,5 +296,109 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
         ),
       ],
     );
+  }
+
+  Widget _buildLoadingState() {
+    return SizedBox(
+      height: 260,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading posts...',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return SizedBox(
+      height: 260,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load posts',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ref.invalidate(latestPostsProvider);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D09E),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return SizedBox(
+      height: 260,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.article_outlined, size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No posts available',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Check back later for new posts',
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
   }
 }
