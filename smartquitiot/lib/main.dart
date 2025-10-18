@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:SmartQuitIoT/providers/membership_provider.dart';
+import 'package:SmartQuitIoT/views/screens/authentication/auth_wrapper.dart';
 import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -172,16 +173,17 @@ class _MyAppState extends ConsumerState<MyApp> {
       locale: context.locale,
 
       routes: {
+        '/auth': (_) => const AuthWrapper(),
         '/welcome': (_) => const WelcomeScreen(),
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignUpScreen(),
         '/onboarding': (_) => OnboardingScreen(),
         '/home': (_) => const HomeScreen(),
+        '/main': (_) => const MainNavigationScreen(),
         '/relaunch': (_) => const RelaunchScreen(),
         '/forgot': (_) => const ForgotPasswordScreen(),
         '/debug-home': (_) => const DebugHomeScreen(),
         '/api-demo': (_) => const ApiDemoScreen(),
-        '/main': (_) => const MainNavigationScreen(),
         '/payment-success': (_) => const PaymentSuccessScreen(),
         '/payment-cancel': (_) => const PaymentCancelScreen(),
         '/premium': (_) => const PremiumMembershipScreen(),

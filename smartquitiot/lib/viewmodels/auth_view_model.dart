@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../models/state/auth_state.dart';
 import '../repositories/auth_repository.dart';
+import '../services/token_storage_service.dart';
 
 
 
@@ -155,11 +156,16 @@ class AuthViewModel extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _authRepository.logout();
+      final tokenStorage = TokenStorageService();
+      await tokenStorage.clearTokens();
       state = state.clearAuth();
     } catch (e) {
+      final tokenStorage = TokenStorageService();
+      await tokenStorage.clearTokens();
       state = state.clearAuth();
     }
   }
+
 
   void clearError() {
     if (state.error != null) {

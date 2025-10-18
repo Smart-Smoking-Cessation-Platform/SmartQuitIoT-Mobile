@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../services/token_storage_service.dart';
 import '../../../utils/snackbar_helper.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/auth_header.dart';
@@ -10,6 +11,8 @@ import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import '../../../models/state/auth_state.dart';
 import '../../../utils/notification_helper.dart';
+import '../common/main_navigation_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -78,19 +81,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           title: 'Success',
           message: 'Login successful!',
         );
+        final tokenStorage = TokenStorageService();
+        await tokenStorage.saveTokens(
+          next.accessToken ?? '',
+          next.refreshToken ?? '',
+        );
         await Future.delayed(const Duration(seconds: 1));
         if (!mounted) return;
         final isFirstLogin = next.isFirstLogin ?? false;
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (!mounted) return;
-          if (isFirstLogin) {
-            Navigator.pushReplacementNamed(context, '/onboarding');
-          } else {
-            Navigator.pushReplacementNamed(context, '/main');
-          }
-        });
+        if (isFirstLogin) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                (route) => false,
+          );
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                (route) => false,
+          );
+        }
       }
-
     });
 
     final authState = ref.watch(authViewModelProvider);
