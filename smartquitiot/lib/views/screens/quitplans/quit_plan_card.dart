@@ -190,6 +190,7 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
           const SizedBox(height: 16),
 
           // Progress
+          // Progress
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -206,6 +207,47 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 10,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1FFF3), // background bar
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final barWidth = constraints.maxWidth * progress;
+                return Stack(
+                  children: [
+                    // Foreground bar: màu xanh
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      width: barWidth,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00D09E), Color(0xFF3FCF8E)],
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    // Optional: thêm Text % trên thanh progress
+                    Positioned(
+                      left: (barWidth - 20).clamp(0, constraints.maxWidth - 30),
+                      top: -18,
+                      child: Text(
+                        '$percent%',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00D09E),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           const SizedBox(height: 8),
           Container(
