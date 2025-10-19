@@ -1,6 +1,5 @@
 import 'package:SmartQuitIoT/views/screens/achievements/achievements_card.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/coach_appointment_card.dart';
-import 'package:SmartQuitIoT/views/screens/common/common.dart';
 import 'package:SmartQuitIoT/views/screens/common/membership_shortcut_card.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/home_header.dart';
@@ -13,6 +12,7 @@ import 'package:SmartQuitIoT/views/widgets/cards/analysis_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/community_trending_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/recent_news_card.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/diary_record_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -28,6 +28,7 @@ class HomeScreen extends StatelessWidget {
             children: const [
               HomeHeader(),
               SmokeFreeTimerCard(),
+              DiaryRecordCard(),
               CoachAppointmentCard(),
               StatsTableCard(),
               HealthImprovementCard(),
