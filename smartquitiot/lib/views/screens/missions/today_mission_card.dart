@@ -129,9 +129,6 @@ class _TodayMissionCardState extends State<TodayMissionCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Title + View More button
-          // Header: Title + View More text
-          // Header: Title + View More text
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -140,7 +137,7 @@ class _TodayMissionCardState extends State<TodayMissionCard> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 8.0), // đẩy vào trái 8px
+                padding: const EdgeInsets.only(right: 8.0),
                 child: GestureDetector(
                   onTap: () {
                     Navigator.push(

@@ -1,384 +1,252 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/quit_plan_provider.dart';
+import '../../../models/quit_phase.dart';
+import '../diary/diary_screen.dart';
 
-import 'package:SmartQuitIoT/views/screens/diary/diary_screen.dart';
-
-class QuitPlanScreen extends StatefulWidget {
+class QuitPlanScreen extends ConsumerStatefulWidget {
   const QuitPlanScreen({super.key});
 
   @override
-  State<QuitPlanScreen> createState() => _QuitPlanScreenState();
+  ConsumerState<QuitPlanScreen> createState() => _QuitPlanScreenState();
 }
 
-class _QuitPlanScreenState extends State<QuitPlanScreen> {
-  int selectedIndex = 0;
+class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
+  int selectedPhaseIndex = 0;
+  int selectedDayIndex = 0;
+  final Set<int> locallyCompletedMissionIds = <int>{};
 
-  final stages = [
-    'Preparation',
-    'On Set',
-    'Peak Craving',
-    'Subsiding',
-    'Maintenance',
-  ];
-
-  final stageDates = [
-    '15/09/2025 - 17/09/2025',
-    '18/09/2025 - 20/09/2025',
-    '21/09/2025 - 23/09/2025',
-    '24/09/2025 - 27/09/2025',
-    '28/09/2025 - 30/09/2025',
-  ];
-
-  List<Map<String, dynamic>> missions = [
-    {'title': 'Không hút thuốc buổi sáng', 'completed': false},
-    {'title': 'Không hút thuốc khi căng thẳng', 'completed': false},
-    {'title': 'Đi bộ 15 phút', 'completed': true},
-  ];
-
-  final stageProgress = [0.2, 0.4, 0.6, 0.8, 1.0];
-  final stageTarget = [0.5, 0.6, 0.7, 0.8, 1.0];
-
-  final colors = [
+  final phaseColors = [
     const Color(0xFF00D09E),
-    Colors.blue,
-    Colors.orange,
-    Colors.purple,
-    Colors.green,
+    const Color(0xFF3B82F6),
+    const Color(0xFFF59E0B),
+    const Color(0xFF8B5CF6),
+    const Color(0xFF10B981),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final currentColor = colors[selectedIndex];
-    final currentProgress = stageProgress[selectedIndex];
-    final currentPercent = (currentProgress * 100).toStringAsFixed(0);
-    final targetProgress = stageTarget[selectedIndex];
-    final targetPercent = (targetProgress * 100).toStringAsFixed(0);
+    final state = ref.watch(quitPlanViewModelApiProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFDFF7E2),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text('Quit Plan'),
-        centerTitle: true,
         backgroundColor: const Color(0xFF00D09E),
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: Column(
-        children: [
-          // Stage bar
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: List.generate(stages.length, (index) {
-                final isSelected = selectedIndex == index;
-                final color = colors[index];
-                return Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => selectedIndex = index),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? color.withOpacity(0.15)
-                            : Colors.transparent,
-                        border: Border(
-                          bottom: BorderSide(
-                            color: isSelected ? color : Colors.grey.shade300,
-                            width: 3,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        stages[index],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: isSelected ? color : Colors.black87,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-
-          // Stage dates
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.date_range, size: 20, color: currentColor),
-                const SizedBox(width: 8),
-                Text(
-                  stageDates[selectedIndex],
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: currentColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Progress + Status
-          Container(
-            width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Pass Condition + Status
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Pass Condition',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    Builder(
-                      builder: (context) {
-                        String statusText;
-                        Color textColor;
-                        Color bgColor;
-
-                        if (selectedIndex == 0) {
-                          statusText = "In Progress";
-                          textColor = Colors.white;
-                          bgColor = Colors.green.withOpacity(0.85);
-                        } else if (selectedIndex < 0) {
-                          statusText = "Completed";
-                          textColor = Colors.white;
-                          bgColor = Colors.grey.shade600.withOpacity(0.85);
-                        } else {
-                          statusText = "Upcoming";
-                          textColor = Colors.orange.shade800;
-                          bgColor = Colors.orange.shade100.withOpacity(0.5);
-                        }
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: bgColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            statusText,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: textColor,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 22),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final fullWidth = constraints.maxWidth;
-                    final currentWidth = fullWidth * currentProgress;
-                    final targetX = fullWidth * targetProgress;
-
-                    return SizedBox(
-                      height: 50,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          // Background progress
-                          Container(
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: currentColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          // Current progress
-                          Container(
-                            height: 18,
-                            width: currentWidth,
-                            decoration: BoxDecoration(
-                              color: currentColor,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          // Current percent
-                          Positioned(
-                            left: (currentWidth - 20).clamp(0, fullWidth - 40),
-                            top: -20,
-                            child: Text(
-                              '$currentPercent%',
-                              style: TextStyle(
-                                color: currentColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          // Target marker
-                          Positioned(
-                            left: targetX - 1,
-                            top: 0,
-                            child: Container(
-                              width: 2,
-                              height: 24,
-                              color: Colors.red,
-                            ),
-                          ),
-                          // Target percent
-                          Positioned(
-                            left: (targetX - 16).clamp(0, fullWidth - 40),
-                            top: -20,
-                            child: Text(
-                              '$targetPercent%',
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Current: $currentPercent%',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: currentColor,
-                      ),
-                    ),
-                    Text(
-                      'Target: $targetPercent%',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (selectedIndex > 0) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Craving level:',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '4 / 6',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: currentColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'No Smoking day:',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '5 / 2',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: currentColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDateGridCard(),
-                  const SizedBox(height: 16),
-                  _buildMissionGridCard(),
-                  const SizedBox(height: 16),
-
-                  // Nút Go to Diary
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Go to Diary pressed!')),
-                        );
-                        // TODO: Thêm navigation tới DiaryScreen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => DiaryScreen()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF00D09E),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      child: const Text(
-                        'Go to Diary',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+      body: state.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF00D09E)),
+        ),
+        error: (err, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error: $err'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref
+                    .read(quitPlanViewModelApiProvider.notifier)
+                    .loadQuitPlan(),
+                child: const Text('Retry'),
               ),
+            ],
+          ),
+        ),
+        data: (data) {
+          if (data == null || (data.phases?.isEmpty ?? true)) {
+            return const Center(child: Text('No quit plan found'));
+          }
+
+          final phases = data.phases!;
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildHeader(data),
+                _buildStats(phases),
+                _buildPhasesList(phases),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DiaryScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFF00D09E),
+        foregroundColor: Colors.white, // ✅ thêm dòng này
+        icon: const Icon(Icons.book), // icon giờ sẽ tự trắng
+        label: const Text('Diary'),
+      ),
+    );
+  }
+
+  Widget _buildHeader(QuitPhase data) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00D09E).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.smoke_free,
+                  color: Color(0xFF00D09E),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data.name ?? 'Quit Plan',
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'FTND Score: ${data.ftndScore ?? 'N/A'}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              if (data.useNRT == true)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00D09E).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'NRT',
+                    style: TextStyle(
+                      color: Color(0xFF00D09E),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+              const SizedBox(width: 6),
+              Text(
+                '${data.startDate ?? ''} → ${data.endDate ?? ''}',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStats(List<QuitPhaseDetail> phases) {
+    final totalMissions = phases.fold<int>(
+      0,
+      (sum, p) => sum + (p.totalMissions ?? 0),
+    );
+    final completedMissions = phases.fold<int>(
+      0,
+      (sum, p) => sum + (p.completedMissions ?? 0),
+    );
+    final progress = totalMissions > 0
+        ? completedMissions / totalMissions
+        : 0.0;
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem(
+                'Phases',
+                '${phases.length}',
+                Icons.flag,
+                const Color(0xFF3B82F6),
+              ),
+              _buildStatItem(
+                'Missions',
+                '$completedMissions/$totalMissions',
+                Icons.task_alt,
+                const Color(0xFF10B981),
+              ),
+              _buildStatItem(
+                'Progress',
+                '${(progress * 100).toInt()}%',
+                Icons.trending_up,
+                const Color(0xFFF59E0B),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.grey[200],
+              valueColor: const AlwaysStoppedAnimation(Color(0xFF00D09E)),
             ),
           ),
         ],
@@ -386,158 +254,395 @@ class _QuitPlanScreenState extends State<QuitPlanScreen> {
     );
   }
 
-  Widget _buildMissionGridCard() {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Missions',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        const SizedBox(height: 8),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: missions.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 1,
-            mainAxisExtent: 70,
-            mainAxisSpacing: 8,
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
-          itemBuilder: (context, index) {
-            final mission = missions[index];
-            final completed = mission['completed'] as bool;
-
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'lib/assets/images/gold-cup.png',
-                    width: 28,
-                    height: 28,
-                    color: completed ? null : Colors.grey.shade400,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      mission['title'] as String,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: completed
-                            ? Colors.amber.shade700
-                            : Colors.black87,
-                      ),
-                    ),
-                  ),
-                  if (completed)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.yellow.shade700,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'Completed',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
         ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
 
-  Widget _buildDateGridCard() {
-    final days = List.generate(8, (i) => i + 1);
-    final dates = [
-      '15/09',
-      '16/09',
-      '17/09',
-      '18/09',
-      '19/09',
-      '20/09',
-      '21/09',
-      '22/09',
-    ];
+  Widget _buildPhasesList(List<QuitPhaseDetail> phases) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: phases.length,
+      itemBuilder: (context, index) {
+        final phase = phases[index];
+        final color = phaseColors[index % phaseColors.length];
+        final isExpanded = selectedPhaseIndex == index;
 
-    return SizedBox(
-      height: 80,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: days.length,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemBuilder: (context, index) {
-          final isCurrent = index == selectedIndex;
-          final isCompleted = index < selectedIndex;
+        // Xử lý progress an toàn
+        final totalMissions = phase.totalMissions ?? 0;
+        final completedMissions = phase.completedMissions ?? 0;
+        final phaseProgress = (totalMissions > 0)
+            ? (completedMissions / totalMissions)
+            : 0.0;
+        final phasePercent = (phaseProgress * 100).toInt();
 
-          final bgColor = isCurrent
-              ? Colors.green.shade400
-              : isCompleted
-              ? Colors.grey.shade300
-              : Colors.white;
-          final textColor = isCurrent || isCompleted
-              ? Colors.white
-              : Colors.black87;
-
-          return Container(
-            width: 60,
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Day ${days[index]}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey[200]!, width: 1),
+          ),
+          elevation: 0,
+          child: Column(
+            children: [
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    selectedPhaseIndex = isExpanded ? -1 : index;
+                    selectedDayIndex = 0;
+                  });
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              _getPhaseIcon(phase.name ?? ''),
+                              color: color,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  phase.name ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${phase.startDate ?? ''} → ${phase.endDate ?? ''}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            isExpanded
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Progress bar giai đoạn
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: phaseProgress.clamp(0.0, 1.0),
+                          minHeight: 6,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: AlwaysStoppedAnimation(color),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            '$phasePercent% completed',
+                            style: TextStyle(fontSize: 10, color: color),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  dates[index],
-                  style: TextStyle(fontSize: 12, color: textColor),
-                ),
-              ],
+              ),
+              if (isExpanded) _buildPhaseDetails(phase, color),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPhaseDetails(QuitPhaseDetail phase, Color color) {
+    final days = phase.details ?? [];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if ((phase.reason ?? '').isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, color: color, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      phase.reason ?? '',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          );
-        },
+            const SizedBox(height: 12),
+          ],
+          if (days.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Center(
+                child: Text(
+                  'No missions available yet',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ),
+            )
+          else ...[
+            const Text(
+              'Days:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 70, // tăng chút để vừa chữ day + date
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: days.length,
+                itemBuilder: (context, dayIdx) {
+                  final day = days[dayIdx];
+                  final isSelected = selectedDayIndex == dayIdx;
+                  final missions = day.missions ?? [];
+                  final completed = missions
+                      .where(
+                        (m) =>
+                            m.status == 'COMPLETED' ||
+                            locallyCompletedMissionIds.contains(m.id),
+                      )
+                      .length;
+
+                  return GestureDetector(
+                    onTap: () => setState(() => selectedDayIndex = dayIdx),
+                    child: Container(
+                      width: 80, // tăng chút rộng để ngày không bị ép
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected ? color : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: color.withOpacity(0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Day ${day.dayIndex}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            day.date ?? '',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey[700],
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+                          Text(
+                            '$completed/${missions.length}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white70 : color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 12),
+            if (selectedDayIndex < days.length)
+              _buildMissionsList(days[selectedDayIndex].missions ?? [], color),
+          ],
+        ],
       ),
     );
+  }
+
+  Widget _buildMissionsList(List<QuitMissionItem> missions, Color color) {
+    if (missions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: Center(child: Text('No missions for this day')),
+      );
+    }
+
+    return Column(
+      children: missions.map((mission) {
+        final missionId = mission.id ?? -1;
+        final completed =
+            mission.status == 'COMPLETED' ||
+            locallyCompletedMissionIds.contains(missionId);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: completed ? Colors.green.withOpacity(0.05) : Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: completed ? Colors.green : Colors.grey[300]!,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    completed
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: completed ? Colors.green : color,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      mission.name ?? '',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        decoration: completed
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: completed ? Colors.green : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if ((mission.description ?? '').isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 28),
+                  child: Text(
+                    mission.description ?? '',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ),
+              ],
+              if (!completed && missionId != -1) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        locallyCompletedMissionIds.add(missionId);
+                      });
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Mark Done'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  IconData _getPhaseIcon(String phaseName) {
+    switch (phaseName.toLowerCase()) {
+      case 'preparation':
+        return Icons.settings;
+      case 'onset':
+        return Icons.play_arrow;
+      case 'peak craving':
+        return Icons.whatshot;
+      case 'subsiding':
+        return Icons.trending_down;
+      case 'maintenance':
+        return Icons.health_and_safety;
+      default:
+        return Icons.flag;
+    }
   }
 }

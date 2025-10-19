@@ -1,6 +1,9 @@
+import 'package:SmartQuitIoT/viewmodels/quit_phase_view_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/phase.dart';
+import '../models/quit_phase.dart';
+import '../models/state/quit_plan_state.dart';
 import '../repositories/quit_plan_repository.dart';
 import '../services/quit_plan_service.dart';
 import '../viewmodels/quit_plan_view_model.dart';
@@ -26,4 +29,10 @@ final quitPlanViewModelProvider =
     StateNotifierProvider<QuitPlanViewModel, AsyncValue<Phase?>>((ref) {
       final repo = ref.watch(quitPlanRepositoryProvider);
       return QuitPlanViewModel(repo);
+    });
+
+final quitPlanViewModelApiProvider =
+    StateNotifierProvider<QuitPhaseViewModel, AsyncValue<QuitPhase?>>((ref) {
+      final repo = ref.watch(quitPlanRepositoryProvider);
+      return QuitPhaseViewModel(repo);
     });

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/quit_phase.dart';
 import '../models/request/create_quit_plan_request.dart';
+import '../models/state/quit_plan_state.dart';
 import '../providers/quit_plan_provider.dart';
 import '../repositories/quit_plan_repository.dart';
 import '../models/phase.dart';
@@ -17,11 +19,11 @@ class QuitPlanViewModel extends StateNotifier<AsyncValue<Phase?>> {
       state = AsyncValue.error(e, st);
     }
   }
-}
 
-// Provider
-final quitPlanViewModelProvider =
-    StateNotifierProvider<QuitPlanViewModel, AsyncValue<Phase?>>((ref) {
-      final repo = ref.watch(quitPlanRepositoryProvider);
-      return QuitPlanViewModel(repo);
-    });
+  // Provider
+  final quitPlanViewModelProvider =
+      StateNotifierProvider<QuitPlanViewModel, AsyncValue<Phase?>>((ref) {
+        final repo = ref.watch(quitPlanRepositoryProvider);
+        return QuitPlanViewModel(repo);
+      });
+}
