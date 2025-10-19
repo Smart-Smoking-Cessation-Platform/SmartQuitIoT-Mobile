@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:SmartQuitIoT/views/screens/news/news_list_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:SmartQuitIoT/models/news.dart';
 import 'package:SmartQuitIoT/providers/news_provider.dart';
-import 'package:SmartQuitIoT/views/screens/news/news_detail_screen.dart';
+import 'package:SmartQuitIoT/views/screens/news/news_list_screen.dart';
+
+import '../../screens/news/news_detail_screen.dart';
 
 class RecentNewsCard extends ConsumerStatefulWidget {
   const RecentNewsCard({super.key});
@@ -18,8 +19,16 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
   final PageController _pageController = PageController(viewportFraction: 0.75);
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(newsViewModelProvider.notifier).loadLatestNews(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final newsAsync = ref.watch(latestNewsProvider);
+    final newsState = ref.watch(newsViewModelProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -52,11 +61,10 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
               ),
               TextButton(
                 onPressed: () {
+                  // Navigate to NewsListScreen
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const NewsListScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const NewsListScreen()),
                   );
                 },
                 child: Text(
@@ -72,67 +80,67 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
           const SizedBox(height: 16),
 
           /// Content
-          newsAsync.when(
-            data: (news) {
-              if (news.isEmpty) {
-                return _buildEmptyState();
-              }
-
-              return Column(
-                children: [
-                  /// PageView
-                  SizedBox(
-                    height: 180,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: news.length,
-                      itemBuilder: (context, index) {
-                        final newsItem = news[index];
-
-                        return AnimatedBuilder(
-                          animation: _pageController,
-                          builder: (context, child) {
-                            double value = 1.0;
-                            if (_pageController.hasClients &&
-                                _pageController.position.haveDimensions) {
-                              final page =
-                                  _pageController.page ??
-                                  _pageController.initialPage.toDouble();
-                              double diff = (page - index).abs();
-                              value = (1 - (diff * 0.1))
-                                  .clamp(0.9, 1.0)
-                                  .toDouble();
-                            }
-
-                            return Transform.scale(scale: value, child: child);
-                          },
-                          child: _buildNewsCard(newsItem),
-                        );
-                      },
+          if (newsState.isLoading)
+            _buildLoadingState()
+          else if (newsState.error != null)
+            _buildErrorState(newsState.error!)
+          else if (newsState.news.isEmpty)
+            _buildEmptyState()
+          else
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 180,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: newsState.news.length,
+                    itemBuilder: (context, index) {
+                      final newsItem = newsState.news[index];
+                      return AnimatedBuilder(
+                        animation: _pageController,
+                        builder: (context, child) {
+                          double value = 1.0;
+                          if (_pageController.hasClients &&
+                              _pageController.position.haveDimensions) {
+                            final page =
+                                _pageController.page ??
+                                _pageController.initialPage.toDouble();
+                            double diff = (page - index).abs();
+                            value = (1 - (diff * 0.1))
+                                .clamp(0.9, 1.0)
+                                .toDouble();
+                          }
+                          return Transform.scale(
+                            scale: value,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 8.0,
+                              ), // fix overflow
+                              child: _buildNewsCard(newsItem),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: SmoothPageIndicator(
+                    controller: _pageController,
+                    count: newsState.news.length,
+                    effect: ExpandingDotsEffect(
+                      activeDotColor: const Color(0xFF00D09E),
+                      dotColor: Colors.grey.shade300,
+                      dotHeight: 8,
+                      dotWidth: 8,
+                      spacing: 6,
                     ),
                   ),
-                  const SizedBox(height: 12),
-
-                  /// SmoothPageIndicator
-                  Center(
-                    child: SmoothPageIndicator(
-                      controller: _pageController,
-                      count: news.length,
-                      effect: ExpandingDotsEffect(
-                        activeDotColor: const Color(0xFF00D09E),
-                        dotColor: Colors.grey.shade300,
-                        dotHeight: 8,
-                        dotWidth: 8,
-                        spacing: 6,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-            loading: () => _buildLoadingState(),
-            error: (error, stack) => _buildErrorState(error.toString()),
-          ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -143,11 +151,10 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => NewsDetailScreen(newsId: news.id),
-          ),
+          MaterialPageRoute(builder: (_) => NewsDetailScreen(newsId: news.id)),
         );
       },
+
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
@@ -163,43 +170,19 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
         ),
         child: Stack(
           children: [
-            // News Image
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: news.media != null && news.media!.isNotEmpty
+              child: news.thumbnail != null && news.thumbnail!.isNotEmpty
                   ? Image.network(
-                      news.media!.first.mediaUrl,
+                      news.thumbnail!,
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 180,
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 50,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        );
-                      },
+                      errorBuilder: (context, error, stackTrace) =>
+                          _placeholder(),
                     )
-                  : Container(
-                      height: 180,
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(
-                          Icons.article,
-                          size: 50,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
+                  : _placeholder(),
             ),
-
-            // Gradient overlay
             Container(
               height: 180,
               decoration: BoxDecoration(
@@ -211,8 +194,6 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
                 ),
               ),
             ),
-
-            // News content
             Positioned(
               bottom: 12,
               left: 12,
@@ -244,107 +225,93 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return SizedBox(
+  Widget _placeholder() {
+    return Container(
       height: 180,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading news...',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            ),
-          ],
-        ),
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
       ),
     );
   }
 
-  Widget _buildErrorState(String error) {
-    return SizedBox(
-      height: 180,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load news',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ref.invalidate(latestNewsProvider);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D09E),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+  Widget _buildLoadingState() => SizedBox(
+    height: 180,
+    child: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+          ),
+          SizedBox(height: 16),
+          Text('Loading news...', style: TextStyle(fontSize: 14)),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildEmptyState() {
-    return SizedBox(
-      height: 180,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.article_outlined, size: 48, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No news available',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+  Widget _buildErrorState(String error) => SizedBox(
+    height: 180,
+    child: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          const Text(
+            'Failed to load news',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            style: const TextStyle(fontSize: 12),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () =>
+                ref.read(newsViewModelProvider.notifier).refreshNews(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00D09E),
+              foregroundColor: Colors.white,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Check back later for new articles',
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-            ),
-          ],
-        ),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+
+  Widget _buildEmptyState() => SizedBox(
+    height: 180,
+    child: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.article_outlined, size: 48, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'No news available',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Check back later for new articles',
+            style: TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+    ),
+  );
 
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
+    if (difference.inDays > 0) return '${difference.inDays}d ago';
+    if (difference.inHours > 0) return '${difference.inHours}h ago';
+    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
+    return 'Just now';
   }
 }

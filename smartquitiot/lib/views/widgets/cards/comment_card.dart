@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/models/post.dart';
 
+import '../../../models/post_comment.dart';
+import '../../../models/post_media.dart';
+
 class CommentCard extends StatelessWidget {
   final PostComment comment;
 

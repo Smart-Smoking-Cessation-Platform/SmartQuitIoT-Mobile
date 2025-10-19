@@ -181,4 +181,6 @@ class PostViewModel extends StateNotifier<PostState> {
   Future<void> refreshPosts({int limit = 5}) async {
     await loadLatestPosts(limit: limit);
   }
+
+
 }

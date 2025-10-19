@@ -1,15 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/state/news_detail_state.dart';
 import '../repositories/news_repository.dart';
+import '../services/news_service.dart';
+import '../viewmodels/news_detail_view_model.dart';
 import '../viewmodels/news_view_model.dart';
 import '../models/state/news_state.dart';
 import '../models/news.dart';
 
-/// Repository Provider
 final newsRepositoryProvider = Provider<NewsRepository>((ref) {
   return NewsRepository();
 });
 
-/// ViewModel Provider
 final newsViewModelProvider = StateNotifierProvider<NewsViewModel, NewsState>((
   ref,
 ) {
@@ -17,29 +18,18 @@ final newsViewModelProvider = StateNotifierProvider<NewsViewModel, NewsState>((
   return NewsViewModel(repo);
 });
 
-/// Latest news provider
+// Service Provider
+final newsServiceProvider = Provider((ref) => NewsService(baseUrl: ''));
+
+// Repository Provider
 final latestNewsProvider = FutureProvider<List<News>>((ref) async {
-  final newsViewModel = ref.watch(newsViewModelProvider.notifier);
-  await newsViewModel.loadLatestNews();
-  return ref.watch(newsViewModelProvider).news;
+  final viewModel = ref.read(newsViewModelProvider.notifier);
+  await viewModel.loadLatestNews();
+  return ref.read(newsViewModelProvider).news;
 });
 
-/// All news provider
-final allNewsProvider = FutureProvider.family<List<News>, String?>((
-  ref,
-  query,
-) async {
-  final newsViewModel = ref.watch(newsViewModelProvider.notifier);
-  await newsViewModel.loadAllNews(query: query);
-  return ref.watch(newsViewModelProvider).news;
-});
-
-/// Individual news providers for specific news IDs
-final newsDetailProvider = FutureProvider.family<News, int>((
-  ref,
-  newsId,
-) async {
-  final newsViewModel = ref.watch(newsViewModelProvider.notifier);
-  await newsViewModel.loadNewsDetail(newsId);
-  return ref.watch(newsViewModelProvider).selectedNews!;
-});
+final newsDetailViewModelProvider =
+    StateNotifierProvider<NewsDetailViewModel, NewsDetailState>((ref) {
+      final repo = ref.read(newsRepositoryProvider);
+      return NewsDetailViewModel(repository: repo);
+    });

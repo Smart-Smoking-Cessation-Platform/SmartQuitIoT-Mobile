@@ -91,43 +91,43 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
           ),
 
           // Posts List
-          Expanded(child: _buildPostsList()),
+          // Expanded(child: _buildPostsList()),
         ],
       ),
     );
   }
 
-  Widget _buildPostsList() {
-    final postsAsync = ref.watch(
-      allPostsProvider(_searchQuery.isEmpty ? null : _searchQuery),
-    );
-
-    return postsAsync.when(
-      data: (posts) {
-        if (posts.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(
-              allPostsProvider(_searchQuery.isEmpty ? null : _searchQuery),
-            );
-          },
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              final post = posts[index];
-              return _buildPostCard(post);
-            },
-          ),
-        );
-      },
-      loading: () => _buildLoadingState(),
-      error: (error, stack) => _buildErrorState(error.toString()),
-    );
-  }
+  // Widget _buildPostsList() {
+  //   final postsAsync = ref.watch(
+  //     allPostsProvider(_searchQuery.isEmpty ? null : _searchQuery),
+  //   );
+  //
+  //   return postsAsync.when(
+  //     data: (posts) {
+  //       if (posts.isEmpty) {
+  //         return _buildEmptyState();
+  //       }
+  //
+  //       return RefreshIndicator(
+  //         onRefresh: () async {
+  //           ref.invalidate(
+  //             allPostsProvider(_searchQuery.isEmpty ? null : _searchQuery),
+  //           );
+  //         },
+  //         child: ListView.builder(
+  //           padding: const EdgeInsets.all(16),
+  //           itemCount: posts.length,
+  //           itemBuilder: (context, index) {
+  //             final post = posts[index];
+  //             return _buildPostCard(post);
+  //           },
+  //         ),
+  //       );
+  //     },
+  //     loading: () => _buildLoadingState(),
+  //     error: (error, stack) => _buildErrorState(error.toString()),
+  //   );
+  // }
 
   Widget _buildPostCard(Post post) {
     return Container(

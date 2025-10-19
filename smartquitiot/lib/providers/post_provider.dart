@@ -10,36 +10,34 @@ final postRepositoryProvider = Provider<PostRepository>((ref) {
 });
 
 /// ViewModel Provider
-final postViewModelProvider = StateNotifierProvider<PostViewModel, PostState>((
-  ref,
-) {
-  final repo = ref.watch(postRepositoryProvider);
+final postViewModelProvider =
+StateNotifierProvider<PostViewModel, PostState>((ref) {
+  final repo = ref.read(postRepositoryProvider);
   return PostViewModel(repo);
 });
 
-/// Individual post providers for specific post IDs
-final postDetailProvider = FutureProvider.family<Post, int>((
-  ref,
-  postId,
-) async {
-  final postViewModel = ref.watch(postViewModelProvider.notifier);
-  await postViewModel.loadPostDetail(postId);
-  return ref.watch(postViewModelProvider).selectedPost!;
+/// Individual post provider for specific post IDs
+final postDetailProvider =
+Provider.family<Post?, int>((ref, postId) {
+  final state = ref.watch(postViewModelProvider);
+  return state.selectedPost?.id == postId ? state.selectedPost : null;
 });
 
-/// Latest posts provider
-final latestPostsProvider = FutureProvider<List<Post>>((ref) async {
-  final postViewModel = ref.watch(postViewModelProvider.notifier);
-  await postViewModel.loadLatestPosts();
-  return ref.watch(postViewModelProvider).posts;
+/// Latest posts provider (just reads ViewModel state)
+final latestPostsProvider =
+Provider<List<Post>>((ref) {
+  final state = ref.watch(postViewModelProvider);
+  return state.posts;
 });
 
-/// All posts provider with search
-final allPostsProvider = FutureProvider.family<List<Post>, String?>((
-  ref,
-  query,
-) async {
-  final postViewModel = ref.watch(postViewModelProvider.notifier);
-  await postViewModel.loadAllPosts(query: query);
-  return ref.watch(postViewModelProvider).posts;
+/// All posts provider with search (reads posts in ViewModel)
+final allPostsProvider =
+Provider.family<List<Post>, String?>((ref, query) {
+  final state = ref.watch(postViewModelProvider);
+  // Nếu muốn filter theo query, lọc ở đây
+  if (query == null || query.isEmpty) return state.posts;
+  return state.posts
+      .where((p) =>
+      p.title.toLowerCase().contains(query.toLowerCase()))
+      .toList();
 });

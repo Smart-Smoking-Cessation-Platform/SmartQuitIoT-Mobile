@@ -1,7 +1,8 @@
-import '../core/errors/exception.dart';
 import '../models/news.dart';
+import '../models/news_detail.dart';
 import '../services/news_service.dart';
 import '../repositories/auth_repository.dart';
+import '../core/errors/exception.dart';
 
 class NewsRepository {
   final NewsService _newsService;
@@ -11,69 +12,21 @@ class NewsRepository {
     : _newsService = newsService ?? NewsService(),
       _authRepository = authRepository ?? AuthRepository();
 
-  /// Get latest news with limit
   Future<List<News>> getLatestNews({int limit = 5}) async {
-    try {
-      final accessToken = await _authRepository.getAccessToken();
-      if (accessToken == null) {
-        throw NewsException('Access token not found. Please login again.');
-      }
-
-      final response = await _newsService.getLatestNews(
-        accessToken: accessToken,
-        limit: limit,
-      );
-
-      return response.data;
-    } catch (e) {
-      if (e is NewsException) {
-        rethrow;
-      }
-      throw NewsException('Failed to get latest news: ${e.toString()}');
-    }
+    final token = await _authRepository.getAccessToken();
+    if (token == null) throw NewsException('No access token found');
+    return _newsService.getLatestNews(limit: limit, accessToken: token);
   }
 
-  /// Get all news with optional search query
   Future<List<News>> getAllNews({String? query}) async {
-    try {
-      final accessToken = await _authRepository.getAccessToken();
-      if (accessToken == null) {
-        throw NewsException('Access token not found. Please login again.');
-      }
-
-      final response = await _newsService.getAllNews(
-        accessToken: accessToken,
-        query: query,
-      );
-
-      return response.data;
-    } catch (e) {
-      if (e is NewsException) {
-        rethrow;
-      }
-      throw NewsException('Failed to get news: ${e.toString()}');
-    }
+    final token = await _authRepository.getAccessToken();
+    if (token == null) throw NewsException('No access token found');
+    return _newsService.getAllNews(query: query, accessToken: token);
   }
 
-  /// Get news detail by ID
-  Future<News> getNewsDetail(int newsId) async {
-    try {
-      final accessToken = await _authRepository.getAccessToken();
-      if (accessToken == null) {
-        throw NewsException('Access token not found. Please login again.');
-      }
-
-      final response = await _newsService.getNewsDetail(
-        accessToken: accessToken,
-        newsId: newsId,
-      );
-
-      return response.data;
-    } catch (e) {
-      if (e is NewsException) {
-        rethrow;
-      }
-      throw NewsException('Failed to get news detail: ${e.toString()}');
-    }
+  Future<NewsDetail> fetchNewsDetail(int id) async {
+    final token = await _authRepository.getAccessToken();
+    if (token == null) throw NewsException('No access token found');
+    return _newsService.getNewsDetail(id, accessToken: token);
   }
 }

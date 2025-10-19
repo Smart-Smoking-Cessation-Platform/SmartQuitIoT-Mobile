@@ -1,125 +1,97 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import '../core/errors/exception.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/news.dart';
-import '../models/response/error_response.dart';
+import '../core/errors/exception.dart';
+import '../models/news_detail.dart';
 
 class NewsService {
-  static final String _baseUrl =
-      dotenv.env['API_NEWS_URL'] ?? 'http://localhost:8080/api/news';
-  static const Duration _timeout = Duration(seconds: 30);
+  final String baseUrl;
 
-  /// Get latest news with limit
-  Future<NewsListResponse> getLatestNews({
-    required String accessToken,
+  NewsService({String? baseUrl})
+    : baseUrl = baseUrl ?? dotenv.env['API_NEWS_URL'] ?? '';
+
+  Future<List<News>> getAllNews({String? query, String? accessToken}) async {
+    try {
+      final uri = query != null && query.isNotEmpty
+          ? Uri.parse('$baseUrl?query=$query')
+          : Uri.parse(baseUrl);
+
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (accessToken != null && accessToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $accessToken';
+      }
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonBody = jsonDecode(response.body) as Map<String, dynamic>;
+        final List<dynamic> data = jsonBody['data'] ?? [];
+        return data.map((e) => News.fromJson(e)).toList();
+      } else if (response.statusCode == 401) {
+        throw NewsException('Unauthorized. Token may be expired.');
+      } else {
+        throw NewsException(
+          'Failed to load news. Status code: ${response.statusCode}, body: ${response.body}',
+        );
+      }
+    } catch (e) {
+      if (e is NewsException) rethrow;
+      throw NewsException('Failed to load news: ${e.toString()}');
+    }
+  }
+
+  Future<List<News>> getLatestNews({
     int limit = 5,
+    required String accessToken,
   }) async {
     try {
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/latest?limit=$limit'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          )
-          .timeout(_timeout);
+      final uri = Uri.parse('$baseUrl/latest?limit=$limit');
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return NewsListResponse.fromJson(data);
+        final jsonBody = json.decode(response.body) as Map<String, dynamic>;
+        final List<dynamic> data = jsonBody['data'] ?? [];
+        return data.map((e) => News.fromJson(e)).toList();
+      } else if (response.statusCode == 401) {
+        throw NewsException('Unauthorized. Token may be expired.');
       } else {
-        final Map<String, dynamic> errorData = jsonDecode(response.body);
-        final errorResponse = ErrorResponse.fromJson(errorData);
-        throw NewsException(errorResponse.message);
+        throw NewsException(
+          'Failed to fetch latest news: Status code ${response.statusCode}',
+        );
       }
-    } on http.ClientException {
-      throw NewsException('Network error. Please check your connection.');
-    } on FormatException {
-      throw NewsException('Invalid response format from server.');
     } catch (e) {
-      if (e is NewsException) {
-        rethrow;
-      }
-      throw NewsException('Failed to get latest news: ${e.toString()}');
+      if (e is NewsException) rethrow;
+      throw NewsException('Failed to fetch latest news: ${e.toString()}');
     }
   }
 
-  /// Get all news with optional search query
-  Future<NewsListResponse> getAllNews({
-    required String accessToken,
-    String? query,
-  }) async {
-    try {
-      String url = _baseUrl;
-      if (query != null && query.isNotEmpty) {
-        url += '?query=$query';
-      }
+  Future<NewsDetail> getNewsDetail(int id, {String? accessToken}) async {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (accessToken != null) headers['Authorization'] = 'Bearer $accessToken';
 
-      final response = await http
-          .get(
-            Uri.parse(url),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          )
-          .timeout(_timeout);
+    final response = await http.get(
+      Uri.parse('$baseUrl/$id'),
+      headers: headers,
+    );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return NewsListResponse.fromJson(data);
-      } else {
-        final Map<String, dynamic> errorData = jsonDecode(response.body);
-        final errorResponse = ErrorResponse.fromJson(errorData);
-        throw NewsException(errorResponse.message);
-      }
-    } on http.ClientException {
-      throw NewsException('Network error. Please check your connection.');
-    } on FormatException {
-      throw NewsException('Invalid response format from server.');
-    } catch (e) {
-      if (e is NewsException) {
-        rethrow;
-      }
-      throw NewsException('Failed to get news: ${e.toString()}');
-    }
-  }
-
-  /// Get news detail by ID
-  Future<NewsDetailResponse> getNewsDetail({
-    required String accessToken,
-    required int newsId,
-  }) async {
-    try {
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/$newsId'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          )
-          .timeout(_timeout);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return NewsDetailResponse.fromJson(data);
-      } else {
-        final Map<String, dynamic> errorData = jsonDecode(response.body);
-        final errorResponse = ErrorResponse.fromJson(errorData);
-        throw NewsException(errorResponse.message);
-      }
-    } on http.ClientException {
-      throw NewsException('Network error. Please check your connection.');
-    } on FormatException {
-      throw NewsException('Invalid response format from server.');
-    } catch (e) {
-      if (e is NewsException) {
-        rethrow;
-      }
-      throw NewsException('Failed to get news detail: ${e.toString()}');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)['data'];
+      return NewsDetail.fromJson(data);
+    } else if (response.statusCode == 401) {
+      throw NewsException('Unauthorized');
+    } else if (response.statusCode == 404) {
+      throw NewsException('News not found');
+    } else {
+      throw NewsException(
+        'Failed to load news detail. Status code: ${response.statusCode}',
+      );
     }
   }
 }

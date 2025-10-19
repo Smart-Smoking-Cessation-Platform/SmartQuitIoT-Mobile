@@ -1,11 +1,20 @@
+import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:SmartQuitIoT/views/screens/posts/post_list_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:SmartQuitIoT/models/post.dart';
-import 'package:SmartQuitIoT/providers/post_provider.dart';
+import 'package:SmartQuitIoT/viewmodels/post_view_model.dart';
 import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
+
+import '../../../models/state/post_state.dart';
+
+final postViewModelProvider =
+StateNotifierProvider<PostViewModel, PostState>((ref) {
+  final repo = ref.read(postRepositoryProvider);
+  return PostViewModel(repo)..loadLatestPosts();
+});
 
 class CommunityTrendingCard extends ConsumerStatefulWidget {
   const CommunityTrendingCard({super.key});
@@ -15,12 +24,14 @@ class CommunityTrendingCard extends ConsumerStatefulWidget {
       _CommunityTrendingCardState();
 }
 
-class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
+class _CommunityTrendingCardState
+    extends ConsumerState<CommunityTrendingCard> {
   final PageController _pageController = PageController(viewportFraction: 0.8);
 
   @override
   Widget build(BuildContext context) {
-    final postsAsync = ref.watch(latestPostsProvider);
+    final postState = ref.watch(postViewModelProvider);
+    final posts = postState.posts;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -39,7 +50,7 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ====== Header ======
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -56,8 +67,7 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const PostListScreen(),
-                    ),
+                        builder: (context) => const PostListScreen()),
                   );
                 },
                 child: Text(
@@ -72,66 +82,63 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
           ),
           const SizedBox(height: 12),
 
-          // ====== Content ======
-          postsAsync.when(
-            data: (posts) {
-              if (posts.isEmpty) {
-                return _buildEmptyState();
-              }
-
-              return Column(
-                children: [
-                  // ====== PageView ======
-                  SizedBox(
-                    height: 260,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: posts.length,
-                      itemBuilder: (context, index) {
-                        final post = posts[index];
-                        return AnimatedBuilder(
-                          animation: _pageController,
-                          builder: (context, child) {
-                            double value = 1.0;
-                            if (_pageController.hasClients &&
-                                _pageController.position.haveDimensions) {
-                              final page =
-                                  _pageController.page ??
-                                  _pageController.initialPage.toDouble();
-                              double diff = (page - index).abs();
-                              value = (1 - (diff * 0.1))
-                                  .clamp(0.9, 1.0)
-                                  .toDouble();
-                            }
-                            return Transform.scale(scale: value, child: child);
-                          },
-                          child: _buildPostCard(post),
-                        );
-                      },
+          // Content
+          if (postState.isLoading) ...[_buildLoadingState()],
+          if (postState.error != null) ...[
+            _buildErrorState(postState.error!)
+          ],
+          if (!postState.isLoading &&
+              postState.error == null &&
+              posts.isEmpty) ...[_buildEmptyState()],
+          if (!postState.isLoading &&
+              postState.error == null &&
+              posts.isNotEmpty) ...[
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 260,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: posts.length,
+                    itemBuilder: (context, index) {
+                      final post = posts[index];
+                      return AnimatedBuilder(
+                        animation: _pageController,
+                        builder: (context, child) {
+                          double value = 1.0;
+                          if (_pageController.hasClients &&
+                              _pageController.position.haveDimensions) {
+                            final page =
+                                _pageController.page ??
+                                    _pageController.initialPage.toDouble();
+                            double diff = (page - index).abs();
+                            value = (1 - (diff * 0.1)).clamp(0.9, 1.0);
+                          }
+                          return Transform.scale(scale: value, child: child);
+                        },
+                        child: _buildPostCard(post),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: SmoothPageIndicator(
+                    controller: _pageController,
+                    count: posts.length,
+                    effect: ExpandingDotsEffect(
+                      activeDotColor: const Color(0xFF00D09E),
+                      dotColor: Colors.grey.shade300,
+                      dotHeight: 8,
+                      dotWidth: 8,
+                      spacing: 6,
                     ),
                   ),
-                  const SizedBox(height: 12),
-
-                  // ====== SmoothPageIndicator ======
-                  Center(
-                    child: SmoothPageIndicator(
-                      controller: _pageController,
-                      count: posts.length,
-                      effect: ExpandingDotsEffect(
-                        activeDotColor: const Color(0xFF00D09E),
-                        dotColor: Colors.grey.shade300,
-                        dotHeight: 8,
-                        dotWidth: 8,
-                        spacing: 6,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-            loading: () => _buildLoadingState(),
-            error: (error, stack) => _buildErrorState(error.toString()),
-          ),
+                ),
+              ],
+            ),
+          ]
         ],
       ),
     );
@@ -161,34 +168,31 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
         ),
         child: Stack(
           children: [
-            // Image
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: post.thumbnail != null && post.thumbnail!.isNotEmpty
-                  ? Image.network(
-                      post.thumbnail!,
-                      height: 260,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.asset(
-                          'lib/assets/images/news.jpg',
-                          height: 260,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        );
-                      },
-                    )
-                  : Image.asset(
-                      'lib/assets/images/news.jpg',
-                      height: 260,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+        child: post.thumbnail != null && post.thumbnail!.isNotEmpty
+            ? Image.network(
+          post.thumbnail!,
+          height: 260,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Image.asset(
+              'lib/assets/images/news.jpg',
+              height: 260,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            );
+          },
+        )
+            : Image.asset(
+          'lib/assets/images/news.jpg',
+          height: 260,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        ),
             ),
-
-            // Gradient overlay
-            Container(
+        Container(
               height: 260,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
@@ -199,22 +203,20 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                 ),
               ),
             ),
-
-            // Post content
             Positioned(
               left: 12,
               right: 12,
               bottom: 12,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     post.title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.white,
-                    ),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.white),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -223,19 +225,17 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                     children: [
                       CircleAvatar(
                         radius: 12,
-                        backgroundImage:
-                            post.account.avatarUrl != null &&
-                                post.account.avatarUrl!.isNotEmpty
+                        backgroundImage: post.account.avatarUrl != null &&
+                            post.account.avatarUrl!.isNotEmpty
                             ? NetworkImage(post.account.avatarUrl!)
                             : null,
-                        child:
-                            post.account.avatarUrl == null ||
-                                post.account.avatarUrl!.isEmpty
+                        child: post.account.avatarUrl == null ||
+                            post.account.avatarUrl!.isEmpty
                             ? const Icon(
-                                Icons.person,
-                                size: 16,
-                                color: Colors.white,
-                              )
+                          Icons.person,
+                          size: 16,
+                          color: Colors.white,
+                        )
                             : null,
                       ),
                       const SizedBox(width: 6),
@@ -243,9 +243,7 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                         child: Text(
                           post.account.displayName,
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
+                              color: Colors.white, fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -264,20 +262,16 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                     children: [
                       _buildAction(Icons.favorite_border, post.likeCount),
                       const SizedBox(width: 12),
-                      _buildAction(
-                        Icons.chat_bubble_outline,
-                        post.comments?.length ?? 0,
-                      ),
-                      const SizedBox(width: 12),
-                      _buildAction(
-                        Icons.share_outlined,
-                        0,
-                      ), // Share count not available in API
+                      // _buildAction(
+                      //     Icons.chat_bubble_outline,
+                      //     post.comments?.length ?? 0),
+                      // const SizedBox(width: 12),
+                      // _buildAction(Icons.share_outlined, 0),
                     ],
                   ),
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -293,7 +287,7 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
         Text(
           count.toString(),
           style: const TextStyle(fontSize: 10, color: Colors.white),
-        ),
+        )
       ],
     );
   }
@@ -303,16 +297,13 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
       height: 260,
       child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading posts...',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            ),
+            SizedBox(height: 16),
+            Text('Loading posts...'),
           ],
         ),
       ),
@@ -322,38 +313,24 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
   Widget _buildErrorState(String error) {
     return SizedBox(
       height: 260,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load posts',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+      child: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              const Text('Failed to load posts'),
+              const SizedBox(height: 8),
+              Text(error, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () =>
+                    ref.read(postViewModelProvider.notifier).refreshPosts(),
+                child: const Text('Retry'),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ref.invalidate(latestPostsProvider);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D09E),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -364,23 +341,13 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
       height: 260,
       child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.article_outlined, size: 48, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No posts available',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Check back later for new posts',
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-            ),
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.article_outlined, size: 48, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('No posts available'),
+            SizedBox(height: 8),
+            Text('Check back later for new posts'),
           ],
         ),
       ),
@@ -391,14 +358,9 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
+    if (difference.inDays > 0) return '${difference.inDays}d ago';
+    if (difference.inHours > 0) return '${difference.inHours}h ago';
+    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
+    return 'Just now';
   }
 }

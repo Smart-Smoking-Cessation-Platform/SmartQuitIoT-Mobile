@@ -11,7 +11,6 @@ class PostRepository {
     : _postService = postService ?? PostService(),
       _authRepository = authRepository ?? AuthRepository();
 
-  /// Get latest posts with limit
   Future<List<Post>> getLatestPosts({int limit = 5}) async {
     try {
       final accessToken = await _authRepository.getAccessToken();
@@ -23,7 +22,6 @@ class PostRepository {
         accessToken: accessToken,
         limit: limit,
       );
-
       return response.data;
     } catch (e) {
       if (e is PostException) {
@@ -33,7 +31,6 @@ class PostRepository {
     }
   }
 
-  /// Get all posts with optional search query
   Future<List<Post>> getAllPosts({String? query}) async {
     try {
       final accessToken = await _authRepository.getAccessToken();
@@ -55,7 +52,6 @@ class PostRepository {
     }
   }
 
-  /// Get post detail by ID
   Future<Post> getPostDetail(int postId) async {
     try {
       final accessToken = await _authRepository.getAccessToken();
@@ -77,7 +73,6 @@ class PostRepository {
     }
   }
 
-  /// Like a post
   Future<bool> likePost(int postId) async {
     try {
       final accessToken = await _authRepository.getAccessToken();
@@ -99,7 +94,6 @@ class PostRepository {
     }
   }
 
-  /// Unlike a post
   Future<bool> unlikePost(int postId) async {
     try {
       final accessToken = await _authRepository.getAccessToken();
@@ -121,7 +115,6 @@ class PostRepository {
     }
   }
 
-  /// Update a post
   Future<Post> updatePost(int postId, Map<String, dynamic> updateData) async {
     try {
       final accessToken = await _authRepository.getAccessToken();
@@ -144,7 +137,6 @@ class PostRepository {
     }
   }
 
-  /// Delete a post
   Future<void> deletePost(int postId) async {
     try {
       final accessToken = await _authRepository.getAccessToken();
@@ -160,4 +152,21 @@ class PostRepository {
       throw PostException('Failed to delete post: ${e.toString()}');
     }
   }
+
+  Future<Post> toggleLikePost(Post post) async {
+    try {
+      bool success;
+      if (post.isLiked == true) {
+        success = await unlikePost(post.id);
+        if (success) return post.copyWith(likeCount: post.likeCount - 1, isLiked: false);
+      } else {
+        success = await likePost(post.id);
+        if (success) return post.copyWith(likeCount: post.likeCount + 1, isLiked: true);
+      }
+      return post;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 }

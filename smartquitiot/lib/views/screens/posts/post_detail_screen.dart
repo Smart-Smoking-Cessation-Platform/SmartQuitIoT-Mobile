@@ -4,6 +4,8 @@ import 'package:SmartQuitIoT/models/post.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/comment_card.dart';
 
+import '../../../models/post_media.dart';
+
 class PostDetailScreen extends ConsumerStatefulWidget {
   final int postId;
 

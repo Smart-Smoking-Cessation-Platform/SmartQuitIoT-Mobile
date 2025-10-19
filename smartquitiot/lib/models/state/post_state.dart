@@ -1,4 +1,5 @@
-import '../models/post.dart';
+
+import '../post.dart';
 
 class PostState {
   final List<Post> posts;
@@ -6,7 +7,7 @@ class PostState {
   final bool isLoading;
   final bool isLoadingDetail;
   final String? error;
-  final Map<int, bool> likedPosts; // Track which posts are liked
+  final Map<int, bool> likedPosts;
 
   const PostState({
     this.posts = const [],

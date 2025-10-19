@@ -2,15 +2,16 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../core/errors/exception.dart';
-import '../models/post.dart';
 import '../models/response/error_response.dart';
+import '../models/response/post_detail_response.dart';
+import '../models/response/post_like_response.dart';
+import '../models/response/post_list_response.dart';
 
 class PostService {
   static final String _baseUrl =
       dotenv.env['API_POSTS_URL'] ?? 'http://localhost:8080/api/posts';
-  static const Duration _timeout = Duration(seconds: 30);
+  // static const Duration _timeout = Duration(seconds: 30);
 
-  /// Get latest posts with limit
   Future<PostListResponse> getLatestPosts({
     required String accessToken,
     int limit = 5,
@@ -23,8 +24,8 @@ class PostService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
             },
-          )
-          .timeout(_timeout);
+          );
+
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -46,7 +47,6 @@ class PostService {
     }
   }
 
-  /// Get all posts with optional search query
   Future<PostListResponse> getAllPosts({
     required String accessToken,
     String? query,
@@ -64,8 +64,8 @@ class PostService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
             },
-          )
-          .timeout(_timeout);
+          );
+
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -87,7 +87,6 @@ class PostService {
     }
   }
 
-  /// Get post detail by ID
   Future<PostDetailResponse> getPostDetail({
     required String accessToken,
     required int postId,
@@ -100,8 +99,8 @@ class PostService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
             },
-          )
-          .timeout(_timeout);
+          );
+
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -123,7 +122,6 @@ class PostService {
     }
   }
 
-  /// Like a post
   Future<PostLikeResponse> likePost({
     required String accessToken,
     required int postId,
@@ -136,8 +134,8 @@ class PostService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
             },
-          )
-          .timeout(_timeout);
+          );
+
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -159,7 +157,6 @@ class PostService {
     }
   }
 
-  /// Unlike a post
   Future<PostLikeResponse> unlikePost({
     required String accessToken,
     required int postId,
@@ -172,8 +169,8 @@ class PostService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
             },
-          )
-          .timeout(_timeout);
+          );
+
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -195,7 +192,6 @@ class PostService {
     }
   }
 
-  /// Update a post
   Future<PostDetailResponse> updatePost({
     required String accessToken,
     required int postId,
@@ -210,8 +206,8 @@ class PostService {
               'Authorization': 'Bearer $accessToken',
             },
             body: jsonEncode(updateData),
-          )
-          .timeout(_timeout);
+          );
+          // .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -233,7 +229,6 @@ class PostService {
     }
   }
 
-  /// Delete a post
   Future<void> deletePost({
     required String accessToken,
     required int postId,
@@ -246,8 +241,8 @@ class PostService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
             },
-          )
-          .timeout(_timeout);
+          );
+          // .timeout(_timeout);
 
       if (response.statusCode != 200) {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
