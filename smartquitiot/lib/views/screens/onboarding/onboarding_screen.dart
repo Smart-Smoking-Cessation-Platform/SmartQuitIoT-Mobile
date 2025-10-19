@@ -425,13 +425,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   await ref
                                       .read(quitPlanViewModelProvider.notifier)
                                       .createPlan(request);
-
                                   NotificationHelper.showTopNotification(
                                     context,
                                     title: "Success",
-                                    message: "Quit plan created successfully",
+                                    message:
+                                        "Quit plan \"${_quitPlanNameController.text.trim()}\" created successfully",
                                   );
-
+                                  await Future.delayed(
+                                    const Duration(seconds: 1),
+                                  );
                                   Navigator.pushReplacementNamed(
                                     context,
                                     '/main',
