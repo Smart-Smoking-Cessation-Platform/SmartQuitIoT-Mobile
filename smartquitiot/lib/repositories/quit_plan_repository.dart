@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+
 import '../models/request/create_quit_plan_request.dart';
 import '../models/phase.dart';
 import '../services/quit_plan_service.dart';
@@ -21,5 +26,36 @@ class QuitPlanRepository {
     } catch (e) {
       throw Exception('Failed to create quit plan: ${e.toString()}');
     }
+  }
+
+  Future<Map<String, dynamic>> getQuitPlan() async {
+    // Direct API call from repository (skip service as requested)
+    final baseUrl =
+        dotenv.env['API_QUIT_PLAN_URL'] ??
+        'http://localhost:8080/api/quit-plan';
+
+    // Try include token if available, but don't block if none (support local dev)
+    String? token;
+    try {
+      token = await authRepository.getAccessToken();
+    } catch (_) {
+      token = null;
+    }
+
+    final response = await http.get(
+      Uri.parse(baseUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+
+    throw Exception(
+      'Failed to fetch quit plan: ${response.statusCode} ${response.body}',
+    );
   }
 }

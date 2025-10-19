@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-
 import '../../../repositories/auth_repository.dart';
 
 class QuitPlanCard extends StatefulWidget {
@@ -140,9 +139,7 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(
-                    0xFF00D09E,
-                  ), // background xanh lá
+                  backgroundColor: const Color(0xFF00D09E),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -157,7 +154,7 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white, // chữ trắng
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -189,8 +186,7 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
           ),
           const SizedBox(height: 16),
 
-          // Progress
-          // Progress
+          // Progress bar
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -212,47 +208,6 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
           Container(
             height: 10,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1FFF3), // background bar
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final barWidth = constraints.maxWidth * progress;
-                return Stack(
-                  children: [
-                    // Foreground bar: màu xanh
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      width: barWidth,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00D09E), Color(0xFF3FCF8E)],
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    // Optional: thêm Text % trên thanh progress
-                    Positioned(
-                      left: (barWidth - 20).clamp(0, constraints.maxWidth - 30),
-                      top: -18,
-                      child: Text(
-                        '$percent%',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF00D09E),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            height: 10,
-            decoration: BoxDecoration(
               color: const Color(0xFFF1FFF3),
               borderRadius: BorderRadius.circular(6),
             ),
@@ -269,6 +224,18 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
                           colors: [progressColorStart, progressColorEnd],
                         ),
                         borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    Positioned(
+                      left: (barWidth - 20).clamp(0, constraints.maxWidth - 30),
+                      top: -18,
+                      child: Text(
+                        '$percent%',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00D09E),
+                        ),
                       ),
                     ),
                   ],
@@ -294,7 +261,7 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
                         ? Icons.check_circle
                         : Icons.radio_button_unchecked,
                     color: isCurrentStage
-                        ? const Color(0xFF00D09E) // green for current stage
+                        ? const Color(0xFF00D09E)
                         : (completed
                               ? const Color(0xFF00D09E)
                               : Colors.grey[300]),
