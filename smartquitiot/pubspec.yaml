@@ -58,6 +58,12 @@ dependencies:
   another_flushbar: ^1.12.32
   flutter_dotenv: ^6.0.0
   convert: ^3.1.2
+  qr: ^3.0.2
+  url_launcher: ^6.3.2
+  qr_flutter: ^4.1.0
+  app_links: ^6.4.1
+  video_player: ^2.10.0
+
 
 dev_dependencies:
   flutter_test:

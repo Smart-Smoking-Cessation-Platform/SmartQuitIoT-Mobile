@@ -2,7 +2,6 @@
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
 import '../core/errors/exception.dart';
 import '../models/request/login_request.dart';
 import '../models/response/login_response.dart';
@@ -10,6 +9,8 @@ import '../models/request/register_request.dart';
 import '../models/response/register_response.dart';
 import '../services/auth_service.dart';
 import '../services/token_storage_service.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 class AuthRepository {
   final AuthService _authService;
@@ -195,5 +196,48 @@ class AuthRepository {
       return 'Bearer $accessToken';
     }
     return null;
+  }
+
+  Future<String?> getValidAccessToken() async {
+    String? accessToken = await _tokenStorageService.getAccessToken();
+    if (accessToken == null || _isTokenExpired(accessToken)) {
+      print('[AuthRepository] Access token expired — refreshing...');
+      try {
+        final newTokens = await refreshAccessToken();
+        accessToken = newTokens.accessToken;
+        print('[AuthRepository] Token refreshed successfully!');
+      } catch (e) {
+        print('[AuthRepository] Failed to refresh token: $e');
+        rethrow;
+      }
+    }
+
+    return accessToken;
+  }
+
+  bool _isTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        print('[AuthRepository] Invalid JWT format: $token');
+        return true;
+      }
+
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+
+      // Chỗ này có thể lỗi nếu chuỗi không phải base64 hợp lệ
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final payloadMap = json.decode(decoded);
+
+      final exp = payloadMap['exp'];
+      if (exp == null) return true;
+
+      final expiryDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      return DateTime.now().isAfter(expiryDate);
+    } catch (e) {
+      print('[AuthRepository] Token decode error: $e');
+      return true; // Nếu decode lỗi → xem như token hết hạn
+    }
   }
 }

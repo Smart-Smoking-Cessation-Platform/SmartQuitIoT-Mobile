@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:SmartQuitIoT/services/token_storage_service.dart';
 
-import '../onboarding/welcome_screen.dart';
-
-// Sửa thành StatelessWidget hoặc StatefulWidget bình thường
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -11,47 +9,46 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final TokenStorageService _tokenStorage = TokenStorageService();
+
   @override
   void initState() {
     super.initState();
-    _navigateToWelcome();
+    _navigateToNext();
   }
 
-  Future<void> _navigateToWelcome() async {
+  Future<void> _navigateToNext() async {
     await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-      );
+
+    if (!mounted) return;
+
+    final bool isLoggedIn = await _tokenStorage.isLoggedIn();
+    if (isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/auth');
+    } else {
+      Navigator.pushReplacementNamed(context, '/welcome');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Phần UI này giữ nguyên 100%
     return Scaffold(
       backgroundColor: const Color(0xFF00D09E),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(),
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset('lib/assets/logo/logo-2.png', width: 230, height: 230),
-                const SizedBox(height: 20),
-                Text(
-                  'SmartQuit',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset('lib/assets/logo/logo-2.png', width: 230, height: 230),
+              const SizedBox(height: 20),
+              Text(
+                'SmartQuit',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

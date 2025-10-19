@@ -1,13 +1,9 @@
-﻿// lib/views/auth/auth_wrapper.dart
-import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/state/auth_state.dart';
-import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
-
-import '../../../providers/auth_provider.dart';
-import '../onboarding/onboarding_screen.dart';
-
+import 'package:SmartQuitIoT/providers/auth_provider.dart';
+import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
+import 'package:SmartQuitIoT/views/screens/onboarding/onboarding_screen.dart';
 
 class AuthWrapper extends ConsumerWidget {
   const AuthWrapper({super.key});
@@ -20,20 +16,22 @@ class AuthWrapper extends ConsumerWidget {
 
         if (isFirstLogin) {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-                (Route<dynamic> route) => false,
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                (route) => false,
           );
         } else {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-                (Route<dynamic> route) => false,
+            MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                (route) => false,
           );
         }
       }
     });
+
     final authState = ref.watch(authViewModelProvider);
+
     if (authState.isAuthenticated) {
-      return const HomeScreen();
+      return const MainNavigationScreen();
     } else {
       return const OnboardingScreen();
     }
