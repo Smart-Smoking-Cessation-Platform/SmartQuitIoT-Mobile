@@ -1,25 +1,113 @@
-import 'package:SmartQuitIoT/views/screens/questionaires/question_input_card.dart';
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:SmartQuitIoT/views/screens/questionaires/question_card.dart';
-import 'package:SmartQuitIoT/views/widgets/common/page_indicator.dart';
-import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../models/request/create_quit_plan_request.dart';
+import '../../../providers/quit_plan_provider.dart';
+import '../../../utils/notification_helper.dart';
+import '../../widgets/buttons/primary_button.dart';
+import '../../widgets/common/page_indicator.dart';
+import '../questionaires/question_input_card.dart';
 import '../questionaires/question_options_card.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+
+  // Controllers
+  final TextEditingController _smokeAvgController = TextEditingController();
+  final TextEditingController _yearsController = TextEditingController();
+  final TextEditingController _moneyController = TextEditingController();
+  final TextEditingController _cigarettesPerPackController =
+      TextEditingController();
+  final TextEditingController _quitPlanNameController = TextEditingController();
+
+  // Options
+  int? _selectedFirstCigaretteOptionMinutes;
+  bool? _difficultRefrain;
+  bool? _hateToGiveUp;
+  bool? _smokeMoreMorning;
+  bool? _smokeEvenSick;
+  bool _useNRT = false;
+  List<String> _selectedInterests = [];
+
+  // Validation flag
+  bool _submitted = false;
+
+  // First cigarette options
+  final Map<String, int> firstCigaretteOptions = {
+    "≤5 minutes": 5,
+    "6–30 minutes": 30,
+    "31–60 minutes": 60,
+    ">60 minutes": 120,
+  };
+
+  // Interest options
+  final List<String> interestOptions = [
+    "All Interests",
+    "Sports and Exercise",
+    "Art and Creativity",
+    "Cooking and Food",
+    "Reading, Learning and Writing",
+    "Music and Entertainment",
+    "Nature and Outdoor Activities",
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Format cost input with thousand separator
+    _moneyController.addListener(() {
+      final text = _moneyController.text.replaceAll(',', '');
+      if (text.isEmpty) return;
+      final number = int.tryParse(text);
+      if (number != null) {
+        final formatted = NumberFormat('#,###', 'en_US').format(number);
+        if (formatted != _moneyController.text) {
+          _moneyController.value = TextEditingValue(
+            text: formatted,
+            selection: TextSelection.collapsed(offset: formatted.length),
+          );
+        }
+      }
+    });
+  }
+
+  /// Validate and return first error page index, -1 if no error
+  int _validateAndGetFirstErrorPage() {
+    setState(() => _submitted = true);
+
+    // Page 3 errors
+    if (_yearsController.text.isEmpty ||
+        _moneyController.text.isEmpty ||
+        _cigarettesPerPackController.text.isEmpty ||
+        _selectedFirstCigaretteOptionMinutes == null) {
+      return 2;
+    }
+
+    // Page 4 errors
+    if (_difficultRefrain == null ||
+        _hateToGiveUp == null ||
+        _smokeMoreMorning == null ||
+        _smokeEvenSick == null ||
+        _selectedInterests.isEmpty) {
+      return 3;
+    }
+
+    return -1; // no error
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final quitPlanState = ref.watch(quitPlanViewModelProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
@@ -33,10 +121,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             alignment: Alignment.center,
             child: Text(
               _currentIndex == 0
-                  ? 'welcome_to_smartquit'.tr()
+                  ? 'Welcome to SmartQuit'
                   : _currentIndex == 1
-                  ? "talk_smoking_status".tr()
-                  : "questions".tr(),
+                  ? "Talk Smoking Status"
+                  : "Questions",
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -46,20 +134,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          // Nội dung PageView
+          // PageView
           Expanded(
             child: PageView(
               controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => _currentIndex = index);
-              },
+              onPageChanged: (index) => setState(() => _currentIndex = index),
               children: [
-                // PAGE 1: Welcome
+                // Page 1
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 20,
-                  ),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -68,9 +151,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Image.asset('lib/assets/images/Group.png'),
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        'ready_to_save'.tr(),
-                        style: const TextStyle(
+                      const Text(
+                        'Ready to save your health?',
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -80,12 +163,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
 
-                // PAGE 2: Let’s Talk
+                // Page 2
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 20,
-                  ),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -94,9 +174,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Image.asset('lib/assets/images/health.png'),
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        'tell_smoking_habits'.tr(),
-                        style: const TextStyle(
+                      const Text(
+                        'Tell us about your smoking habits',
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -106,85 +186,277 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
 
-                // PAGE 3: Questions 1
+                // Page 3
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 20,
-                  ),
+                  padding: const EdgeInsets.all(20),
                   child: ListView(
                     children: [
                       QuestionInputCard(
-                        question: 'how_long_smoked'.tr(),
-                        controller: TextEditingController(),
-                        hintText: 'input_hint'.tr(),
+                        question: 'Quit plan name',
+                        controller: _quitPlanNameController,
+                        hintText: 'Enter your plan name',
+                        errorText:
+                            _submitted && _quitPlanNameController.text.isEmpty
+                            ? 'You must enter a name'
+                            : null,
                       ),
                       QuestionInputCard(
-                        question: 'cost_per_pack'.tr(),
-                        controller: TextEditingController(),
-                        hintText: 'input_hint'.tr(),
+                        question: 'How many years have you smoked?',
+                        controller: _yearsController,
+                        hintText: 'Enter number of years',
+                        keyboardType: TextInputType.number,
+                        errorText: _submitted && _yearsController.text.isEmpty
+                            ? 'You must enter a value'
+                            : null,
                       ),
                       QuestionInputCard(
-                        question: 'cigarettes_per_pack'.tr(),
-                        controller: TextEditingController(),
-                        hintText: 'input_hint'.tr(),
+                        question: 'Cost per cigarette pack',
+                        controller: _moneyController,
+                        hintText: 'Enter cost',
+                        keyboardType: TextInputType.number,
+                        errorText: _submitted && _moneyController.text.isEmpty
+                            ? 'You must enter a value'
+                            : null,
+                      ),
+                      QuestionInputCard(
+                        question: 'Cigarettes per pack',
+                        controller: _cigarettesPerPackController,
+                        hintText: 'Enter number of cigarettes',
+                        keyboardType: TextInputType.number,
+                        errorText:
+                            _submitted &&
+                                _cigarettesPerPackController.text.isEmpty
+                            ? 'You must enter a value'
+                            : null,
                       ),
                       QuestionOptionsCard(
-                        question: 'first_cigarette_time'.tr(),
-                        options: [
-                          '5_minutes'.tr(),
-                          '5_10_minutes'.tr(),
-                          '31_60_minutes'.tr(),
-                          'other'.tr(),
-                        ],
+                        question:
+                            'How soon after waking do you smoke your first cigarette?',
+                        options: firstCigaretteOptions.keys.toList(),
+                        onSelected: (option) {
+                          setState(() {
+                            _selectedFirstCigaretteOptionMinutes =
+                                firstCigaretteOptions[option]!;
+                          });
+                        },
+                        errorText:
+                            _submitted &&
+                                _selectedFirstCigaretteOptionMinutes == null
+                            ? 'You must select an option'
+                            : null,
                       ),
                     ],
                   ),
                 ),
 
-                // PAGE 4: Questions 2
+                // Page 4
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 20,
-                  ),
+                  padding: const EdgeInsets.all(20),
                   child: ListView(
                     children: [
                       QuestionOptionsCard(
-                        question: 'cigarettes_per_day'.tr(),
-                        options: [
-                          '1_10'.tr(),
-                          '11_20'.tr(),
-                          '21_30'.tr(),
-                          '30_plus'.tr(),
+                        question: 'Difficult to refrain in forbidden places?',
+                        options: ['Yes', 'No'],
+                        onSelected: (option) =>
+                            setState(() => _difficultRefrain = option == 'Yes'),
+                        errorText: _submitted && _difficultRefrain == null
+                            ? 'You must select an option'
+                            : null,
+                      ),
+                      QuestionOptionsCard(
+                        question: 'Which cigarette would you hate to give up?',
+                        options: ['First in the morning', 'Any other'],
+                        onSelected: (option) => setState(
+                          () =>
+                              _hateToGiveUp = option == 'First in the morning',
+                        ),
+                        errorText: _submitted && _hateToGiveUp == null
+                            ? 'You must select an option'
+                            : null,
+                      ),
+                      QuestionOptionsCard(
+                        question:
+                            'Do you smoke more frequently in the morning?',
+                        options: ['Yes', 'No'],
+                        onSelected: (option) =>
+                            setState(() => _smokeMoreMorning = option == 'Yes'),
+                        errorText: _submitted && _smokeMoreMorning == null
+                            ? 'You must select an option'
+                            : null,
+                      ),
+                      QuestionOptionsCard(
+                        question: 'Do you smoke even if sick?',
+                        options: ['Yes', 'No'],
+                        onSelected: (option) =>
+                            setState(() => _smokeEvenSick = option == 'Yes'),
+                        errorText: _submitted && _smokeEvenSick == null
+                            ? 'You must select an option'
+                            : null,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Interests
+                      const Text(
+                        "Select your interests",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: interestOptions.map((option) {
+                          final isSelected = _selectedInterests.contains(
+                            option,
+                          );
+                          return FilterChip(
+                            label: Text(
+                              option,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            selected: isSelected,
+                            backgroundColor: Colors.white,
+                            selectedColor: const Color(0xFF00D09E),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            onSelected: (val) {
+                              setState(() {
+                                if (val) {
+                                  _selectedInterests.add(option);
+                                } else {
+                                  _selectedInterests.remove(option);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      if (_submitted && _selectedInterests.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            'You must select at least one interest',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      const SizedBox(height: 20),
+
+                      // Use NRT
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _useNRT,
+                            onChanged: (val) =>
+                                setState(() => _useNRT = val ?? false),
+                          ),
+                          const Text("Use Nicotine Replacement Therapy"),
+                          const SizedBox(width: 5),
+                          const Tooltip(
+                            message:
+                                "NRT helps reduce withdrawal symptoms by replacing nicotine safely.",
+                            child: Icon(Icons.info_outline, size: 18),
+                          ),
                         ],
                       ),
-                      QuestionOptionsCard(
-                        question: 'difficult_refrain'.tr(),
-                        options: ['yes'.tr(), 'no'.tr()],
-                      ),
-                      QuestionOptionsCard(
-                        question: 'hate_to_give_up'.tr(),
-                        options: ['first_in_morning'.tr(), 'any_other'.tr()],
-                      ),
-                      QuestionOptionsCard(
-                        question: 'smoke_more_morning'.tr(),
-                        options: ['yes'.tr(), 'no'.tr()],
-                      ),
-                      QuestionOptionsCard(
-                        question: 'smoke_even_sick'.tr(),
-                        options: ['yes'.tr(), 'no'.tr()],
-                      ),
                       const SizedBox(height: 40),
-                      PrimaryButton(
-                        text: 'finish'.tr(),
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/relaunch');
-                        },
-                        width: 200,
-                        height: 50,
-                        borderRadius: 30,
-                      ),
+
+                      // Submit
+                      quitPlanState is AsyncLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : PrimaryButton(
+                              text: 'Finish',
+                              onPressed: () async {
+                                final errorPage =
+                                    _validateAndGetFirstErrorPage();
+                                if (errorPage != -1) {
+                                  _pageController.animateToPage(
+                                    errorPage,
+                                    duration: const Duration(milliseconds: 400),
+                                    curve: Curves.easeInOut,
+                                  );
+                                  NotificationHelper.showTopNotification(
+                                    context,
+                                    title: "Error",
+                                    message:
+                                        "Please fix the highlighted errors",
+                                    isError: true,
+                                  );
+                                  return;
+                                }
+
+                                final request = CreateQuitPlanRequest(
+                                  startDate: DateTime.now().toIso8601String(),
+                                  useNRT: _useNRT,
+                                  quitPlanName: _quitPlanNameController.text
+                                      .trim(),
+                                  smokeAvgPerDay:
+                                      int.tryParse(_smokeAvgController.text) ??
+                                      0,
+                                  numberOfYearsOfSmoking:
+                                      int.tryParse(_yearsController.text) ?? 0,
+                                  moneyPerPackage: double.parse(
+                                    _moneyController.text.replaceAll(',', ''),
+                                  ),
+                                  cigarettesPerPackage:
+                                      int.tryParse(
+                                        _cigarettesPerPackController.text,
+                                      ) ??
+                                      0,
+                                  minutesAfterWakingToSmoke:
+                                      _selectedFirstCigaretteOptionMinutes!,
+                                  smokingInForbiddenPlaces: _difficultRefrain!,
+                                  cigaretteHateToGiveUp: _hateToGiveUp!,
+                                  morningSmokingFrequency: _smokeMoreMorning!,
+                                  smokeWhenSick: _smokeEvenSick!,
+                                  interests: _selectedInterests,
+                                  amountOfNicotinePerCigarettes: 0,
+                                );
+
+                                try {
+                                  await ref
+                                      .read(quitPlanViewModelProvider.notifier)
+                                      .createPlan(request);
+
+                                  NotificationHelper.showTopNotification(
+                                    context,
+                                    title: "Success",
+                                    message: "Quit plan created successfully",
+                                  );
+
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    '/main',
+                                  );
+                                } catch (e) {
+                                  NotificationHelper.showTopNotification(
+                                    context,
+                                    title: "Error",
+                                    message: e.toString(),
+                                    isError: true,
+                                  );
+                                }
+                              },
+                              width: 200,
+                              height: 50,
+                              borderRadius: 30,
+                            ),
+                      if (quitPlanState is AsyncError)
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            "Error: ${quitPlanState.error}",
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -192,7 +464,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          // indicator
+          // Page indicator
           Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: PageIndicator(currentIndex: _currentIndex, totalPages: 4),
