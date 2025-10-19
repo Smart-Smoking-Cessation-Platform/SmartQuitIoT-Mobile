@@ -16,6 +16,15 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    // Gọi loadAllPosts() khi mở màn hình
+    Future.microtask(() {
+      ref.read(postViewModelProvider.notifier).loadAllPosts();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -23,9 +32,11 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final postsFuture = ref.watch(
-      allPostsFutureProvider(_searchQuery.isEmpty ? null : _searchQuery),
-    );
+    final state = ref.watch(postViewModelProvider);
+    final posts = state.posts.where((post) {
+      if (_searchQuery.isEmpty) return true;
+      return post.title.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -43,7 +54,7 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
+          // 🔍 Search Bar
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(16),
@@ -57,9 +68,7 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
                         icon: const Icon(Icons.clear, color: Colors.grey),
                         onPressed: () {
                           _searchController.clear();
-                          setState(() {
-                            _searchQuery = '';
-                          });
+                          setState(() => _searchQuery = '');
                         },
                       )
                     : null,
@@ -78,25 +87,22 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
                 filled: true,
                 fillColor: Colors.grey[50],
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-              onSubmitted: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+              onChanged: (value) => setState(() => _searchQuery = value),
+              onSubmitted: (value) => setState(() => _searchQuery = value),
             ),
           ),
 
-          // Posts List
+          // 📄 Posts List / Loading / Error
           Expanded(
-            child: postsFuture.when(
-              data: (_) {
-                final posts = ref.watch(allPostsProvider(_searchQuery));
-                if (posts.isEmpty) return _buildEmptyState();
+            child: Builder(
+              builder: (context) {
+                if (state.isLoading) {
+                  return _buildLoadingState();
+                } else if (state.error != null) {
+                  return _buildErrorState(state.error!);
+                } else if (posts.isEmpty) {
+                  return _buildEmptyState();
+                }
 
                 return RefreshIndicator(
                   onRefresh: () async {
@@ -117,8 +123,6 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
                   ),
                 );
               },
-              loading: () => _buildLoadingState(),
-              error: (error, stack) => _buildErrorState(error.toString()),
             ),
           ),
         ],
@@ -157,7 +161,7 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Post Header
+                // 👤 Post Header
                 Row(
                   children: [
                     CircleAvatar(
@@ -199,7 +203,7 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Post Title
+                // 📝 Post Title
                 Text(
                   post.title,
                   style: const TextStyle(
@@ -210,7 +214,7 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // Post Description
+                // 📖 Post Description
                 Text(
                   post.description,
                   style: TextStyle(
@@ -222,7 +226,7 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
 
-                // Post Image
+                // 🖼 Post Image
                 if (post.thumbnail != null && post.thumbnail!.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   ClipRRect(
@@ -251,7 +255,7 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
 
                 const SizedBox(height: 12),
 
-                // Post Actions
+                // ❤️ Actions
                 Row(
                   children: [
                     Row(
@@ -305,101 +309,90 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
-      ),
-    );
-  }
+  Widget _buildLoadingState() => const Center(
+    child: CircularProgressIndicator(
+      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+    ),
+  );
 
   Widget _buildErrorState(String error) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load posts',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+        child: SingleChildScrollView(
+          // ✅ fix overflow
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load posts',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[600],
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                ref.invalidate(
-                  allPostsFutureProvider(
-                    _searchQuery.isEmpty ? null : _searchQuery,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D09E),
-                foregroundColor: Colors.white,
+              const SizedBox(height: 8),
+              Text(
+                error,
+                style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                textAlign: TextAlign.center,
               ),
-              child: const Text('Retry'),
-            ),
-          ],
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(postViewModelProvider.notifier).loadAllPosts();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D09E),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.article_outlined, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isEmpty ? 'No posts available' : 'No results found',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
-              ),
+  Widget _buildEmptyState() => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.article_outlined, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            _searchQuery.isEmpty ? 'No posts available' : 'No results found',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
             ),
-            const SizedBox(height: 8),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'Check back later for new posts'
-                  : 'Try searching with different keywords',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _searchQuery.isEmpty
+                ? 'Check back later for new posts'
+                : 'Try searching with different keywords',
+            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
+    if (difference.inDays > 0) return '${difference.inDays}d ago';
+    if (difference.inHours > 0) return '${difference.inHours}h ago';
+    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
+    return 'Just now';
   }
 }

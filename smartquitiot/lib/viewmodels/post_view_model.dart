@@ -32,7 +32,6 @@ class PostViewModel extends StateNotifier<PostState> {
     }
   }
 
-  /// Load post detail
   Future<void> loadPostDetail(int postId) async {
     state = state.copyWith(isLoadingDetail: true, error: null);
 
@@ -44,64 +43,73 @@ class PostViewModel extends StateNotifier<PostState> {
         error: null,
       );
     } catch (e) {
-      state = state.copyWith(isLoadingDetail: false, error: e.toString());
+      // Nếu backend trả lỗi kiểu "You already liked this post"
+      final message = e.toString();
+      if (message.contains('already liked')) {
+        // // Không xem là lỗi nghiêm trọng -> chỉ log
+        // debugPrint('Info: already liked, ignoring error');
+        state = state.copyWith(isLoadingDetail: false, error: null);
+      } else {
+        state = state.copyWith(isLoadingDetail: false, error: message);
+      }
     }
   }
 
-  /// Toggle like for a post
-  Future<void> toggleLike(int postId) async {
-    try {
-      final isCurrentlyLiked = state.isPostLiked(postId);
-      bool success;
+  bool _likeLock = false;
 
+  Future<void> toggleLike(int postId) async {
+    if (_likeLock) return;
+    _likeLock = true;
+    final isCurrentlyLiked = state.isPostLiked(postId);
+    _updateLikeStateLocally(postId, !isCurrentlyLiked);
+
+    try {
+      bool success;
       if (isCurrentlyLiked) {
         success = await _postRepository.unlikePost(postId);
       } else {
         success = await _postRepository.likePost(postId);
       }
 
-      if (success) {
-        // Update the liked posts map
-        final updatedLikedPosts = Map<int, bool>.from(state.likedPosts);
-        updatedLikedPosts[postId] = !isCurrentlyLiked;
+      if (!success) {
+        _updateLikeStateLocally(postId, isCurrentlyLiked);
+      }
+    } catch (_) {
+      _updateLikeStateLocally(postId, isCurrentlyLiked);
+    }
 
-        // Update the post in the list if it exists
-        final updatedPosts = <Post>[];
-        for (final post in state.posts) {
-          if (post.id == postId) {
-            updatedPosts.add(
-              post.copyWith(
-                likeCount: isCurrentlyLiked
-                    ? post.likeCount - 1
-                    : post.likeCount + 1,
-                isLiked: !isCurrentlyLiked,
-              ),
-            );
-          } else {
-            updatedPosts.add(post);
-          }
-        }
+    _likeLock = false;
+  }
 
-        // Update selected post if it's the same post
-        Post? updatedSelectedPost = state.selectedPost;
-        if (state.selectedPost != null && state.selectedPost!.id == postId) {
-          updatedSelectedPost = state.selectedPost!.copyWith(
-            likeCount: isCurrentlyLiked
-                ? state.selectedPost!.likeCount - 1
-                : state.selectedPost!.likeCount + 1,
-            isLiked: !isCurrentlyLiked,
-          );
-        }
+  void _updateLikeStateLocally(int postId, bool isLiked) {
+    final updatedLikedPosts = Map<int, bool>.from(state.likedPosts);
+    updatedLikedPosts[postId] = isLiked;
 
-        state = state.copyWith(
-          posts: updatedPosts,
-          selectedPost: updatedSelectedPost,
-          likedPosts: updatedLikedPosts,
+    final updatedPosts = state.posts.map((p) {
+      if (p.id == postId) {
+        return p.copyWith(
+          likeCount: isLiked ? p.likeCount + 1 : p.likeCount - 1,
+          isLiked: isLiked,
         );
       }
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
+      return p;
+    }).toList();
+
+    Post? updatedSelectedPost = state.selectedPost;
+    if (state.selectedPost != null && state.selectedPost!.id == postId) {
+      updatedSelectedPost = state.selectedPost!.copyWith(
+        likeCount: isLiked
+            ? state.selectedPost!.likeCount + 1
+            : state.selectedPost!.likeCount - 1,
+        isLiked: isLiked,
+      );
     }
+
+    state = state.copyWith(
+      likedPosts: updatedLikedPosts,
+      posts: updatedPosts,
+      selectedPost: updatedSelectedPost,
+    );
   }
 
   /// Update a post
@@ -181,6 +189,4 @@ class PostViewModel extends StateNotifier<PostState> {
   Future<void> refreshPosts({int limit = 5}) async {
     await loadLatestPosts(limit: limit);
   }
-
-
 }

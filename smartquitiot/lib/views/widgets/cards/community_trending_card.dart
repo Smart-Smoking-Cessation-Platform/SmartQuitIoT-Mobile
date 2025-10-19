@@ -268,11 +268,11 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _buildAction(Icons.favorite_border, post.likeCount),
-                      ],
-                    ),
+                    // Row(
+                    //   children: [
+                    //     _buildAction(Icons.favorite_border, post.likeCount),
+                    //   ],
+                    // ),
                   ],
                 ),
               ),

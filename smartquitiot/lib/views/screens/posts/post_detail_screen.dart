@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/post.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/comment_card.dart';
-
 import '../../../models/post_media.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
@@ -22,7 +21,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Load post detail when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
     });
@@ -43,28 +41,23 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF00D09E), // Màu xanh lá cây
         elevation: 0,
+        centerTitle: true, // canh giữa tiêu đề
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // icon trắng
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'Post Detail',
           style: TextStyle(
-            color: Colors.grey[800],
+            color: Colors.white, // chữ trắng
             fontWeight: FontWeight.w600,
+            fontSize: 16, // chữ nhỏ gọn
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share, color: Colors.black),
-            onPressed: () {
-              // TODO: Implement share functionality
-            },
-          ),
-        ],
       ),
+
       body: postState.isLoadingDetail
           ? const Center(
               child: CircularProgressIndicator(
@@ -75,29 +68,23 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           ? _buildErrorState(postState.error!)
           : post == null
           ? _buildEmptyState()
-          : _buildPostContent(post),
+          : Stack(
+              children: [_buildPostContent(post), _buildCommentInputBar(post)],
+            ),
     );
   }
 
   Widget _buildPostContent(Post post) {
     return SingleChildScrollView(
       controller: _scrollController,
+      padding: const EdgeInsets.only(bottom: 80),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Post Header
           _buildPostHeader(post),
-
-          // Post Content
           _buildPostBody(post),
-
-          // Post Actions
-          _buildPostActions(post),
-
-          // Comments Section
+          // _buildPostActions(post),
           _buildCommentsSection(post),
-
-          const SizedBox(height: 100), // Space for bottom bar
         ],
       ),
     );
@@ -107,245 +94,206 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundImage:
-                    post.account.avatarUrl != null &&
-                        post.account.avatarUrl!.isNotEmpty
-                    ? NetworkImage(post.account.avatarUrl!)
-                    : null,
-                child:
-                    post.account.avatarUrl == null ||
-                        post.account.avatarUrl!.isEmpty
-                    ? const Icon(Icons.person, color: Colors.white)
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          CircleAvatar(
+            radius: 20,
+            backgroundImage:
+                post.account.avatarUrl != null &&
+                    post.account.avatarUrl!.isNotEmpty
+                ? NetworkImage(post.account.avatarUrl!)
+                : null,
+            child:
+                post.account.avatarUrl == null ||
+                    post.account.avatarUrl!.isEmpty
+                ? const Icon(Icons.person, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  post.account.displayName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  _formatTimeAgo(post.createdAt),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onSelected: (value) {
+              if (value == 'delete') {
+                _showDeleteConfirmation(post);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
                   children: [
-                    Text(
-                      post.account.displayName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      _formatTimeAgo(post.createdAt),
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
+                    Icon(Icons.delete, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Delete', style: TextStyle(color: Colors.red)),
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    // TODO: Implement edit functionality
-                  } else if (value == 'delete') {
-                    _showDeleteConfirmation(post);
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 20, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            post.title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          if (post.description.isNotEmpty) ...[
-            const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  /// Nội dung bài viết + ảnh/video
+  Widget _buildPostBody(Post post) {
+    return Container(
+      color: Colors.white,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (post.content != null && post.content!.isNotEmpty)
             Text(
-              post.description,
-              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+              post.content!,
+              style: const TextStyle(fontSize: 16, height: 1.5),
             ),
+          if (post.media != null && post.media!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildInlineMedia(post.media!),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildPostBody(Post post) {
-    return Container(
-      color: Colors.white,
-      margin: const EdgeInsets.only(top: 8),
-      child: Column(
-        children: [
-          // Post Image
-          if (post.thumbnail != null && post.thumbnail!.isNotEmpty)
-            Image.network(
-              post.thumbnail!,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
+  /// Hiển thị ảnh/video xen giữa nội dung
+  Widget _buildInlineMedia(List<PostMedia> media) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: media.map((item) {
+        if (item.mediaType == 'IMAGE') {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                item.mediaUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                errorBuilder: (_, __, ___) => Container(
                   height: 200,
                   color: Colors.grey[200],
-                  child: const Center(
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
-                  ),
-                );
-              },
-            ),
-
-          // Post Content
-          if (post.content != null && post.content!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                post.content!,
-                style: const TextStyle(fontSize: 16, height: 1.5),
+                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                ),
               ),
             ),
-
-          // Media Gallery
-          if (post.media != null && post.media!.isNotEmpty)
-            _buildMediaGallery(post.media!),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMediaGallery(List<PostMedia> media) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Media',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[800],
-            ),
-          ),
-          const SizedBox(height: 12),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1,
-            ),
-            itemCount: media.length,
-            itemBuilder: (context, index) {
-              final mediaItem = media[index];
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  mediaItem.mediaUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPostActions(Post post) {
-    final isLiked = ref.watch(postViewModelProvider).isPostLiked(post.id);
-
-    return Container(
-      color: Colors.white,
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              ref.read(postViewModelProvider.notifier).toggleLike(post.id);
-            },
-            child: Row(
-              children: [
-                Icon(
-                  isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: isLiked ? Colors.red : Colors.grey[600],
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  post.likeCount.toString(),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
+          );
+        } else if (item.mediaType == 'VIDEO') {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                color: Colors.black12,
+                child: const Center(
+                  child: Icon(
+                    Icons.play_circle_fill,
+                    size: 60,
+                    color: Colors.grey,
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: 24),
-          Row(
-            children: [
-              Icon(
-                Icons.chat_bubble_outline,
-                color: Colors.grey[600],
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${post.comments?.length ?? 0}',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Icon(Icons.share_outlined, color: Colors.grey[600], size: 24),
-        ],
-      ),
+          );
+        } else {
+          return const SizedBox.shrink();
+        }
+      }).toList(),
     );
   }
+
+  // Widget _buildPostActions(Post post) {
+  //   final isLiked = ref.watch(postViewModelProvider).isPostLiked(post.id);
+
+  //   return Container(
+  //     color: Colors.white,
+  //     margin: const EdgeInsets.only(top: 8),
+  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //     child: Row(
+  //       children: [
+  //         GestureDetector(
+  //           onTap: () async {
+  //             final viewModel = ref.read(postViewModelProvider.notifier);
+  //             final isCurrentlyLiked = ref
+  //                 .read(postViewModelProvider)
+  //                 .isPostLiked(post.id);
+
+  //             await viewModel.toggleLike(post.id);
+
+  //             if (mounted) {
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 SnackBar(
+  //                   content: Text(
+  //                     isCurrentlyLiked
+  //                         ? 'You unliked this post 💔'
+  //                         : 'You liked this post ❤️',
+  //                   ),
+  //                   duration: const Duration(seconds: 1),
+  //                   behavior: SnackBarBehavior.floating,
+  //                 ),
+  //               );
+  //             }
+  //           },
+  //           child: Row(
+  //             children: [
+  //               Icon(
+  //                 isLiked ? Icons.favorite : Icons.favorite_border,
+  //                 color: isLiked ? Colors.red : Colors.grey[600],
+  //                 size: 24,
+  //               ),
+  //               const SizedBox(width: 8),
+  //               Text(
+  //                 '${post.likeCount}',
+  //                 style: TextStyle(color: Colors.grey[600]),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+
+  //         const SizedBox(width: 24),
+  //         Row(
+  //           children: [
+  //             Icon(
+  //               Icons.chat_bubble_outline,
+  //               color: Colors.grey[600],
+  //               size: 24,
+  //             ),
+  //             const SizedBox(width: 8),
+  //             Text(
+  //               '${post.comments?.length ?? 0}',
+  //               style: TextStyle(color: Colors.grey[600]),
+  //             ),
+  //           ],
+  //         ),
+  //         const Spacer(),
+  //         Icon(Icons.share_outlined, color: Colors.grey[600], size: 24),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildCommentsSection(Post post) {
     return Container(
@@ -367,7 +315,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               child: Center(
                 child: Text(
                   'No comments yet. Be the first to comment!',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  style: TextStyle(color: Colors.grey[600]),
                 ),
               ),
             )
@@ -376,7 +324,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: post.comments!.length,
-              itemBuilder: (context, index) {
+              itemBuilder: (_, index) {
                 final comment = post.comments![index];
                 return CommentCard(comment: comment);
               },
@@ -386,72 +334,51 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     );
   }
 
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load post',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+  Widget _buildCommentInputBar(Post post) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: SafeArea(
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _commentController,
+                  decoration: InputDecoration(
+                    hintText: 'Write a comment...',
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                ref
-                    .read(postViewModelProvider.notifier)
-                    .loadPostDetail(widget.postId);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D09E),
-                foregroundColor: Colors.white,
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.send, color: Color(0xFF00D09E)),
+                onPressed: () {
+                  final text = _commentController.text.trim();
+                  if (text.isNotEmpty) {
+                    FocusScope.of(context).unfocus();
+                    _commentController.clear();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Comment sent!')),
+                    );
+                  }
+                },
               ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.article_outlined, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Post not found',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'The post you are looking for does not exist or has been deleted.',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -461,22 +388,34 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Post'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete Post',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: const Text(
           'Are you sure you want to delete this post? This action cannot be undone.',
+          style: TextStyle(fontSize: 15),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               ref.read(postViewModelProvider.notifier).deletePost(post.id);
-              Navigator.pop(context); // Go back to previous screen
+              Navigator.pop(context);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -484,17 +423,18 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 
   String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'Just now';
   }
+
+  Widget _buildErrorState(String error) => Center(
+    child: Text('Error: $error', style: const TextStyle(color: Colors.red)),
+  );
+
+  Widget _buildEmptyState() => const Center(
+    child: Text('Post not found', style: TextStyle(color: Colors.grey)),
+  );
 }

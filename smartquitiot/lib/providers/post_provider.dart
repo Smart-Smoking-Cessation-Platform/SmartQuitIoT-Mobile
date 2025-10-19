@@ -29,20 +29,22 @@ final latestPostsProvider = Provider<List<Post>>((ref) {
   return state.posts;
 });
 
-/// All posts provider with search (reads posts in ViewModel)
 final allPostsProvider = Provider.family<List<Post>, String?>((ref, query) {
   final state = ref.watch(postViewModelProvider);
-  // Nếu muốn filter theo query, lọc ở đây
   if (query == null || query.isEmpty) return state.posts;
   return state.posts
       .where((p) => p.title.toLowerCase().contains(query.toLowerCase()))
       .toList();
 });
 
-final allPostsFutureProvider = FutureProvider.family<void, String?>((
+/// ✅ Fix: FutureProvider now returns List<Post> instead of void
+final allPostsFutureProvider = FutureProvider.family<List<Post>, String?>((
   ref,
   query,
 ) async {
   final viewModel = ref.read(postViewModelProvider.notifier);
   await viewModel.loadAllPosts(query: query);
+  // sau khi load, đọc lại state
+  final state = ref.read(postViewModelProvider);
+  return state.posts;
 });

@@ -1,5 +1,6 @@
 import '../core/errors/exception.dart';
 import '../models/post.dart';
+import '../models/post_detail.dart';
 import '../services/post_service.dart';
 import '../repositories/auth_repository.dart';
 
@@ -13,7 +14,7 @@ class PostRepository {
 
   Future<List<Post>> getLatestPosts({int limit = 5}) async {
     try {
-      final accessToken = await _authRepository.getAccessToken();
+      final accessToken = await _authRepository.getValidAccessToken();
       if (accessToken == null) {
         throw PostException('Access token not found. Please login again.');
       }
@@ -154,19 +155,33 @@ class PostRepository {
   }
 
   Future<Post> toggleLikePost(Post post) async {
-    try {
-      bool success;
-      if (post.isLiked == true) {
-        success = await unlikePost(post.id);
-        if (success) return post.copyWith(likeCount: post.likeCount - 1, isLiked: false);
-      } else {
-        success = await likePost(post.id);
-        if (success) return post.copyWith(likeCount: post.likeCount + 1, isLiked: true);
-      }
-      return post;
-    } catch (e) {
-      rethrow;
-    }
-  }
+    final token = await _authRepository.getAccessToken();
+    if (token == null) throw PostException('Please login again.');
 
+    if (post.isLiked == true) {
+      // unlike
+      final response = await _postService.unlikePost(
+        accessToken: token,
+        postId: post.id,
+      );
+
+      final success = response.success;
+      if (success) {
+        return post.copyWith(likeCount: post.likeCount - 1, isLiked: false);
+      }
+    } else {
+      // like
+      final response = await _postService.likePost(
+        accessToken: token,
+        postId: post.id,
+      );
+
+      final success = response.success;
+      if (success) {
+        return post.copyWith(likeCount: post.likeCount + 1, isLiked: true);
+      }
+    }
+
+    return post;
+  }
 }
