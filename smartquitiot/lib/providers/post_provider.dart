@@ -10,34 +10,39 @@ final postRepositoryProvider = Provider<PostRepository>((ref) {
 });
 
 /// ViewModel Provider
-final postViewModelProvider =
-StateNotifierProvider<PostViewModel, PostState>((ref) {
+final postViewModelProvider = StateNotifierProvider<PostViewModel, PostState>((
+  ref,
+) {
   final repo = ref.read(postRepositoryProvider);
   return PostViewModel(repo);
 });
 
 /// Individual post provider for specific post IDs
-final postDetailProvider =
-Provider.family<Post?, int>((ref, postId) {
+final postDetailProvider = Provider.family<Post?, int>((ref, postId) {
   final state = ref.watch(postViewModelProvider);
   return state.selectedPost?.id == postId ? state.selectedPost : null;
 });
 
 /// Latest posts provider (just reads ViewModel state)
-final latestPostsProvider =
-Provider<List<Post>>((ref) {
+final latestPostsProvider = Provider<List<Post>>((ref) {
   final state = ref.watch(postViewModelProvider);
   return state.posts;
 });
 
 /// All posts provider with search (reads posts in ViewModel)
-final allPostsProvider =
-Provider.family<List<Post>, String?>((ref, query) {
+final allPostsProvider = Provider.family<List<Post>, String?>((ref, query) {
   final state = ref.watch(postViewModelProvider);
   // Nếu muốn filter theo query, lọc ở đây
   if (query == null || query.isEmpty) return state.posts;
   return state.posts
-      .where((p) =>
-      p.title.toLowerCase().contains(query.toLowerCase()))
+      .where((p) => p.title.toLowerCase().contains(query.toLowerCase()))
       .toList();
+});
+
+final allPostsFutureProvider = FutureProvider.family<void, String?>((
+  ref,
+  query,
+) async {
+  final viewModel = ref.read(postViewModelProvider.notifier);
+  await viewModel.loadAllPosts(query: query);
 });

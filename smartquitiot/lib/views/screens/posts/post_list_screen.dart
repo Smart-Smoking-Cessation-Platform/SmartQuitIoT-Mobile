@@ -23,20 +23,21 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final postsFuture = ref.watch(
+      allPostsFutureProvider(_searchQuery.isEmpty ? null : _searchQuery),
+    );
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF00D09E),
         elevation: 0,
-        title: Text(
+        title: const Text(
           'Community Posts',
-          style: TextStyle(
-            color: Colors.grey[800],
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -91,43 +92,39 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
           ),
 
           // Posts List
-          // Expanded(child: _buildPostsList()),
+          Expanded(
+            child: postsFuture.when(
+              data: (_) {
+                final posts = ref.watch(allPostsProvider(_searchQuery));
+                if (posts.isEmpty) return _buildEmptyState();
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await ref
+                        .read(postViewModelProvider.notifier)
+                        .loadAllPosts(
+                          query: _searchQuery.isEmpty ? null : _searchQuery,
+                        );
+                  },
+                  color: const Color(0xFF00D09E),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: posts.length,
+                    itemBuilder: (context, index) {
+                      final post = posts[index];
+                      return _buildPostCard(post);
+                    },
+                  ),
+                );
+              },
+              loading: () => _buildLoadingState(),
+              error: (error, stack) => _buildErrorState(error.toString()),
+            ),
+          ),
         ],
       ),
     );
   }
-
-  // Widget _buildPostsList() {
-  //   final postsAsync = ref.watch(
-  //     allPostsProvider(_searchQuery.isEmpty ? null : _searchQuery),
-  //   );
-  //
-  //   return postsAsync.when(
-  //     data: (posts) {
-  //       if (posts.isEmpty) {
-  //         return _buildEmptyState();
-  //       }
-  //
-  //       return RefreshIndicator(
-  //         onRefresh: () async {
-  //           ref.invalidate(
-  //             allPostsProvider(_searchQuery.isEmpty ? null : _searchQuery),
-  //           );
-  //         },
-  //         child: ListView.builder(
-  //           padding: const EdgeInsets.all(16),
-  //           itemCount: posts.length,
-  //           itemBuilder: (context, index) {
-  //             final post = posts[index];
-  //             return _buildPostCard(post);
-  //           },
-  //         ),
-  //       );
-  //     },
-  //     loading: () => _buildLoadingState(),
-  //     error: (error, stack) => _buildErrorState(error.toString()),
-  //   );
-  // }
 
   Widget _buildPostCard(Post post) {
     return Container(
@@ -343,7 +340,9 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
             ElevatedButton(
               onPressed: () {
                 ref.invalidate(
-                  allPostsProvider(_searchQuery.isEmpty ? null : _searchQuery),
+                  allPostsFutureProvider(
+                    _searchQuery.isEmpty ? null : _searchQuery,
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(

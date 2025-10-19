@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../core/errors/exception.dart';
+import '../models/post_detail.dart';
 import '../models/response/error_response.dart';
 import '../models/response/post_detail_response.dart';
 import '../models/response/post_like_response.dart';
@@ -17,15 +18,13 @@ class PostService {
     int limit = 5,
   }) async {
     try {
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/latest?limit=$limit'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          );
-
+      final response = await http.get(
+        Uri.parse('$_baseUrl/latest?limit=$limit'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -57,15 +56,13 @@ class PostService {
         url += '?query=$query';
       }
 
-      final response = await http
-          .get(
-            Uri.parse(url),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          );
-
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -92,15 +89,13 @@ class PostService {
     required int postId,
   }) async {
     try {
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/$postId'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          );
-
+      final response = await http.get(
+        Uri.parse('$_baseUrl/$postId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -127,15 +122,13 @@ class PostService {
     required int postId,
   }) async {
     try {
-      final response = await http
-          .post(
-            Uri.parse('$_baseUrl/$postId/like'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          );
-
+      final response = await http.post(
+        Uri.parse('$_baseUrl/$postId/like'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -162,15 +155,13 @@ class PostService {
     required int postId,
   }) async {
     try {
-      final response = await http
-          .delete(
-            Uri.parse('$_baseUrl/$postId/like'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          );
-
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/$postId/like'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -198,16 +189,15 @@ class PostService {
     required Map<String, dynamic> updateData,
   }) async {
     try {
-      final response = await http
-          .put(
-            Uri.parse('$_baseUrl/$postId'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-            body: jsonEncode(updateData),
-          );
-          // .timeout(_timeout);
+      final response = await http.put(
+        Uri.parse('$_baseUrl/$postId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode(updateData),
+      );
+      // .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -234,15 +224,14 @@ class PostService {
     required int postId,
   }) async {
     try {
-      final response = await http
-          .delete(
-            Uri.parse('$_baseUrl/$postId'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-          );
-          // .timeout(_timeout);
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/$postId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+      // .timeout(_timeout);
 
       if (response.statusCode != 200) {
         final Map<String, dynamic> errorData = jsonDecode(response.body);

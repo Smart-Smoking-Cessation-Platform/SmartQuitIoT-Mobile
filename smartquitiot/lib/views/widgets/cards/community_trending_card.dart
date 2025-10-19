@@ -10,8 +10,10 @@ import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
 
 import '../../../models/state/post_state.dart';
 
-final postViewModelProvider =
-StateNotifierProvider<PostViewModel, PostState>((ref) {
+// ✅ Provider ViewModel (call API)
+final postViewModelProvider = StateNotifierProvider<PostViewModel, PostState>((
+  ref,
+) {
   final repo = ref.read(postRepositoryProvider);
   return PostViewModel(repo)..loadLatestPosts();
 });
@@ -24,8 +26,7 @@ class CommunityTrendingCard extends ConsumerStatefulWidget {
       _CommunityTrendingCardState();
 }
 
-class _CommunityTrendingCardState
-    extends ConsumerState<CommunityTrendingCard> {
+class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
   final PageController _pageController = PageController(viewportFraction: 0.8);
 
   @override
@@ -67,7 +68,8 @@ class _CommunityTrendingCardState
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const PostListScreen()),
+                      builder: (context) => const PostListScreen(),
+                    ),
                   );
                 },
                 child: Text(
@@ -84,12 +86,12 @@ class _CommunityTrendingCardState
 
           // Content
           if (postState.isLoading) ...[_buildLoadingState()],
-          if (postState.error != null) ...[
-            _buildErrorState(postState.error!)
-          ],
+          if (postState.error != null) ...[_buildErrorState(postState.error!)],
           if (!postState.isLoading &&
               postState.error == null &&
-              posts.isEmpty) ...[_buildEmptyState()],
+              posts.isEmpty) ...[
+            _buildEmptyState(),
+          ],
           if (!postState.isLoading &&
               postState.error == null &&
               posts.isNotEmpty) ...[
@@ -111,7 +113,7 @@ class _CommunityTrendingCardState
                               _pageController.position.haveDimensions) {
                             final page =
                                 _pageController.page ??
-                                    _pageController.initialPage.toDouble();
+                                _pageController.initialPage.toDouble();
                             double diff = (page - index).abs();
                             value = (1 - (diff * 0.1)).clamp(0.9, 1.0);
                           }
@@ -138,7 +140,7 @@ class _CommunityTrendingCardState
                 ),
               ],
             ),
-          ]
+          ],
         ],
       ),
     );
@@ -166,113 +168,116 @@ class _CommunityTrendingCardState
             ),
           ],
         ),
-        child: Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-        child: post.thumbnail != null && post.thumbnail!.isNotEmpty
-            ? Image.network(
-          post.thumbnail!,
-          height: 260,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset(
-              'lib/assets/images/news.jpg',
-              height: 260,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            );
-          },
-        )
-            : Image.asset(
-          'lib/assets/images/news.jpg',
-          height: 260,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
-            ),
-        Container(
-              height: 260,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  colors: [Colors.black.withOpacity(0.4), Colors.transparent],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Thumbnail
+              post.thumbnail != null && post.thumbnail!.isNotEmpty
+                  ? Image.network(
+                      post.thumbnail!,
+                      height: 260,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          'lib/assets/images/news.jpg',
+                          height: 260,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    )
+                  : Image.asset(
+                      'lib/assets/images/news.jpg',
+                      height: 260,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+
+              // Overlay
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.black.withOpacity(0.4), Colors.transparent],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    post.title,
-                    style: const TextStyle(
+
+              // Text info
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      post.title,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: Colors.white),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundImage: post.account.avatarUrl != null &&
-                            post.account.avatarUrl!.isNotEmpty
-                            ? NetworkImage(post.account.avatarUrl!)
-                            : null,
-                        child: post.account.avatarUrl == null ||
-                            post.account.avatarUrl!.isEmpty
-                            ? const Icon(
-                          Icons.person,
-                          size: 16,
-                          color: Colors.white,
-                        )
-                            : null,
+                        color: Colors.white,
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          post.account.displayName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              post.account.avatarUrl != null &&
+                                  post.account.avatarUrl!.isNotEmpty
+                              ? NetworkImage(post.account.avatarUrl!)
+                              : null,
+                          child:
+                              post.account.avatarUrl == null ||
+                                  post.account.avatarUrl!.isEmpty
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            post.account.displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          _formatTimeAgo(post.createdAt),
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 12),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                            color: Colors.white70,
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
-                      Text(
-                        _formatTimeAgo(post.createdAt),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      _buildAction(Icons.favorite_border, post.likeCount),
-                      const SizedBox(width: 12),
-                      // _buildAction(
-                      //     Icons.chat_bubble_outline,
-                      //     post.comments?.length ?? 0),
-                      // const SizedBox(width: 12),
-                      // _buildAction(Icons.share_outlined, 0),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        _buildAction(Icons.favorite_border, post.likeCount),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            )
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -287,7 +292,7 @@ class _CommunityTrendingCardState
         Text(
           count.toString(),
           style: const TextStyle(fontSize: 10, color: Colors.white),
-        )
+        ),
       ],
     );
   }
