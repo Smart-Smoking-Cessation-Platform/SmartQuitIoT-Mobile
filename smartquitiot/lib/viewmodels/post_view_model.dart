@@ -13,9 +13,11 @@ class PostViewModel extends StateNotifier<PostState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final posts = await _postRepository.getLatestPosts(limit: limit);
+      final posts = await _postRepository.getLatestPosts(limit: 5);
+      // print('🔥 Posts loaded: ${res.length}');
       state = state.copyWith(posts: posts, isLoading: false, error: null);
-    } catch (e) {
+    } catch (e, st) {
+      print('🔥 Load posts error: $e\n$st');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

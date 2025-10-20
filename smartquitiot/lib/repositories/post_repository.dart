@@ -1,6 +1,7 @@
 import '../core/errors/exception.dart';
 import '../models/post.dart';
 import '../models/post_detail.dart';
+import '../models/response/post_list_response.dart';
 import '../services/post_service.dart';
 import '../repositories/auth_repository.dart';
 
@@ -14,20 +15,25 @@ class PostRepository {
 
   Future<List<Post>> getLatestPosts({int limit = 5}) async {
     try {
-      final accessToken = await _authRepository.getAccessToken();
+      final accessToken = await _authRepository.getValidAccessToken();
       if (accessToken == null) {
         throw PostException('Access token not found. Please login again.');
       }
 
-      final response = await _postService.getLatestPosts(
+      // Gọi service để lấy response
+      final PostListResponse response = await _postService.getLatestPosts(
         accessToken: accessToken,
         limit: limit,
       );
+
+      // Log debug
+      print('✅ [PostRepository] Loaded ${response.data.length} posts');
+
+      // Trả về data trực tiếp
       return response.data;
-    } catch (e) {
-      if (e is PostException) {
-        rethrow;
-      }
+    } catch (e, st) {
+      print('🔥 [PostRepository] Error getting latest posts: $e\n$st');
+      if (e is PostException) rethrow;
       throw PostException('Failed to get latest posts: ${e.toString()}');
     }
   }
