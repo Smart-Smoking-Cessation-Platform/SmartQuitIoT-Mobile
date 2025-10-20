@@ -14,7 +14,7 @@ class PostRepository {
 
   Future<List<Post>> getLatestPosts({int limit = 5}) async {
     try {
-      final accessToken = await _authRepository.getValidAccessToken();
+      final accessToken = await _authRepository.getAccessToken();
       if (accessToken == null) {
         throw PostException('Access token not found. Please login again.');
       }
@@ -113,6 +113,27 @@ class PostRepository {
         rethrow;
       }
       throw PostException('Failed to unlike post: ${e.toString()}');
+    }
+  }
+
+  Future<Post> createPost(Map<String, dynamic> postData) async {
+    try {
+      final accessToken = await _authRepository.getAccessToken();
+      if (accessToken == null) {
+        throw PostException('Access token not found. Please login again.');
+      }
+
+      final response = await _postService.createPost(
+        accessToken: accessToken,
+        postData: postData,
+      );
+
+      return response.data;
+    } catch (e) {
+      if (e is PostException) {
+        rethrow;
+      }
+      throw PostException('Failed to create post: ${e.toString()}');
     }
   }
 

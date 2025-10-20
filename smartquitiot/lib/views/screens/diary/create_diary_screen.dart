@@ -28,14 +28,16 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   // Triggers
   List<String> selectedTriggers = [];
   final List<String> availableTriggers = [
-    'Stress',
-    'Social',
-    'Alcohol',
-    'Coffee',
-    'After meal',
-    'Boredom',
-    'Work break',
-    'Driving',
+    "Morning",
+    "After Meal",
+    "Gaming",
+    "Party",
+    "Coffee",
+    "Stress",
+    "Boredom",
+    "Driving",
+    "Sadness",
+    "Work",
   ];
 
   // NRT

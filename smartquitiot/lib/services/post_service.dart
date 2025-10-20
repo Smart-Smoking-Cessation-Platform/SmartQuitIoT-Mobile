@@ -183,6 +183,40 @@ class PostService {
     }
   }
 
+  Future<PostDetailResponse> createPost({
+    required String accessToken,
+    required Map<String, dynamic> postData,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse(_baseUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode(postData),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return PostDetailResponse.fromJson(data);
+      } else {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        final errorResponse = ErrorResponse.fromJson(errorData);
+        throw PostException(errorResponse.message);
+      }
+    } on http.ClientException {
+      throw PostException('Network error. Please check your connection.');
+    } on FormatException {
+      throw PostException('Invalid response format from server.');
+    } catch (e) {
+      if (e is PostException) {
+        rethrow;
+      }
+      throw PostException('Failed to create post: ${e.toString()}');
+    }
+  }
+
   Future<PostDetailResponse> updatePost({
     required String accessToken,
     required int postId,

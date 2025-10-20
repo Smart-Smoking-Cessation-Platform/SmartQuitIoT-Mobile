@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/post.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
+import 'package:SmartQuitIoT/views/screens/posts/create_post_screen.dart';
 
 class PostListScreen extends ConsumerStatefulWidget {
   const PostListScreen({super.key});
@@ -126,6 +127,19 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFF00D09E),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Create Post'),
+        elevation: 8,
       ),
     );
   }
@@ -260,45 +274,45 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.favorite_border,
-                          color: Colors.grey[600],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          post.likeCount.toString(),
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
+                        // Icon(
+                        //   Icons.favorite_border,
+                        //   color: Colors.grey[600],
+                        //   size: 20,
+                        // ),
+                        // const SizedBox(width: 4),
+                        // Text(
+                        //   post.likeCount.toString(),
+                        //   style: TextStyle(
+                        //     color: Colors.grey[600],
+                        //     fontSize: 14,
+                        //   ),
+                        // ),
                       ],
                     ),
-                    const SizedBox(width: 20),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.chat_bubble_outline,
-                          color: Colors.grey[600],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${post.comments?.length ?? 0}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Icon(
-                      Icons.share_outlined,
-                      color: Colors.grey[600],
-                      size: 20,
-                    ),
+                    // const SizedBox(width: 20),
+                    // Row(
+                    //   children: [
+                    //     Icon(
+                    //       Icons.chat_bubble_outline,
+                    //       color: Colors.grey[600],
+                    //       size: 20,
+                    //     ),
+                    //     const SizedBox(width: 4),
+                    //     Text(
+                    //       '${post.comments?.length ?? 0}',
+                    //       style: TextStyle(
+                    //         color: Colors.grey[600],
+                    //         fontSize: 14,
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
+                    // const Spacer(),
+                    // Icon(
+                    //   Icons.share_outlined,
+                    //   color: Colors.grey[600],
+                    //   size: 20,
+                    // ),
                   ],
                 ),
               ],

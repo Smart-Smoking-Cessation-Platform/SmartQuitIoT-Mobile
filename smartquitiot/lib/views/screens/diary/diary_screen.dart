@@ -264,7 +264,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                     Expanded(
                       child: _buildSimpleStat(
                         'Smoked',
-                        todayRecord?.cigarettesSmoked?.toString() ?? '0',
+                        todayRecord['cigarettesSmoked']?.toString() ?? '0',
                         'cigarettes',
                         Icons.smoke_free,
                         const Color(0xFF4CAF50),
@@ -274,7 +274,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                     Expanded(
                       child: _buildSimpleStat(
                         'Cravings',
-                        todayRecord?.cravingLevel?.toString() ?? '0',
+                        todayRecord['cravingLevel']?.toString() ?? '0',
                         'level',
                         Icons.psychology,
                         const Color(0xFFE91E63),
@@ -288,7 +288,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                     Expanded(
                       child: _buildSimpleStat(
                         'Mood',
-                        todayRecord?.moodLevel?.toString() ?? '0',
+                        todayRecord['moodLevel']?.toString() ?? '0',
                         'out of 10',
                         Icons.sentiment_satisfied,
                         const Color(0xFF2196F3),
@@ -298,7 +298,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                     Expanded(
                       child: _buildSimpleStat(
                         'Confidence',
-                        todayRecord?.confidenceLevel?.toString() ?? '0',
+                        todayRecord['confidenceLevel']?.toString() ?? '0',
                         'level',
                         Icons.psychology_alt,
                         const Color(0xFFFF9800),

@@ -15,7 +15,7 @@ final postViewModelProvider = StateNotifierProvider<PostViewModel, PostState>((
   ref,
 ) {
   final repo = ref.read(postRepositoryProvider);
-  return PostViewModel(repo)..loadLatestPosts();
+  return PostViewModel(repo);
 });
 
 class CommunityTrendingCard extends ConsumerStatefulWidget {
@@ -28,6 +28,15 @@ class CommunityTrendingCard extends ConsumerStatefulWidget {
 
 class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
   final PageController _pageController = PageController(viewportFraction: 0.8);
+
+  @override
+  void initState() {
+    super.initState();
+    // Load latest posts when widget initializes
+    Future.microtask(() {
+      ref.read(postViewModelProvider.notifier).loadLatestPosts(limit: 5);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
