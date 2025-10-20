@@ -1,26 +1,58 @@
-﻿import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_options.dart';
-import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/screens/diary/diary_date_selector.dart';
-import 'package:SmartQuitIoT/views/widgets/cards/smoking_choice_card.dart';
-import 'package:SmartQuitIoT/views/widgets/cards/mood_slider_card.dart';
-import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
-class CreateDiaryScreen extends StatefulWidget {
+﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
+import 'package:SmartQuitIoT/models/diary_record.dart';
+import 'package:intl/intl.dart';
+
+class CreateDiaryScreen extends ConsumerStatefulWidget {
   const CreateDiaryScreen({super.key});
 
   @override
-  State<CreateDiaryScreen> createState() => _CreateDiaryScreenState();
+  ConsumerState<CreateDiaryScreen> createState() => _CreateDiaryScreenState();
 }
 
-class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
+class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   DateTime selectedDate = DateTime.now();
   bool hasSmoked = false;
   int cigarettesSmoked = 0;
-  double moneySpent = 0.0;
   double cravingLevel = 5.0;
   double moodLevel = 5.0;
   double confidenceLevel = 5.0;
   double anxietyLevel = 5.0;
+  final NumberFormat currencyFormatter = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: 'VND',
+    decimalDigits: 0,
+  );
+
+  // Triggers
+  List<String> selectedTriggers = [];
+  final List<String> availableTriggers = [
+    'Stress',
+    'Social',
+    'Alcohol',
+    'Coffee',
+    'After meal',
+    'Boredom',
+    'Work break',
+    'Driving',
+  ];
+
+  // NRT
+  bool isUseNrt = false;
+  double moneySpentOnNrt = 0.0;
+
+  // IoT Data
+  bool isConnectIoTDevice = false;
+  int steps = 0;
+  int heartRate = 0;
+  int spo2 = 0;
+  int activityMinutes = 0;
+  int respiratoryRate = 0;
+  double sleepDuration = 0.0;
+  int sleepQuality = 5;
   final TextEditingController notesController = TextEditingController();
+  final TextEditingController moneyController = TextEditingController();
 
   @override
   void dispose() {
@@ -47,159 +79,71 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DiaryDateSelector(
-              selectedDate: selectedDate,
-              onTap: () => _selectDate(context),
-            ),
-            const SizedBox(height: 24),
-            SmokingChoiceCard(
-              title: 'Have You Smoked Since Your Last Entry?',
-              subtitle: '',
-              isSelected: hasSmoked,
-              onTap: () {
-                setState(() {
-                  hasSmoked = !hasSmoked;
-                  if (!hasSmoked) {
-                    cigarettesSmoked = 0;
-                    moneySpent = 0.0;
-                  }
-                });
-              },
-            ),
-            if (hasSmoked) ...[
-              const SizedBox(height: 24),
-              _buildSmokingDetails(),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Date Selector
+              _buildDateSelector(),
+              const SizedBox(height: 20),
+
+              // Smoking Status
+              _buildSmokingSection(),
+              const SizedBox(height: 20),
+
+              // Mood Sliders
+              _buildMoodSection(),
+              const SizedBox(height: 20),
+
+              // Triggers
+              _buildTriggersSection(),
+              const SizedBox(height: 20),
+
+              // NRT
+              _buildNrtSection(),
+              const SizedBox(height: 20),
+
+              // IoT Data
+              _buildIoTSection(),
+              const SizedBox(height: 20),
+
+              // Notes
+              _buildNotesSection(),
+              const SizedBox(height: 32),
+
+              // Save Button
+              _buildSaveButton(),
+              const SizedBox(height: 20),
             ],
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  MoodSliderCard(
-                    title: 'Cravings',
-                    subtitle: 'How strong was your desire to smoke?',
-                    value: cravingLevel,
-                    onChanged: (value) => setState(() => cravingLevel = value),
-                    icon: Icons.psychology,
-                    color: const Color(0xFFE91E63),
-                  ),
-                  const SizedBox(height: 24),
-                  MoodSliderCard(
-                    title: 'Mood',
-                    subtitle: 'How did you feel today?',
-                    value: moodLevel,
-                    onChanged: (value) => setState(() => moodLevel = value),
-                    icon: Icons.sentiment_satisfied,
-                    color: const Color(0xFF2196F3),
-                  ),
-                  const SizedBox(height: 24),
-                  MoodSliderCard(
-                    title: 'Confidence Level',
-                    subtitle: 'How confident you feel?',
-                    value: confidenceLevel,
-                    onChanged: (value) =>
-                        setState(() => confidenceLevel = value),
-                    icon: Icons.psychology_alt,
-                    color: const Color(0xFF4CAF50),
-                  ),
-                  const SizedBox(height: 24),
-                  MoodSliderCard(
-                    title: 'Anxiety',
-                    subtitle: 'How anxious was anxiety?',
-                    value: anxietyLevel,
-                    onChanged: (value) => setState(() => anxietyLevel = value),
-                    icon: Icons.airline_seat_recline_normal,
-                    color: const Color(0xFFFF9800),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildNotesSection(),
-            const SizedBox(height: 32),
-            _buildSaveButton(),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildDateSelector() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Date',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+    return InkWell(
+      onTap: () => _selectDate(context),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF00D09E)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today, color: Color(0xFF00D09E)),
+            const SizedBox(width: 12),
+            Text(
+              '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-          ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () => _selectDate(context),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00D09E).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF00D09E).withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    color: Color(0xFF00D09E),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF00D09E),
-                    ),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.arrow_drop_down, color: Color(0xFF00D09E)),
-                ],
-              ),
-            ),
-          ),
-        ],
+            const Spacer(),
+            const Icon(Icons.arrow_drop_down, color: Color(0xFF00D09E)),
+          ],
+        ),
       ),
     );
   }
@@ -209,7 +153,7 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -222,239 +166,85 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Have You Smoked Since Your Last Entry?',
+            'Did You Smoke Today?',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Color(0xFF2D3748),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      hasSmoked = false;
-                      cigarettesSmoked = 0;
-                      moneySpent = 0.0;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: !hasSmoked
-                          ? const Color(0xFF4CAF50).withOpacity(0.1)
-                          : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: !hasSmoked
-                            ? const Color(0xFF4CAF50)
-                            : Colors.grey[300]!,
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: !hasSmoked
-                                ? const Color(0xFF4CAF50)
-                                : Colors.transparent,
-                            border: Border.all(
-                              color: !hasSmoked
-                                  ? const Color(0xFF4CAF50)
-                                  : Colors.grey[400]!,
-                              width: 2,
-                            ),
-                          ),
-                          child: !hasSmoked
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 14,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'No',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: !hasSmoked
-                                ? const Color(0xFF4CAF50)
-                                : Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                child: _buildChoiceButton('No', !hasSmoked, () {
+                  setState(() {
+                    hasSmoked = false;
+                    cigarettesSmoked = 0;
+                  });
+                }),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      hasSmoked = true;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: hasSmoked
-                          ? const Color(0xFFE91E63).withOpacity(0.1)
-                          : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: hasSmoked
-                            ? const Color(0xFFE91E63)
-                            : Colors.grey[300]!,
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: hasSmoked
-                                ? const Color(0xFFE91E63)
-                                : Colors.transparent,
-                            border: Border.all(
-                              color: hasSmoked
-                                  ? const Color(0xFFE91E63)
-                                  : Colors.grey[400]!,
-                              width: 2,
-                            ),
-                          ),
-                          child: hasSmoked
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 14,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Yes',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: hasSmoked
-                                ? const Color(0xFFE91E63)
-                                : Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                child: _buildChoiceButton('Yes', hasSmoked, () {
+                  setState(() => hasSmoked = true);
+                }),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSmokingDetails() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: const Color(0xFFE91E63).withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildNumberInput(
-            'How Many Did You Smoke?',
-            cigarettesSmoked,
-            (value) => setState(() => cigarettesSmoked = value),
-            Icons.smoke_free,
-            const Color(0xFFE91E63),
-          ),
-          const SizedBox(height: 24),
-          _buildNumberInput(
-            'How Much You Spent On NRT Since Last Entry (\$)',
-            moneySpent.toInt(),
-            (value) => setState(() => moneySpent = value.toDouble()),
-            Icons.attach_money,
-            const Color(0xFFE91E63),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNumberInput(
-    String title,
-    int value,
-    Function(int) onChanged,
-    IconData icon,
-    Color color,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: color,
+          if (hasSmoked) ...[
+            const SizedBox(height: 20),
+            const Text(
+              'How many cigarettes?',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: '0',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
               ),
+              onChanged: (value) {
+                setState(() {
+                  cigarettesSmoked = int.tryParse(value) ?? 0;
+                });
+              },
             ),
           ],
-        ),
+        ],
+      ),
+    );
+  }
 
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3)),
-          ),
-          child: TextField(
-            keyboardType: TextInputType.number,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              hintText: '0',
-              hintStyle: TextStyle(color: Colors.grey[400]),
-            ),
-            onChanged: (text) {
-              final number = int.tryParse(text) ?? 0;
-              onChanged(number);
-            },
+  Widget _buildChoiceButton(String label, bool isSelected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00D09E) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00D09E) : Colors.grey[300]!,
           ),
         ),
-      ],
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[600],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -463,7 +253,7 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -476,38 +266,30 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
         children: [
           _buildSlider(
             'Cravings',
-            'How strong was your desire to smoke?',
             cravingLevel,
-            (value) => setState(() => cravingLevel = value),
-            Icons.psychology,
             const Color(0xFFE91E63),
+            (v) => setState(() => cravingLevel = v),
           ),
-          const SizedBox(height: 24),
+          const Divider(height: 32),
           _buildSlider(
             'Mood',
-            'How did you feel today?',
             moodLevel,
-            (value) => setState(() => moodLevel = value),
-            Icons.sentiment_satisfied,
             const Color(0xFF2196F3),
+            (v) => setState(() => moodLevel = v),
           ),
-          const SizedBox(height: 24),
+          const Divider(height: 32),
           _buildSlider(
-            'Confidence Level',
-            'How confident you feel?',
+            'Confidence',
             confidenceLevel,
-            (value) => setState(() => confidenceLevel = value),
-            Icons.psychology_alt,
             const Color(0xFF4CAF50),
+            (v) => setState(() => confidenceLevel = v),
           ),
-          const SizedBox(height: 24),
+          const Divider(height: 32),
           _buildSlider(
             'Anxiety',
-            'How anxious was anxiety?',
             anxietyLevel,
-            (value) => setState(() => anxietyLevel = value),
-            Icons.airline_seat_recline_normal,
             const Color(0xFFFF9800),
+            (v) => setState(() => anxietyLevel = v),
           ),
         ],
       ),
@@ -515,88 +297,134 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
   }
 
   Widget _buildSlider(
-    String title,
-    String subtitle,
+    String label,
     double value,
-    Function(double) onChanged,
-    IconData icon,
     Color color,
+    ValueChanged<double> onChanged,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                value.toStringAsFixed(1),
-                style: TextStyle(fontWeight: FontWeight.bold, color: color),
+            Text(
+              '${value.round()}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text('1', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-            Expanded(
-              child: Slider(
-                value: value,
-                min: 1.0,
-                max: 10.0,
-                divisions: 90,
-                activeColor: color,
-                inactiveColor: color.withOpacity(0.2),
-                thumbColor: color,
-                onChanged: onChanged,
-              ),
-            ),
-            Text('10', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-          ],
+        Slider(
+          value: value,
+          min: 0,
+          max: 10,
+          divisions: 10,
+          activeColor: color,
+          inactiveColor: color.withOpacity(0.2),
+          onChanged: onChanged,
         ),
       ],
     );
   }
 
-  Widget _buildNotesSection() {
+  Widget _buildTriggersSection() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Triggers',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: availableTriggers.map((trigger) {
+              final isSelected = selectedTriggers.contains(trigger);
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    if (isSelected) {
+                      selectedTriggers.remove(trigger);
+                    } else {
+                      selectedTriggers.add(trigger);
+                    }
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF00D09E)
+                        : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF00D09E)
+                          : Colors.grey[300]!,
+                    ),
+                  ),
+                  child: Text(
+                    trigger,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey[700],
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNrtSection() {
+    final moneyController = TextEditingController(
+      text: moneySpentOnNrt > 0
+          ? currencyFormatter.format(moneySpentOnNrt)
+          : '',
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -609,52 +437,208 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF9C27B0).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.notes,
-                  color: Color(0xFF9C27B0),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
               const Text(
-                'Notes',
+                'Using NRT?',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF9C27B0),
+                  color: Color(0xFF2D3748),
                 ),
+              ),
+              Switch(
+                value: isUseNrt,
+                activeColor: const Color(0xFF00D09E),
+                onChanged: (value) {
+                  setState(() {
+                    isUseNrt = value;
+                    if (!value) moneySpentOnNrt = 0.0;
+                  });
+                },
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Container(
-            height: 120,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              // 👇 nền trắng hoàn toàn
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              // 👇 viền xám nhẹ
-              border: Border.all(color: Colors.grey[300]!),
+          if (isUseNrt) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Money spent on NRT',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
-            child: TextField(
-              controller: notesController,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF2D3748)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: moneyController,
+              keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Enter notes...',
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                hintText: '0',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
+              onChanged: (value) {
+                // Loại bỏ ký tự không phải số
+                final numericString = value.replaceAll(RegExp(r'[^0-9]'), '');
+                final parsed = double.tryParse(numericString) ?? 0;
+                setState(() {
+                  moneySpentOnNrt = parsed;
+                  // Cập nhật lại controller với format VND
+                  moneyController.value = TextEditingValue(
+                    text: parsed == 0 ? '' : currencyFormatter.format(parsed),
+                    selection: TextSelection.collapsed(
+                      offset: parsed == 0
+                          ? 0
+                          : currencyFormatter.format(parsed).length,
+                    ),
+                  );
+                });
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIoTSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Health Data',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _getDataFromIoT,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D09E),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(Icons.bluetooth, color: Colors.white, size: 20),
+              label: const Text(
+                'Connect IOT device',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          if (isConnectIoTDevice) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Column(
+                children: [
+                  _buildDataRow('Steps', '$steps', Icons.directions_walk),
+                  _buildDataRow('Heart Rate', '$heartRate bpm', Icons.favorite),
+                  _buildDataRow('SpO2', '$spo2%', Icons.healing),
+                  _buildDataRow(
+                    'Active Minutes',
+                    '$activityMinutes min',
+                    Icons.fitness_center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.green[700]),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Notes',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: notesController,
+            maxLines: 4,
+            decoration: InputDecoration(
+              hintText: 'How are you feeling today?',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.all(12),
             ),
           ),
         ],
@@ -665,31 +649,23 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
+      height: 50,
       child: ElevatedButton(
         onPressed: _saveDiary,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF00D09E),
-          padding: const EdgeInsets.all(18),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 4,
-          shadowColor: const Color(0xFF00D09E).withOpacity(0.3),
+          elevation: 2,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.save, color: Colors.white, size: 24),
-            const SizedBox(width: 12),
-            const Text(
-              'Save',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
+        child: const Text(
+          'Save Diary',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -707,40 +683,87 @@ class _CreateDiaryScreenState extends State<CreateDiaryScreen> {
             colorScheme: const ColorScheme.light(
               primary: Color(0xFF00D09E),
               onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
             ),
           ),
           child: child!,
         );
       },
     );
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
+    if (picked != null) {
+      setState(() => selectedDate = picked);
     }
   }
 
-  void _saveDiary() {
-    // Show success
+  void _getDataFromIoT() {
+    setState(() {
+      steps = 8500;
+      heartRate = 72;
+      spo2 = 98;
+      activityMinutes = 45;
+      respiratoryRate = 16;
+      sleepDuration = 7.5;
+      sleepQuality = 8;
+      isConnectIoTDevice = true;
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Diary saved successfully!'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+      const SnackBar(
+        content: Text('Health data synced successfully!'),
+        backgroundColor: Color(0xFF4CAF50),
       ),
     );
-
-    Navigator.popUntil(context, (route) {
-      return route.settings.name == '/main';
-    });
   }
 
+  void _saveDiary() async {
+    final diaryNotifier = ref.read(diaryRecordNotifierProvider.notifier);
+
+    final request = DiaryRecordRequest(
+      date: selectedDate.toIso8601String().split('T')[0],
+      haveSmoked: hasSmoked,
+      cigarettesSmoked: cigarettesSmoked,
+      triggers: selectedTriggers,
+      isUseNrt: isUseNrt,
+      moneySpentOnNrt: moneySpentOnNrt,
+      cravingLevel: cravingLevel.round(),
+      moodLevel: moodLevel.round(),
+      confidenceLevel: confidenceLevel.round(),
+      anxietyLevel: anxietyLevel.round(),
+      note: notesController.text,
+      isConnectIoTDevice: isConnectIoTDevice,
+      steps: steps,
+      heartRate: heartRate,
+      spo2: spo2,
+      activityMinutes: activityMinutes,
+      respiratoryRate: respiratoryRate,
+      sleepDuration: sleepDuration,
+      sleepQuality: sleepQuality,
+    );
+
+    await diaryNotifier.createDiaryRecord(request);
+
+    if (mounted) {
+      final state = ref.read(diaryRecordNotifierProvider);
+      state.whenOrNull(
+        data: (_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Diary saved successfully!'),
+              backgroundColor: Color(0xFF4CAF50),
+            ),
+          );
+          Navigator.popUntil(context, (route) {
+            return route.settings.name == '/main';
+          });
+        },
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error.toString()),
+              backgroundColor: const Color(0xFFE53E3E),
+            ),
+          );
+        },
+      );
+    }
+  }
 }
-
-
-
