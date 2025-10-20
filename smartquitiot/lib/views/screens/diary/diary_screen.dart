@@ -2,7 +2,6 @@ import 'package:SmartQuitIoT/views/screens/diary/create_diary_screen.dart';
 import 'package:flutter/material.dart';
 import 'diary_history_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
 
 class DiaryScreen extends ConsumerStatefulWidget {
   const DiaryScreen({super.key});
@@ -14,7 +13,8 @@ class DiaryScreen extends ConsumerStatefulWidget {
 class _DiaryScreenState extends ConsumerState<DiaryScreen> {
   @override
   Widget build(BuildContext context) {
-    final todayRecordAsync = ref.watch(todayDiaryRecordProvider);
+    // Tạm thời sử dụng data giả thay vì API
+    final mockTodayRecord = _getMockTodayRecord();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FFFE),
@@ -45,17 +45,23 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
           ),
         ],
       ),
-      body: todayRecordAsync.when(
-        data: (todayRecord) {
-          if (todayRecord == null) {
-            return _buildEmptyState();
-          }
-          return _buildDiaryContent(todayRecord);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(error.toString()),
-      ),
+      body: mockTodayRecord == null
+          ? _buildEmptyState()
+          : _buildDiaryContent(mockTodayRecord),
     );
+  }
+
+  // Mock data cho testing UI
+  Map<String, dynamic>? _getMockTodayRecord() {
+    return {
+      'cigarettesSmoked': 2,
+      'cravingLevel': 6,
+      'moodLevel': 7,
+      'confidenceLevel': 8,
+      'notes':
+          'Had a challenging day but managed to resist most cravings. Feeling more confident about my progress.',
+      'createdAt': DateTime.now().toIso8601String(),
+    };
   }
 
   Widget _buildEmptyState() {
@@ -304,52 +310,6 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Color(0xFFE53E3E)),
-            const SizedBox(height: 16),
-            const Text(
-              'Something went wrong',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                ref.invalidate(todayDiaryRecordProvider);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00D09E),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('Retry', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
       ),
     );
   }

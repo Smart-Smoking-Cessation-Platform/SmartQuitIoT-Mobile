@@ -34,3 +34,13 @@ class NewsException implements Exception {
   @override
   String toString() => message;
 }
+
+class CoachException implements Exception {
+  final String message;
+  final int? statusCode;
+
+  const CoachException(this.message, [this.statusCode]);
+
+  @override
+  String toString() => 'CoachException: $message';
+}
