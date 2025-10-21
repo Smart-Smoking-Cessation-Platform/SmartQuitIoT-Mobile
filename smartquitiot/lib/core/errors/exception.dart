@@ -1,4 +1,4 @@
-﻿class ServerException implements Exception {
+class ServerException implements Exception {
   final String message;
   ServerException(this.message);
 
@@ -43,4 +43,20 @@ class CoachException implements Exception {
 
   @override
   String toString() => 'CoachException: $message';
+}
+
+class TodayMissionException implements Exception {
+  final String message;
+  TodayMissionException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+class QuitPlanException implements Exception {
+  final String message;
+  QuitPlanException(this.message);
+
+  @override
+  String toString() => message;
 }

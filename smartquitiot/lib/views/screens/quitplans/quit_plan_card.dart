@@ -1,101 +1,27 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-import '../../../repositories/auth_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 
-class QuitPlanCard extends StatefulWidget {
+class QuitPlanCard extends ConsumerStatefulWidget {
   const QuitPlanCard({super.key});
 
   @override
-  State<QuitPlanCard> createState() => _QuitPlanCardState();
+  ConsumerState<QuitPlanCard> createState() => _QuitPlanCardState();
 }
 
-class _QuitPlanCardState extends State<QuitPlanCard> {
-  double progress = 0.0;
-  String stage = "";
-  List<String> steps = [];
-  bool isLoading = true;
-  String? error;
-
-  final AuthRepository _authRepository = AuthRepository();
-
+class _QuitPlanCardState extends ConsumerState<QuitPlanCard> {
   @override
   void initState() {
     super.initState();
-    fetchQuitPlan();
-  }
-
-  Future<void> fetchQuitPlan() async {
-    final url = dotenv.env['API_QUIT_PLAN_URL'];
-    if (url == null) {
-      setState(() {
-        error = "API_QUIT_PLAN_URL not set";
-        isLoading = false;
-      });
-      return;
-    }
-
-    try {
-      final accessToken = await _authRepository.getAccessToken();
-      if (accessToken == null) {
-        setState(() {
-          error = "No access token found";
-          isLoading = false;
-        });
-        return;
-      }
-
-      final res = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final phases = data['phases'] as List;
-
-        final phaseNames = phases
-            .map<String>((p) => p['name'] as String)
-            .toList();
-
-        final currentPhase = phases.firstWhere(
-          (p) => (p['progress'] ?? 0) < 100,
-          orElse: () => phases.last,
-        );
-
-        setState(() {
-          progress = (currentPhase['progress'] ?? 0) / 100.0;
-          stage = currentPhase['name'] ?? "";
-          steps = phaseNames;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          error = "Failed to load quit plan: ${res.statusCode}";
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        error = e.toString();
-        isLoading = false;
-      });
-    }
+    // Load quit plan when widget initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(quitPlanHomepageViewModelProvider.notifier).loadQuitPlanHomePage();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) return const Center(child: CircularProgressIndicator());
-    if (error != null)
-      return Text('Error: $error', style: const TextStyle(color: Colors.red));
-
-    final int percent = (progress * 100).round();
-    const Color progressColorStart = Color(0xFF00D09E);
-    const Color progressColorEnd = Color(0xFF3FCF8E);
+    final state = ref.watch(quitPlanHomepageViewModelProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -111,178 +37,350 @@ class _QuitPlanCardState extends State<QuitPlanCard> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.greenAccent.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.smoke_free,
-                  color: Color(0xFF00D09E),
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Quit Plan',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D09E),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  minimumSize: const Size(0, 32),
-                ),
-                child: const Text(
-                  'View More',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+      child: _buildContent(state),
+    );
+  }
 
-          // Current stage
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00D09E).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+  Widget _buildContent(state) {
+    if (state.isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: CircularProgressIndicator(
+            color: Color(0xFF00D09E),
+          ),
+        ),
+      );
+    }
+
+    if (state.hasError) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Row(
               children: [
-                const Icon(Icons.bolt, size: 16, color: Color(0xFF00D09E)),
-                const SizedBox(width: 6),
-                Text(
-                  stage,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Error: ${state.error}',
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // Progress bar
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Progress',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  ref.read(quitPlanHomepageViewModelProvider.notifier).refreshQuitPlan();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[700],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                child: const Text('Retry', style: TextStyle(fontSize: 12)),
               ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!state.hasQuitPlan) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.grey, size: 20),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'No quit plan available',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final quitPlan = state.quitPlan!;
+    const Color progressColorStart = Color(0xFF00D09E);
+    const Color progressColorEnd = Color(0xFF3FCF8E);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.greenAccent.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.smoke_free,
+                color: Color(0xFF00D09E),
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Quit Plan',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    quitPlan.name,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D09E),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                minimumSize: const Size(0, 32),
+              ),
+              child: const Text(
+                'View More',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Duration and Date Info
+        Row(
+          children: [
+            Expanded(
+              child: _buildInfoCard(
+                icon: Icons.calendar_today,
+                label: 'Duration',
+                value: '${quitPlan.durationDay} days',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildInfoCard(
+                icon: Icons.flag,
+                label: 'Start Date',
+                value: _formatDate(quitPlan.startDate),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Current Phase Detail
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00D09E).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF00D09E).withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.today, size: 16, color: Color(0xFF00D09E)),
+                  const SizedBox(width: 8),
+                  Text(
+                    quitPlan.currentPhaseDetail.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00D09E),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D09E),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Day ${quitPlan.currentPhaseDetail.dayIndex}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Text(
-                '$percent%',
+                'Today: ${quitPlan.currentPhaseDetail.missionProgress} missions',
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF00D09E),
+                  color: Colors.black87,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Container(
-            height: 10,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1FFF3),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final barWidth = constraints.maxWidth * progress;
-                return Stack(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      width: barWidth,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [progressColorStart, progressColorEnd],
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    Positioned(
-                      left: (barWidth - 20).clamp(0, constraints.maxWidth - 30),
-                      top: -18,
-                      child: Text(
-                        '$percent%',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF00D09E),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
+        ),
+        const SizedBox(height: 16),
 
-          // Steps labels
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: steps.map((step) {
-              final int stepIndex = steps.indexOf(step);
-              final bool completed =
-                  stepIndex < steps.indexOf(stage) || progress >= 1.0;
-              final bool isCurrentStage = step == stage;
-
-              return Column(
-                children: [
-                  Icon(
-                    completed
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    color: isCurrentStage
-                        ? const Color(0xFF00D09E)
-                        : (completed
-                              ? const Color(0xFF00D09E)
-                              : Colors.grey[300]),
-                    size: 16,
+        // Mission Progress
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Overall Progress',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${quitPlan.progressPercent}%',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF00D09E),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    step,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isCurrentStage
-                          ? const Color(0xFF00D09E)
-                          : (completed ? Colors.black87 : Colors.grey),
+                ),
+                Text(
+                  quitPlan.missionProgress,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 10,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1FFF3),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final barWidth = constraints.maxWidth * quitPlan.progressPercentage;
+              return Stack(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    width: barWidth,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [progressColorStart, progressColorEnd],
+                      ),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                   ),
                 ],
               );
-            }).toList(),
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: Colors.grey[600]),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
   }
 }
