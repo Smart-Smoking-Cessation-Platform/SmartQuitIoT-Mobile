@@ -24,6 +24,7 @@ import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/api_demo_screen.dart';
 import 'package:SmartQuitIoT/utils/app_theme.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -97,7 +98,10 @@ class _MyAppState extends ConsumerState<MyApp> {
     final orderCodeNum = int.tryParse(params['orderCode'] ?? '') ?? 0;
 
     String membershipStatus;
-    if (cancel || !(path.contains('success') || statusStr.toUpperCase() == 'PAID' || statusStr.toUpperCase() == 'SUCCESS')) {
+    if (cancel ||
+        !(path.contains('success') ||
+            statusStr.toUpperCase() == 'PAID' ||
+            statusStr.toUpperCase() == 'SUCCESS')) {
       membershipStatus = 'UNAVAILABLE';
     } else {
       membershipStatus = 'AVAILABLE';
@@ -117,15 +121,15 @@ class _MyAppState extends ConsumerState<MyApp> {
     showDialog(
       context: navigator.context,
       barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     await Future.delayed(const Duration(seconds: 2));
 
     try {
-      await ref.read(membershipViewModelProvider.notifier).processPaymentResult(body);
+      await ref
+          .read(membershipViewModelProvider.notifier)
+          .processPaymentResult(body);
     } catch (e) {
       debugPrint('Error processing payment result: $e');
     }
@@ -135,13 +139,13 @@ class _MyAppState extends ConsumerState<MyApp> {
     if (cancel) {
       navigator.pushNamedAndRemoveUntil(
         '/payment-cancel',
-            (_) => false,
+        (_) => false,
         arguments: body,
       );
     } else if (membershipStatus == 'AVAILABLE') {
       navigator.pushNamedAndRemoveUntil(
         '/payment-success',
-            (_) => false,
+        (_) => false,
         arguments: body,
       );
     } else {
@@ -150,8 +154,6 @@ class _MyAppState extends ConsumerState<MyApp> {
       );
     }
   }
-
-
 
   @override
   void dispose() {
@@ -168,7 +170,10 @@ class _MyAppState extends ConsumerState<MyApp> {
       home: const SplashScreen(),
 
       // Easy Localization
-      localizationsDelegates: context.localizationDelegates,
+      localizationsDelegates: [
+        ...context.localizationDelegates,
+        FlutterQuillLocalizations.delegate,
+      ],
       supportedLocales: context.supportedLocales,
       locale: context.locale,
 

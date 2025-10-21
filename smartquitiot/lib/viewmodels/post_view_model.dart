@@ -112,6 +112,20 @@ class PostViewModel extends StateNotifier<PostState> {
     );
   }
 
+  /// Create a new post
+  Future<void> createPost(Map<String, dynamic> postData) async {
+    try {
+      final newPost = await _postRepository.createPost(postData);
+
+      // Add the new post to the beginning of the list
+      final updatedPosts = [newPost, ...state.posts];
+
+      state = state.copyWith(posts: updatedPosts, error: null);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
   /// Update a post
   Future<void> updatePost(int postId, Map<String, dynamic> updateData) async {
     try {

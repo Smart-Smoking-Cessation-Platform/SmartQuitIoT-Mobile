@@ -1,231 +1,471 @@
-import 'package:SmartQuitIoT/views/screens/posts/post_screen.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:image_picker/image_picker.dart';
+import 'package:SmartQuitIoT/services/cloudinary_service.dart';
+import 'package:SmartQuitIoT/providers/post_provider.dart';
+import '../../../models/post.dart';
 
-class CreateNewPostPage extends StatefulWidget {
-  const CreateNewPostPage({super.key});
+class CreatePostScreen extends ConsumerStatefulWidget {
+  final Post? post;
+  const CreatePostScreen({super.key, this.post});
 
   @override
-  _CreateNewPostPageState createState() => _CreateNewPostPageState();
+  ConsumerState<CreatePostScreen> createState() => _CreatePostScreenState();
 }
 
-class _CreateNewPostPageState extends State<CreateNewPostPage> {
-  String selectedCategory = '';
+class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
+  late quill.QuillController _quillController;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+  final FocusNode _editorFocusNode = FocusNode();
 
-  final List<Map<String, dynamic>> categories = [
-    {'title': 'Wellness', 'color': Colors.pink[100], 'icon': '🧘'},
-    {'title': 'Healthcare', 'color': Colors.blue[100], 'icon': '⚕️'},
-    {'title': 'Diet', 'color': Colors.orange[100], 'icon': '🥗'},
-    {'title': 'Fitness', 'color': Color(0xFF00D09E), 'icon': '💪'},
-    {'title': 'Nutrition', 'color': Colors.purple[100], 'icon': '🥑'},
-    {'title': 'Mindful', 'color': Colors.cyan[100], 'icon': '🧠'},
-    {'title': 'Sleep', 'color': Colors.yellow[100], 'icon': '😴'},
-    {'title': 'HealthTech', 'color': Colors.grey[100], 'icon': '📱'},
-    {'title': 'Other', 'color': Colors.grey[50], 'icon': '⚪'},
-  ];
+  bool _isLoading = false;
+  String? _thumbnailUrl;
+  List<Map<String, String>> _mediaList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _quillController = quill.QuillController.basic();
+
+    if (widget.post != null) {
+      _titleController.text = widget.post!.title;
+      _descriptionController.text = widget.post!.description ?? '';
+      _thumbnailUrl = widget.post!.thumbnail;
+      if (widget.post!.media != null) {
+        _mediaList = widget.post!.media!
+            .map((m) => {'mediaUrl': m.mediaUrl, 'mediaType': m.mediaType})
+            .toList();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _quillController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _editorFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(
-                        Icons.arrow_back,
-                        color: Colors.black,
-                        size: 20,
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF00D09E),
+        elevation: 0,
+        title: Text(
+          widget.post != null ? 'Edit Post' : 'Create Post',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: _isLoading ? _buildLoading() : _buildBody(),
+    );
+  }
+
+  Widget _buildLoading() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation(Color(0xFF00D09E)),
+          ),
+          SizedBox(height: 16),
+          Text('Uploading...', style: TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTextField(
+            controller: _titleController,
+            label: 'Title',
+            hint: 'Enter post title',
+          ),
+          const SizedBox(height: 20),
+
+          _buildTextField(
+            controller: _descriptionController,
+            label: 'Description',
+            hint: 'Enter a short description',
+            maxLines: 2,
+          ),
+          const SizedBox(height: 20),
+
+          _buildThumbnailPicker(),
+          const SizedBox(height: 20),
+
+          _buildMediaSection(),
+          const SizedBox(height: 20),
+
+          _buildRichTextEditor(),
+          const SizedBox(height: 30),
+
+          _buildSaveButton(), // ✅ Save button moved here
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          style: const TextStyle(fontSize: 15),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF00D09E), width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThumbnailPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Thumbnail',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: _pickThumbnail,
+          child: Container(
+            width: double.infinity,
+            height: 180,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: _thumbnailUrl != null && _thumbnailUrl!.isNotEmpty
+                ? Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          _thumbnailUrl!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
                       ),
-                      padding: EdgeInsets.zero,
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: IconButton(
+                          icon: const Icon(Icons.close, color: Colors.red),
+                          onPressed: () => setState(() => _thumbnailUrl = null),
+                        ),
+                      ),
+                    ],
+                  )
+                : const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.image, size: 48, color: Colors.grey),
+                        SizedBox(height: 8),
+                        Text(
+                          'Tap to upload thumbnail',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
                     ),
                   ),
-                  Spacer(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMediaSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Media',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            ..._mediaList.map((media) {
+              final isVideo = media['mediaType'] == 'VIDEO';
+              return Stack(
+                children: [
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
-                      color: Color(0xFF4A90E2).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[200],
+                      image: isVideo
+                          ? null
+                          : DecorationImage(
+                              image: NetworkImage(media['mediaUrl']!),
+                              fit: BoxFit.cover,
+                            ),
                     ),
-                    child: Text(
-                      'Community Post',
-                      style: TextStyle(
-                        color: Color(0xFF4A90E2),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                    child: isVideo
+                        ? const Center(
+                            child: Icon(
+                              Icons.videocam,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+                          )
+                        : null,
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.red,
+                        size: 20,
                       ),
+                      onPressed: () => setState(() => _mediaList.remove(media)),
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      'Create New Post',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Select post category',
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                    ),
-                    SizedBox(height: 32),
-
-                    // Categories Grid
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 1.1,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: categories.length,
-                      itemBuilder: (context, index) {
-                        final category = categories[index];
-                        final isSelected =
-                            selectedCategory == category['title'];
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedCategory = category['title'];
-                            });
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Color(0xFF4A90E2).withOpacity(0.1)
-                                  : category['color'],
-                              borderRadius: BorderRadius.circular(16),
-                              border: isSelected
-                                  ? Border.all(
-                                      color: Color(0xFF4A90E2),
-                                      width: 2,
-                                    )
-                                  : null,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      category['icon'],
-                                      style: TextStyle(fontSize: 20),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  category['title'],
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: 40),
-                  ],
+              );
+            }),
+            GestureDetector(
+              onTap: _pickMedia,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
-              ),
-            ),
-
-            // Continue Button
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: selectedCategory.isNotEmpty
-                      ? () {
-                          // Navigate to next page
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  PostContentPage(category: selectedCategory),
-                            ),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedCategory.isNotEmpty
-                        ? Color(0xFF4A90E2)
-                        : Colors.grey[300],
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Continue',
-                        style: TextStyle(
-                          color: selectedCategory.isNotEmpty
-                              ? Colors.white
-                              : Colors.grey[600],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(
-                        Icons.arrow_forward,
-                        color: selectedCategory.isNotEmpty
-                            ? Colors.white
-                            : Colors.grey[600],
-                        size: 18,
-                      ),
-                    ],
-                  ),
+                child: const Icon(
+                  Icons.add_a_photo,
+                  color: Colors.grey,
+                  size: 36,
                 ),
               ),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildRichTextEditor() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Content',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Column(
+            children: [
+              // Sử dụng đúng `config` và `QuillSimpleToolbarConfig`
+              quill.QuillSimpleToolbar(
+                controller: _quillController,
+                config: const quill.QuillSimpleToolbarConfig(
+                  multiRowsDisplay: false,
+                  showBoldButton: true,
+                  showItalicButton: true,
+                  showUnderLineButton: true,
+                  showColorButton: true,
+                  showHeaderStyle: true,
+                  showAlignmentButtons: true,
+                  // ẩn những nút ít dùng
+                  showListBullets: false,
+                  showListNumbers: false,
+                  showListCheck: false,
+                  showQuote: false,
+                  showCodeBlock: false,
+                  showInlineCode: false,
+                  showStrikeThrough: false,
+                  showLink: false,
+                ),
+              ),
+
+              Divider(height: 1, color: Colors.grey[300]),
+
+              // Editor: giữ cấu trúc tương tự code bạn đang chạy
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minHeight: 300, // 👈 Chiều cao tối thiểu cho vùng viết
+                    maxHeight: 600, // Giới hạn cao nhất (có thể chỉnh tùy UI)
+                  ),
+                  child: SingleChildScrollView(
+                    child: quill.QuillEditor.basic(
+                      controller: _quillController,
+                      focusNode: _editorFocusNode,
+                      // Nếu version của bạn cần config, thêm lại đoạn này:
+                      // config: const quill.QuillEditorConfig(
+                      //   placeholder: 'Write your content here...',
+                      //   padding: EdgeInsets.all(8),
+                      //   autoFocus: false,
+                      //   expands: false,
+                      //   scrollable: true,
+                      // ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _savePost,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF00D09E),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: const Icon(Icons.save, color: Colors.white),
+        label: const Text(
+          'Save Post',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
+
+  Future<void> _pickThumbnail() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (image != null) {
+        setState(() => _isLoading = true);
+        final url = await CloudinaryService().uploadImage(File(image.path));
+        setState(() {
+          _thumbnailUrl = url;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickMedia() async {
+    final XFile? file = await _imagePicker.pickMedia();
+    if (file != null) {
+      setState(() => _isLoading = true);
+      try {
+        final url = await CloudinaryService().uploadImage(File(file.path));
+        final String type = file.path.endsWith('.mp4') ? 'VIDEO' : 'IMAGE';
+        setState(() {
+          _mediaList.add({'mediaUrl': url, 'mediaType': type});
+          _isLoading = false;
+        });
+      } catch (e) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _savePost() async {
+    if (_titleController.text.trim().isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final postData = {
+        'title': _titleController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'content': _quillController.document.toPlainText().trim(),
+        'thumbnail': _thumbnailUrl ?? '',
+        'media': _mediaList,
+      };
+
+      if (widget.post != null) {
+        await ref
+            .read(postViewModelProvider.notifier)
+            .updatePost(widget.post!.id, postData);
+      } else {
+        await ref.read(postViewModelProvider.notifier).createPost(postData);
+      }
+
+      if (mounted) Navigator.pop(context, true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 }
-
-
