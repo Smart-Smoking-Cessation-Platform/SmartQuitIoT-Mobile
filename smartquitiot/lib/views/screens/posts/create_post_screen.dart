@@ -444,33 +444,56 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         String? thumbUrl;
 
         if (file.path.endsWith('.mp4')) {
+          print('🎬 [CreatePost] Uploading video...');
           url = await CloudinaryService().uploadVideo(File(file.path));
           type = 'VIDEO';
+          print('✅ [CreatePost] Video uploaded: $url');
 
-          // Tạo thumbnail
+          // Generate and upload thumbnail to Cloudinary
+          print('📸 [CreatePost] Generating video thumbnail...');
           final uint8list = await VideoThumbnail.thumbnailData(
             video: file.path,
             imageFormat: ImageFormat.JPEG,
-            maxWidth: 150,
-            quality: 75,
+            maxWidth: 300,
+            quality: 85,
           );
+          
           if (uint8list != null) {
-            thumbUrl = 'data:image/jpeg;base64,${base64Encode(uint8list)}';
+            print('📤 [CreatePost] Uploading thumbnail to Cloudinary...');
+            // Save thumbnail as temporary file
+            final tempDir = Directory.systemTemp;
+            final tempFile = File('${tempDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg');
+            await tempFile.writeAsBytes(uint8list);
+            
+            // Upload thumbnail to Cloudinary
+            thumbUrl = await CloudinaryService().uploadImage(tempFile);
+            
+            // Clean up temp file
+            await tempFile.delete();
+            print('✅ [CreatePost] Thumbnail uploaded: $thumbUrl');
+          } else {
+            print('⚠️ [CreatePost] Failed to generate thumbnail');
           }
         } else {
+          print('🖼️ [CreatePost] Uploading image...');
           url = await CloudinaryService().uploadImage(File(file.path));
           type = 'IMAGE';
+          print('✅ [CreatePost] Image uploaded: $url');
         }
 
         setState(() {
           _mediaList.add({
             'mediaUrl': url,
             'mediaType': type,
-            'thumbUrl': thumbUrl ?? '',
+            'thumbUrl': thumbUrl ?? '', // Cloudinary URL instead of base64
           });
           _isLoading = false;
         });
-      } catch (e) {
+        
+        print('✅ [CreatePost] Media added to list');
+      } catch (e, stack) {
+        print('❌ [CreatePost] Upload error: $e');
+        print('🧩 [CreatePost] Stack trace: $stack');
         setState(() => _isLoading = false);
       }
     }
@@ -478,6 +501,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
   Future<void> _savePost() async {
     if (_titleController.text.trim().isEmpty) {
+      if (!mounted) return;
       NotificationHelper.showTopNotification(
         context,
         title: 'Error',
@@ -487,6 +511,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     final postData = {
@@ -498,6 +523,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     };
 
     // Show loading dialog
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -513,6 +539,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         await ref
             .read(postViewModelProvider.notifier)
             .updatePost(widget.post!.id, postData);
+        
+        if (!mounted) return;
         NotificationHelper.showTopNotification(
           context,
           title: 'Success',
@@ -520,6 +548,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         );
       } else {
         await ref.read(postViewModelProvider.notifier).createPost(postData);
+        
+        if (!mounted) return;
         NotificationHelper.showTopNotification(
           context,
           title: 'Success',
@@ -535,13 +565,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         Navigator.of(context).pop(true);
       }
     } catch (e) {
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
-      NotificationHelper.showTopNotification(
-        context,
-        title: 'Error',
-        message: 'Failed to save post: $e',
-        isError: true,
-      );
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        NotificationHelper.showTopNotification(
+          context,
+          title: 'Error',
+          message: 'Failed to save post: $e',
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

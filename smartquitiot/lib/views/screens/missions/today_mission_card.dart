@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../viewmodels/today_mission_view_model.dart';
+import '../../../providers/mission_refresh_provider.dart';
 import '../quitplans/quit_plan_screen.dart';
 
 class TodayMissionCard extends ConsumerStatefulWidget {
@@ -23,6 +24,14 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(todayMissionViewModelProvider);
+    
+    // Listen for mission refresh trigger
+    ref.listen(missionRefreshProvider, (previous, next) {
+      if (previous != next) {
+        // Refresh missions when trigger changes
+        ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+      }
+    });
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -163,7 +172,7 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
     }
 
     return Column(
-      children: state.missions.map((mission) {
+      children: state.missions.map<Widget>((mission) {
         return GestureDetector(
           onTap: () {
             Navigator.push(
@@ -262,47 +271,58 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Congratulations! 🎉',
+            '🎉 Outstanding Achievement!',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'You\'ve conquered all today\'s missions!\nYour dedication is truly inspiring.',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.5,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           const Text(
-            'You have completed all missions today!\nPlease come back tomorrow for new challenges.',
+            '✨ Every step forward is a victory against smoking.\nCome back tomorrow for new challenges!',
             style: TextStyle(
-              color: Colors.white,
+              color: Colors.white70,
               fontSize: 14,
               height: 1.4,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF00D09E),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Refresh',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
+          // SizedBox(
+          //   width: double.infinity,
+          //   child: ElevatedButton(
+          //     onPressed: () {
+          //       ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+          //     },
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: Colors.white,
+          //       foregroundColor: const Color(0xFF00D09E),
+          //       padding: const EdgeInsets.symmetric(vertical: 12),
+          //       shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(8),
+          //       ),
+          //     ),
+          //     child: const Text(
+          //       'Check for New Missions',
+          //       style: TextStyle(
+          //         fontWeight: FontWeight.w600,
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

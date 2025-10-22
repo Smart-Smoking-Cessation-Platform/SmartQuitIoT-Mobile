@@ -60,3 +60,11 @@ class QuitPlanException implements Exception {
   @override
   String toString() => message;
 }
+
+class MissionCompleteException implements Exception {
+  final String message;
+  MissionCompleteException(this.message);
+
+  @override
+  String toString() => message;
+}

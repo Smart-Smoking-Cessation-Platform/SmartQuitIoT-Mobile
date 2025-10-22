@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../viewmodels/quit_plan_homepage_view_model.dart';
+import '../../../providers/mission_refresh_provider.dart';
+import 'quit_plan_screen.dart';
 
 class QuitPlanCard extends ConsumerStatefulWidget {
   const QuitPlanCard({super.key});
@@ -9,19 +11,45 @@ class QuitPlanCard extends ConsumerStatefulWidget {
   ConsumerState<QuitPlanCard> createState() => _QuitPlanCardState();
 }
 
-class _QuitPlanCardState extends ConsumerState<QuitPlanCard> {
+class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
   @override
   void initState() {
     super.initState();
-    // Load quit plan when widget initializes
+
+    // Animation cho glow effect
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    // Load quit plan khi widget khởi tạo
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(quitPlanHomepageViewModelProvider.notifier).loadQuitPlanHomePage();
+      ref
+          .read(quitPlanHomepageViewModelProvider.notifier)
+          .loadQuitPlanHomePage();
     });
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(quitPlanHomepageViewModelProvider);
+    
+    // Listen for mission refresh trigger
+    ref.listen(missionRefreshProvider, (previous, next) {
+      if (previous != next) {
+        // Refresh quit plan data when missions are completed
+        ref.read(quitPlanHomepageViewModelProvider.notifier).refreshQuitPlan();
+      }
+    });
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -37,11 +65,11 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard> {
           ),
         ],
       ),
-      child: _buildContent(state),
+      child: _buildContent(context, state),
     );
   }
 
-  Widget _buildContent(state) {
+  Widget _buildContent(BuildContext context, state) {
     if (state.isLoading) {
       return const Center(
         child: Padding(
@@ -83,7 +111,9 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  ref.read(quitPlanHomepageViewModelProvider.notifier).refreshQuitPlan();
+                  ref
+                      .read(quitPlanHomepageViewModelProvider.notifier)
+                      .refreshQuitPlan();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red[700],
@@ -166,7 +196,12 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QuitPlanScreen()),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D09E),
                 shape: RoundedRectangleBorder(
@@ -213,36 +248,46 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard> {
         ),
         const SizedBox(height: 16),
 
-        // Current Phase Detail
+        // 🔥 Styled Phase Section
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF00D09E).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF00D09E).withOpacity(0.3),
+            gradient: LinearGradient(
+              colors: _getPhaseGradient(quitPlan.currentPhaseDetail.name),
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.today, size: 16, color: Color(0xFF00D09E)),
+                  _getPhaseIcon(quitPlan.currentPhaseDetail.name),
                   const SizedBox(width: 8),
-                  Text(
-                    quitPlan.currentPhaseDetail.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF00D09E),
+                  Expanded(
+                    child: Text(
+                      quitPlan.currentPhaseDetail.name.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00D09E),
+                      color: Colors.white.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -256,75 +301,79 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 'Today: ${quitPlan.currentPhaseDetail.missionProgress} missions',
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.black87,
+                  color: Colors.white,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
-        // Mission Progress
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // 🌈 Styled Progress Bar with Glow
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Overall Progress',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            const SizedBox(height: 10),
+            Stack(
+              alignment: Alignment.centerLeft,
               children: [
-                Text(
-                  '${quitPlan.progressPercent}%',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF00D09E),
+                Container(
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F8F2),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                Text(
-                  quitPlan.missionProgress,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
+                AnimatedBuilder(
+                  animation: _glowController,
+                  builder: (context, _) {
+                    final glow = 4 + (_glowController.value * 6);
+                    return Container(
+                      height: 12,
+                      width: MediaQuery.of(context).size.width *
+                          0.7 *
+                          quitPlan.progressPercentage,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [progressColorStart, progressColorEnd],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(
+                            color: progressColorStart.withOpacity(0.5),
+                            blurRadius: glow,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                Positioned(
+                  right: 0,
+                  child: Text(
+                    '${quitPlan.progressPercent}%',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00D09E),
+                    ),
                   ),
                 ),
               ],
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 10,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1FFF3),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final barWidth = constraints.maxWidth * quitPlan.progressPercentage;
-              return Stack(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    width: barWidth,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [progressColorStart, progressColorEnd],
-                      ),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
         ),
       ],
     );
@@ -381,6 +430,43 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard> {
       return '${date.day}/${date.month}/${date.year}';
     } catch (e) {
       return dateString;
+    }
+  }
+
+  // 🎨 Gradient cho từng giai đoạn
+  List<Color> _getPhaseGradient(String phaseName) {
+    switch (phaseName.toLowerCase()) {
+      case 'preparation':
+        return [const Color(0xFF4FACFE), const Color(0xFF00F2FE)]; // xanh dương
+      case 'onset':
+        return [const Color(0xFFFBAB7E), const Color(0xFFF7CE68)]; // vàng cam
+      case 'peak craving':
+        return [const Color(0xFFFF5F6D), const Color(0xFFFFC371)]; // đỏ cam
+      case 'subsiding':
+        return [const Color(0xFF74EBD5), const Color(0xFF9FACE6)]; // xanh tím nhẹ
+      case 'maintenance':
+        return [const Color(0xFF43E97B), const Color(0xFF38F9D7)]; // xanh lá
+      default:
+        return [const Color(0xFF00D09E), const Color(0xFF3FCF8E)];
+    }
+  }
+
+  // 🧭 Icon cho từng giai đoạn
+  Widget _getPhaseIcon(String phaseName) {
+    switch (phaseName.toLowerCase()) {
+      case 'preparation':
+        return const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20);
+      case 'onset':
+        return const Icon(Icons.timeline, color: Colors.white, size: 20);
+      case 'peak craving':
+        return const Icon(Icons.local_fire_department,
+            color: Colors.white, size: 20);
+      case 'subsiding':
+        return const Icon(Icons.water_drop, color: Colors.white, size: 20);
+      case 'maintenance':
+        return const Icon(Icons.eco, color: Colors.white, size: 20);
+      default:
+        return const Icon(Icons.flag, color: Colors.white, size: 20);
     }
   }
 }

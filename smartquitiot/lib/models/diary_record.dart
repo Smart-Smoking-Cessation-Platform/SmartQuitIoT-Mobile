@@ -1,5 +1,5 @@
 class DiaryRecord {
-  final String? id;
+  final int? id;
   final String date;
   final bool haveSmoked;
   final int cigarettesSmoked;
@@ -19,6 +19,8 @@ class DiaryRecord {
   final int respiratoryRate;
   final double sleepDuration;
   final int sleepQuality;
+  final double estimatedNicotineIntake;
+  final double reductionPercentage;
 
   DiaryRecord({
     this.id,
@@ -41,11 +43,13 @@ class DiaryRecord {
     required this.respiratoryRate,
     required this.sleepDuration,
     required this.sleepQuality,
+    required this.estimatedNicotineIntake,
+    required this.reductionPercentage,
   });
 
   factory DiaryRecord.fromJson(Map<String, dynamic> json) {
     return DiaryRecord(
-      id: json['id'],
+      id: json['id'] as int?,
       date: json['date'] ?? '',
       haveSmoked: json['haveSmoked'] ?? false,
       cigarettesSmoked: json['cigarettesSmoked'] ?? 0,
@@ -65,6 +69,8 @@ class DiaryRecord {
       respiratoryRate: json['respiratoryRate'] ?? 0,
       sleepDuration: (json['sleepDuration'] ?? 0.0).toDouble(),
       sleepQuality: json['sleepQuality'] ?? 5,
+      estimatedNicotineIntake: (json['estimatedNicotineIntake'] ?? 0.0).toDouble(),
+      reductionPercentage: (json['reductionPercentage'] ?? 0.0).toDouble(),
     );
   }
 
@@ -90,11 +96,13 @@ class DiaryRecord {
       'respiratoryRate': respiratoryRate,
       'sleepDuration': sleepDuration,
       'sleepQuality': sleepQuality,
+      'estimatedNicotineIntake': estimatedNicotineIntake,
+      'reductionPercentage': reductionPercentage,
     };
   }
 
   DiaryRecord copyWith({
-    String? id,
+    int? id,
     String? date,
     bool? haveSmoked,
     int? cigarettesSmoked,
@@ -114,6 +122,8 @@ class DiaryRecord {
     int? respiratoryRate,
     double? sleepDuration,
     int? sleepQuality,
+    double? estimatedNicotineIntake,
+    double? reductionPercentage,
   }) {
     return DiaryRecord(
       id: id ?? this.id,
@@ -136,6 +146,8 @@ class DiaryRecord {
       respiratoryRate: respiratoryRate ?? this.respiratoryRate,
       sleepDuration: sleepDuration ?? this.sleepDuration,
       sleepQuality: sleepQuality ?? this.sleepQuality,
+      estimatedNicotineIntake: estimatedNicotineIntake ?? this.estimatedNicotineIntake,
+      reductionPercentage: reductionPercentage ?? this.reductionPercentage,
     );
   }
 }

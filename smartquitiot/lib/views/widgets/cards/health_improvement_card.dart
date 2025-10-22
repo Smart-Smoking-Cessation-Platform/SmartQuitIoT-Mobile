@@ -1,7 +1,8 @@
 import 'package:SmartQuitIoT/views/screens/health_metrics/health_improvement_screen.dart';
+import 'package:SmartQuitIoT/views/screens/health_recovery/health_recovery_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:easy_localization/easy_localization.dart'; // 👈 thêm
+import 'package:easy_localization/easy_localization.dart';
 
 class HealthImprovementCard extends StatelessWidget {
   const HealthImprovementCard({super.key});
@@ -42,7 +43,7 @@ class HealthImprovementCard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const HealthImprovementScreen(),
+                      builder: (context) => const HealthRecoveryScreen(),
                     ),
                   );
                 },
