@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:app_links/app_links.dart';
+import 'services/token_storage_service.dart';
+import 'services/app_token_manager.dart';
 
 // Screens
 import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
@@ -32,6 +34,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  await AppTokenManager.instance.init();
 
   await GoogleSignIn.instance.initialize(
     serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'],

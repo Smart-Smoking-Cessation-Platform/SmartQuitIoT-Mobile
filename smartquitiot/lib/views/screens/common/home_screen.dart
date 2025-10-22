@@ -28,6 +28,7 @@ class HomeScreen extends StatelessWidget {
             children: const [
               HomeHeader(),
               SmokeFreeTimerCard(),
+              MembershipShortcutCard(),
               DiaryRecordCard(),
               CoachAppointmentCard(),
               StatsTableCard(),
@@ -37,7 +38,7 @@ class HomeScreen extends StatelessWidget {
               TodayMissionCard(),
               AnalysisCard(),
               CommunityTrendingCard(),
-              MembershipShortcutCard(),
+             
               RecentNewsCard(),
             ],
           ),

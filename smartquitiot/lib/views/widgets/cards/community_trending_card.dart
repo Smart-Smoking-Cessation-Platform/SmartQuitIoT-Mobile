@@ -1,48 +1,72 @@
-import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:SmartQuitIoT/views/screens/posts/post_list_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:SmartQuitIoT/models/post.dart';
-import 'package:SmartQuitIoT/viewmodels/post_view_model.dart';
-import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:SmartQuitIoT/services/token_storage_service.dart';
 
-import '../../../models/state/post_state.dart';
+import '../../screens/posts/post_detail_screen.dart';
+import '../../screens/posts/post_list_screen.dart';
 
-// ✅ Provider ViewModel (call API)
-final postViewModelProvider = StateNotifierProvider<PostViewModel, PostState>((
-  ref,
-) {
-  final repo = ref.read(postRepositoryProvider);
-  return PostViewModel(repo);
-});
-
-class CommunityTrendingCard extends ConsumerStatefulWidget {
+class CommunityTrendingCard extends StatefulWidget {
   const CommunityTrendingCard({super.key});
 
   @override
-  ConsumerState<CommunityTrendingCard> createState() =>
-      _CommunityTrendingCardState();
+  State<CommunityTrendingCard> createState() => _CommunityTrendingCardState();
 }
 
-class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
+class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
   final PageController _pageController = PageController(viewportFraction: 0.8);
+  List<dynamic> posts = [];
+  bool isLoading = true;
+  String? error;
+  final TokenStorageService _tokenService = TokenStorageService();
 
   @override
   void initState() {
     super.initState();
-    // Load latest posts when widget initializes
-    Future.microtask(() {
-      ref.read(postViewModelProvider.notifier).loadLatestPosts(limit: 5);
+    _loadLatestPosts();
+  }
+
+  Future<void> _loadLatestPosts() async {
+    setState(() {
+      isLoading = true;
+      error = null;
     });
+
+    try {
+      final accessToken = await _tokenService.getAccessToken();
+      if (accessToken == null) {
+        throw Exception('Access token not found. Please login again.');
+      }
+
+      final baseUrl = dotenv.env['API_POSTS_URL'] ?? 'http://10.0.2.2:8080/api';
+      final res = await http.get(
+        Uri.parse('$baseUrl/latest?limit=5'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final jsonBody = json.decode(res.body) as Map<String, dynamic>;
+        posts = jsonBody['data'] ?? [];
+      } else {
+        error = 'Server error: ${res.statusCode}';
+      }
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final postState = ref.watch(postViewModelProvider);
-    final posts = postState.posts;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -94,16 +118,12 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
           const SizedBox(height: 12),
 
           // Content
-          if (postState.isLoading) ...[_buildLoadingState()],
-          if (postState.error != null) ...[_buildErrorState(postState.error!)],
-          if (!postState.isLoading &&
-              postState.error == null &&
-              posts.isEmpty) ...[
+          if (isLoading) ...[_buildLoadingState()],
+          if (error != null) ...[_buildErrorState(error!)],
+          if (!isLoading && error == null && posts.isEmpty) ...[
             _buildEmptyState(),
           ],
-          if (!postState.isLoading &&
-              postState.error == null &&
-              posts.isNotEmpty) ...[
+          if (!isLoading && error == null && posts.isNotEmpty) ...[
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -155,13 +175,13 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
     );
   }
 
-  Widget _buildPostCard(Post post) {
+  Widget _buildPostCard(dynamic post) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PostDetailScreen(postId: post.id),
+            builder: (context) => PostDetailScreen(postId: post['id']),
           ),
         );
       },
@@ -183,9 +203,10 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
             fit: StackFit.expand,
             children: [
               // Thumbnail
-              post.thumbnail != null && post.thumbnail!.isNotEmpty
+              post['thumbnail'] != null &&
+                      post['thumbnail'].toString().isNotEmpty
                   ? Image.network(
-                      post.thumbnail!,
+                      post['thumbnail'],
                       height: 260,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -226,7 +247,7 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      post.title,
+                      post['title'] ?? '',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -241,13 +262,19 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                         CircleAvatar(
                           radius: 12,
                           backgroundImage:
-                              post.account.avatarUrl != null &&
-                                  post.account.avatarUrl!.isNotEmpty
-                              ? NetworkImage(post.account.avatarUrl!)
+                              post['account'] != null &&
+                                  post['account']['avatarUrl'] != null &&
+                                  post['account']['avatarUrl']
+                                      .toString()
+                                      .isNotEmpty
+                              ? NetworkImage(post['account']['avatarUrl'])
                               : null,
                           child:
-                              post.account.avatarUrl == null ||
-                                  post.account.avatarUrl!.isEmpty
+                              post['account'] == null ||
+                                  post['account']['avatarUrl'] == null ||
+                                  post['account']['avatarUrl']
+                                      .toString()
+                                      .isEmpty
                               ? const Icon(
                                   Icons.person,
                                   size: 16,
@@ -258,7 +285,10 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            post.account.displayName,
+                            post['account'] != null
+                                ? '${post['account']['firstName'] ?? ''} ${post['account']['lastName'] ?? ''}'
+                                      .trim()
+                                : '',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -268,7 +298,11 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                           ),
                         ),
                         Text(
-                          _formatTimeAgo(post.createdAt),
+                          _formatTimeAgo(
+                            DateTime.parse(
+                              post['createdAt'] ?? DateTime.now().toString(),
+                            ),
+                          ),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 10,
@@ -276,12 +310,6 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    // Row(
-                    //   children: [
-                    //     _buildAction(Icons.favorite_border, post.likeCount),
-                    //   ],
-                    // ),
                   ],
                 ),
               ),
@@ -292,81 +320,18 @@ class _CommunityTrendingCardState extends ConsumerState<CommunityTrendingCard> {
     );
   }
 
-  Widget _buildAction(IconData icon, int count) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: Colors.white),
-        const SizedBox(width: 4),
-        Text(
-          count.toString(),
-          style: const TextStyle(fontSize: 10, color: Colors.white),
-        ),
-      ],
-    );
-  }
+  Widget _buildLoadingState() => SizedBox(
+    height: 260,
+    child: Center(
+      child: CircularProgressIndicator(color: const Color(0xFF00D09E)),
+    ),
+  );
 
-  Widget _buildLoadingState() {
-    return SizedBox(
-      height: 260,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
-            ),
-            SizedBox(height: 16),
-            Text('Loading posts...'),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildErrorState(String error) =>
+      SizedBox(height: 260, child: Center(child: Text('Error: $error')));
 
-  Widget _buildErrorState(String error) {
-    return SizedBox(
-      height: 260,
-      child: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              const Text('Failed to load posts'),
-              const SizedBox(height: 8),
-              Text(error, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () =>
-                    ref.read(postViewModelProvider.notifier).refreshPosts(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return SizedBox(
-      height: 260,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.article_outlined, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No posts available'),
-            SizedBox(height: 8),
-            Text('Check back later for new posts'),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildEmptyState() =>
+      SizedBox(height: 260, child: Center(child: Text('No posts available')));
 
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();

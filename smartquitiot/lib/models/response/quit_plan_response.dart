@@ -119,4 +119,8 @@ class Mission {
       status: json['status'],
     );
   }
+
+  // Helper methods
+  bool get isCompleted => status == 'COMPLETED';
+  bool get isIncompleted => status == 'INCOMPLETED';
 }

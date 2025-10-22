@@ -1,8 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:another_flushbar/flushbar.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
+import 'package:SmartQuitIoT/providers/metrics_provider.dart';
 import 'package:SmartQuitIoT/models/diary_record.dart';
 import 'package:intl/intl.dart';
+import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class CreateDiaryScreen extends ConsumerStatefulWidget {
   const CreateDiaryScreen({super.key});
@@ -19,11 +23,12 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   double moodLevel = 5.0;
   double confidenceLevel = 5.0;
   double anxietyLevel = 5.0;
-  final NumberFormat currencyFormatter = NumberFormat.currency(
-    locale: 'vi_VN',
-    symbol: 'VND',
-    decimalDigits: 0,
-  );
+  
+  // Health instance
+  final Health _health = Health();
+  
+  // Money formatter without VND symbol
+  final NumberFormat moneyFormatter = NumberFormat('#,###', 'vi_VN');
 
   // Triggers
   List<String> selectedTriggers = [];
@@ -55,10 +60,27 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   int sleepQuality = 5;
   final TextEditingController notesController = TextEditingController();
   final TextEditingController moneyController = TextEditingController();
+  
+  // Health data controllers
+  final TextEditingController stepsController = TextEditingController();
+  final TextEditingController heartRateController = TextEditingController();
+  final TextEditingController spo2Controller = TextEditingController();
+  final TextEditingController activityMinutesController = TextEditingController();
+  final TextEditingController respiratoryRateController = TextEditingController();
+  final TextEditingController sleepDurationController = TextEditingController();
+  final TextEditingController sleepQualityController = TextEditingController();
 
   @override
   void dispose() {
     notesController.dispose();
+    moneyController.dispose();
+    stepsController.dispose();
+    heartRateController.dispose();
+    spo2Controller.dispose();
+    activityMinutesController.dispose();
+    respiratoryRateController.dispose();
+    sleepDurationController.dispose();
+    sleepQualityController.dispose();
     super.dispose();
   }
 
@@ -125,27 +147,28 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   }
 
   Widget _buildDateSelector() {
-    return InkWell(
-      onTap: () => _selectDate(context),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF00D09E)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, color: Color(0xFF00D09E)),
-            const SizedBox(width: 12),
-            Text(
-              '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.calendar_today, color: Colors.grey[600]),
+          const SizedBox(width: 12),
+          Text(
+            'Today: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+            style: TextStyle(
+              fontSize: 16, 
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
             ),
-            const Spacer(),
-            const Icon(Icons.arrow_drop_down, color: Color(0xFF00D09E)),
-          ],
-        ),
+          ),
+          const Spacer(),
+          Icon(Icons.lock, color: Colors.grey[500], size: 20),
+        ],
       ),
     );
   }
@@ -416,9 +439,9 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   }
 
   Widget _buildNrtSection() {
-    final moneyController = TextEditingController(
+    final localMoneyController = TextEditingController(
       text: moneySpentOnNrt > 0
-          ? currencyFormatter.format(moneySpentOnNrt)
+          ? moneyFormatter.format(moneySpentOnNrt)
           : '',
     );
 
@@ -469,7 +492,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
             ),
             const SizedBox(height: 8),
             TextField(
-              controller: moneyController,
+              controller: localMoneyController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 hintText: '0',
@@ -487,13 +510,13 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
                 final parsed = double.tryParse(numericString) ?? 0;
                 setState(() {
                   moneySpentOnNrt = parsed;
-                  // Cập nhật lại controller với format VND
-                  moneyController.value = TextEditingValue(
-                    text: parsed == 0 ? '' : currencyFormatter.format(parsed),
+                  // Cập nhật lại controller với format (no VND)
+                  localMoneyController.value = TextEditingValue(
+                    text: parsed == 0 ? '' : moneyFormatter.format(parsed),
                     selection: TextSelection.collapsed(
                       offset: parsed == 0
                           ? 0
-                          : currencyFormatter.format(parsed).length,
+                          : moneyFormatter.format(parsed).length,
                     ),
                   );
                 });
@@ -553,56 +576,137 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
               ),
             ),
           ),
-          if (isConnectIoTDevice) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green[200]!),
-              ),
-              child: Column(
-                children: [
-                  _buildDataRow('Steps', '$steps', Icons.directions_walk),
-                  _buildDataRow('Heart Rate', '$heartRate bpm', Icons.favorite),
-                  _buildDataRow('SpO2', '$spo2%', Icons.healing),
-                  _buildDataRow(
-                    'Active Minutes',
-                    '$activityMinutes min',
-                    Icons.fitness_center,
-                  ),
-                ],
-              ),
-            ),
-          ],
+          const SizedBox(height: 16),
+          // Health data input fields
+          _buildHealthDataFields(),
         ],
       ),
     );
   }
 
-  Widget _buildDataRow(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.green[700]),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+  Widget _buildHealthDataFields() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildHealthField(
+                'Steps',
+                stepsController,
+                Icons.directions_walk,
+                (value) => steps = int.tryParse(value) ?? 0,
+              ),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildHealthField(
+                'Heart Rate (bpm)',
+                heartRateController,
+                Icons.favorite,
+                (value) => heartRate = int.tryParse(value) ?? 0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildHealthField(
+                'SpO2 (%)',
+                spo2Controller,
+                Icons.healing,
+                (value) => spo2 = int.tryParse(value) ?? 0,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildHealthField(
+                'Activity (min)',
+                activityMinutesController,
+                Icons.fitness_center,
+                (value) => activityMinutes = int.tryParse(value) ?? 0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildHealthField(
+                'Respiratory Rate',
+                respiratoryRateController,
+                Icons.air,
+                (value) => respiratoryRate = int.tryParse(value) ?? 0,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildHealthField(
+                'Sleep Duration (h)',
+                sleepDurationController,
+                Icons.bedtime,
+                (value) => sleepDuration = double.tryParse(value) ?? 0.0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildHealthField(
+          'Sleep Quality (1-10)',
+          sleepQualityController,
+          Icons.star,
+          (value) => sleepQuality = int.tryParse(value) ?? 5,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHealthField(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+    Function(String) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: const Color(0xFF00D09E)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: '0',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            isDense: true,
           ),
-        ],
-      ),
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 
@@ -673,48 +777,278 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
     );
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF00D09E),
-              onPrimary: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() => selectedDate = picked);
-    }
-  }
 
-  void _getDataFromIoT() {
+  // Future<void> _getDataFromIoT() async {
+  //   try {
+  //     // Request health permissions
+  //     final types = [
+  //       HealthDataType.STEPS,
+  //       HealthDataType.HEART_RATE,
+  //       HealthDataType.RESPIRATORY_RATE,
+  //       HealthDataType.ACTIVE_ENERGY_BURNED,
+  //     ];
+      
+  //     final permissions = types.map((e) => HealthDataAccess.READ).toList();
+  //     bool? granted = await _health.requestAuthorization(types, permissions: permissions);
+      
+  //     if (granted != true) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(
+  //           content: Text('Health permissions denied. Please enable in settings.'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //       return;
+  //     }
+
+  //     // Fetch health data for today
+  //     final now = DateTime.now();
+  //     final startOfDay = DateTime(now.year, now.month, now.day);
+      
+  //     final healthData = await _health.getHealthDataFromTypes(
+  //       types: types,
+  //       startTime: startOfDay,
+  //       endTime: now,
+  //     );
+
+  //     // Process and update health data
+  //     int fetchedSteps = 0;
+  //     int fetchedHeartRate = 0;
+  //     int fetchedRespiratoryRate = 0;
+  //     int fetchedActivityMinutes = 0;
+
+  //     for (var data in healthData) {
+  //       final value = (data.value as NumericHealthValue).numericValue;
+        
+  //       switch (data.type) {
+  //         case HealthDataType.STEPS:
+  //           fetchedSteps += value.toInt();
+  //           break;
+  //         case HealthDataType.HEART_RATE:
+  //           if (fetchedHeartRate == 0 || data.dateTo.isAfter(DateTime.now().subtract(const Duration(hours: 1)))) {
+  //             fetchedHeartRate = value.toInt();
+  //           }
+  //           break;
+  //         case HealthDataType.RESPIRATORY_RATE:
+  //           if (fetchedRespiratoryRate == 0) {
+  //             fetchedRespiratoryRate = value.toInt();
+  //           }
+  //           break;
+  //         case HealthDataType.ACTIVE_ENERGY_BURNED:
+  //           fetchedActivityMinutes = (value / 5).toInt(); // Rough conversion
+  //           break;
+  //         default:
+  //           // Handle other health data types
+  //           break;
+  //       }
+  //     }
+
+  //     setState(() {
+  //       steps = fetchedSteps > 0 ? fetchedSteps : 0; // Fallback to sample data
+  //       heartRate = fetchedHeartRate > 0 ? fetchedHeartRate : 0;
+  //       spo2 = 0; // Not available in Health API, use default
+  //       activityMinutes = fetchedActivityMinutes > 0 ? fetchedActivityMinutes : 0;
+  //       respiratoryRate = fetchedRespiratoryRate > 0 ? fetchedRespiratoryRate : 0;
+  //       sleepDuration = 0; // Not available in basic Health API
+  //       sleepQuality = 0; // Not available in basic Health API
+  //       isConnectIoTDevice = true;
+        
+  //       // Update text controllers
+  //       stepsController.text = steps.toString();
+  //       heartRateController.text = heartRate.toString();
+  //       spo2Controller.text = spo2.toString();
+  //       activityMinutesController.text = activityMinutes.toString();
+  //       respiratoryRateController.text = respiratoryRate.toString();
+  //       sleepDurationController.text = sleepDuration.toString();
+  //       sleepQualityController.text = sleepQuality.toString();
+  //     });
+
+  //     _showFlushBar(
+  //       message: 'Health data synced successfully!',
+  //       backgroundColor: Color(0xFF00D09E),
+  //       icon: Icons.check_circle,
+  //     );
+  //   } catch (e) {
+  //     print('Error fetching health data: $e');
+  //     _showFlushBar(
+  //       message: 'Failed to sync health data: ${e.toString()}',
+  //       backgroundColor: Colors.redAccent,
+  //       icon: Icons.error_outline,
+  //     );
+  //   }
+  // }
+
+  Future<void> _getDataFromIoT() async {
+  try {
+    // Request health permissions
+    final types = [
+      HealthDataType.STEPS,
+      HealthDataType.HEART_RATE,
+      HealthDataType.RESPIRATORY_RATE,
+      HealthDataType.ACTIVE_ENERGY_BURNED,
+      HealthDataType.SLEEP_ASLEEP,
+      HealthDataType.SLEEP_DEEP,
+      HealthDataType.SLEEP_REM,
+      HealthDataType.SLEEP_LIGHT,
+      HealthDataType.SLEEP_SESSION,
+      HealthDataType.BASAL_ENERGY_BURNED,  
+      
+    ];
+
+    final permissions = types.map((e) => HealthDataAccess.READ).toList();
+    bool? granted = await _health.requestAuthorization(types, permissions: permissions);
+
+    if (granted != true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Health permissions denied. Please enable in settings.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Fetch health data for today
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+
+    final healthData = await _health.getHealthDataFromTypes(
+      types: types,
+      startTime: startOfDay,
+      endTime: now,
+    );
+
+    // Process and update health data
+    int fetchedSteps = 0;
+    int fetchedHeartRate = 0;
+    int fetchedRespiratoryRate = 0;
+    int fetchedActivityMinutes = 0;
+    double totalSleepMinutes = 0;
+    double deepSleepMinutes = 0;
+    double remSleepMinutes = 0;
+    double totalSleepSessionMinutes = 0;
+
+    for (var data in healthData) {
+      final value = (data.value is NumericHealthValue)
+          ? ((data.value as NumericHealthValue).numericValue ?? 0.0)
+          : 0.0;
+
+      switch (data.type) {
+        case HealthDataType.STEPS:
+          fetchedSteps += value.toInt();
+          break;
+
+        case HealthDataType.HEART_RATE:
+          // Lấy nhịp tim gần nhất hoặc trung bình
+          if (fetchedHeartRate == 0 ||
+              data.dateTo.isAfter(DateTime.now().subtract(const Duration(hours: 1)))) {
+            fetchedHeartRate = value.toInt();
+          }
+          break;
+
+        case HealthDataType.RESPIRATORY_RATE:
+          if (fetchedRespiratoryRate == 0) {
+            fetchedRespiratoryRate = value.toInt();
+          }
+          break;
+
+        case HealthDataType.ACTIVE_ENERGY_BURNED:
+          // Ước lượng phút hoạt động (trung bình ~6 kcal/phút)
+          fetchedActivityMinutes += (value / 6).round();
+          break;
+
+        case HealthDataType.SLEEP_ASLEEP:
+        case HealthDataType.SLEEP_DEEP:
+        case HealthDataType.SLEEP_REM:
+        case HealthDataType.SLEEP_LIGHT:
+          totalSleepMinutes += data.dateTo.difference(data.dateFrom).inMinutes.toDouble();
+          if (data.type == HealthDataType.SLEEP_DEEP) {
+            deepSleepMinutes += data.dateTo.difference(data.dateFrom).inMinutes.toDouble();
+          }
+          if (data.type == HealthDataType.SLEEP_REM) {
+            remSleepMinutes += data.dateTo.difference(data.dateFrom).inMinutes.toDouble();
+          }
+          break;
+
+        case HealthDataType.SLEEP_SESSION:
+          totalSleepSessionMinutes += data.dateTo.difference(data.dateFrom).inMinutes.toDouble();
+          break;
+
+        default:
+          break;
+      }
+    }
+
+    // ✅ Tính toán sleep metrics
+    double sleepDuration = totalSleepMinutes > 0 ? totalSleepMinutes / 60.0 : 0; // giờ
+    double sleepQuality = 0;
+    if (totalSleepMinutes > 0) {
+      sleepQuality = ((deepSleepMinutes + remSleepMinutes) / totalSleepMinutes) * 100;
+    }
+
+    // Cập nhật UI
     setState(() {
-      steps = 8500;
-      heartRate = 72;
-      spo2 = 98;
-      activityMinutes = 45;
-      respiratoryRate = 16;
-      sleepDuration = 7.5;
-      sleepQuality = 8;
+      steps = fetchedSteps > 0 ? fetchedSteps : 0;
+      heartRate = fetchedHeartRate > 0 ? fetchedHeartRate : 0;
+      spo2 = 0; // ❌ Health API không cung cấp
+      activityMinutes = fetchedActivityMinutes > 0 ? fetchedActivityMinutes : 0;
+      respiratoryRate = fetchedRespiratoryRate > 0 ? fetchedRespiratoryRate : 0;
+      sleepDuration = sleepDuration > 0 ? sleepDuration : 0;
+      sleepQuality = sleepQuality > 0 ? sleepQuality : 0;
       isConnectIoTDevice = true;
+
+      // Update text controllers
+      stepsController.text = steps.toString();
+      heartRateController.text = heartRate.toString();
+      spo2Controller.text = spo2.toString();
+      activityMinutesController.text = activityMinutes.toString();
+      respiratoryRateController.text = respiratoryRate.toString();
+      sleepDurationController.text = sleepDuration.toStringAsFixed(1);
+      sleepQualityController.text = sleepQuality.toStringAsFixed(1);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Health data synced successfully!'),
-        backgroundColor: Color(0xFF4CAF50),
-      ),
+    _showFlushBar(
+      message: 'Health data synced successfully!',
+      backgroundColor: const Color(0xFF00D09E),
+      icon: Icons.check_circle,
+    );
+  } catch (e) {
+    print('Error fetching health data: $e');
+    _showFlushBar(
+      message: 'Failed to sync health data: ${e.toString()}',
+      backgroundColor: Colors.redAccent,
+      icon: Icons.error_outline,
     );
   }
+}
+
+  
+  void _showFlushBar({
+  required String message,
+  Color backgroundColor = const Color(0xFF00D09E),
+  IconData icon = Icons.check_circle,
+  Duration duration = const Duration(seconds: 3),
+}) {
+  Flushbar(
+    message: message,
+    icon: Icon(icon, size: 28, color: Colors.white),
+    margin: const EdgeInsets.all(16),
+    borderRadius: BorderRadius.circular(12),
+    backgroundColor: backgroundColor,
+    duration: duration,
+    flushbarPosition: FlushbarPosition.TOP,
+    forwardAnimationCurve: Curves.easeOutBack,
+    reverseAnimationCurve: Curves.easeIn,
+    boxShadows: [
+      BoxShadow(
+        color: backgroundColor.withOpacity(0.4),
+        blurRadius: 10,
+        offset: const Offset(0, 3),
+      ),
+    ],
+  ).show(context);
+}
+
 
   void _saveDiary() async {
     final diaryNotifier = ref.read(diaryRecordNotifierProvider.notifier);
@@ -743,29 +1077,65 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
 
     await diaryNotifier.createDiaryRecord(request);
 
-    if (mounted) {
-      final state = ref.read(diaryRecordNotifierProvider);
-      state.whenOrNull(
-        data: (_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Diary saved successfully!'),
-              backgroundColor: Color(0xFF4CAF50),
+    if (!mounted) return;
+    
+    final state = ref.read(diaryRecordNotifierProvider);
+    state.whenOrNull(
+      data: (_) {
+        // Trigger metrics refresh after successful diary creation
+        ref.read(metricsRefreshProvider.notifier).refreshMetrics();
+        
+        if (!mounted) return;
+        
+        // Show success flushbar
+        Flushbar(
+          message: '🎉 Diary saved successfully!',
+          icon: const Icon(Icons.check_circle, size: 28, color: Colors.white),
+          margin: const EdgeInsets.all(16),
+          borderRadius: BorderRadius.circular(16),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 2),
+          flushbarPosition: FlushbarPosition.TOP,
+          forwardAnimationCurve: Curves.easeOutBack,
+          reverseAnimationCurve: Curves.easeIn,
+          boxShadows: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          );
-          Navigator.popUntil(context, (route) {
-            return route.settings.name == '/main';
-          });
-        },
-        error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error.toString()),
-              backgroundColor: const Color(0xFFE53E3E),
+          ],
+          onStatusChanged: (status) {
+            // Navigate back after flushbar is dismissed
+            if (status == FlushbarStatus.DISMISSED && mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+        ).show(context);
+      },
+      error: (error, _) {
+        if (!mounted) return;
+        
+        // Show error flushbar
+        Flushbar(
+          message: error.toString(),
+          icon: const Icon(Icons.error_outline, size: 28, color: Colors.white),
+          margin: const EdgeInsets.all(16),
+          borderRadius: BorderRadius.circular(16),
+          backgroundColor: const Color(0xFFE53E3E),
+          duration: const Duration(seconds: 4),
+          flushbarPosition: FlushbarPosition.TOP,
+          forwardAnimationCurve: Curves.easeOutBack,
+          reverseAnimationCurve: Curves.easeIn,
+          boxShadows: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
-      );
-    }
+          ],
+        ).show(context);
+      },
+    );
   }
 }

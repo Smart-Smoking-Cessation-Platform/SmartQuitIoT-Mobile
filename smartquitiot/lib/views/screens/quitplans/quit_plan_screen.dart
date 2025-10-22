@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../models/quit_phase.dart';
+import '../../widgets/mission_complete_dialog.dart';
 import '../diary/diary_screen.dart';
 
 class QuitPlanScreen extends ConsumerStatefulWidget {
@@ -15,6 +16,28 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   int selectedPhaseIndex = 0;
   int selectedDayIndex = 0;
   final Set<int> locallyCompletedMissionIds = <int>{};
+
+  void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => MissionCompleteDialog(
+        phaseId: phaseId,
+        phaseDetailMissionId: mission.id ?? 0,
+        missionCode: mission.code ?? '',
+        missionName: mission.name ?? '',
+        missionDescription: mission.description ?? '',
+        onCompleted: () {
+          // Refresh the quit plan data after mission completion
+          ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+          // Also add to local completed set for immediate UI update
+          setState(() {
+            locallyCompletedMissionIds.add(mission.id ?? 0);
+          });
+        },
+      ),
+    );
+  }
 
   final phaseColors = [
     const Color(0xFF00D09E),
@@ -177,7 +200,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
               Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
               const SizedBox(width: 6),
               Text(
-                '${data.startDate ?? ''} → ${data.endDate ?? ''}',
+               '${_formatDate(data.startDate)} → ${_formatDate(data.endDate)}',
+
                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
             ],
@@ -347,7 +371,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${phase.startDate ?? ''} → ${phase.endDate ?? ''}',
+                                 '${_formatDate(phase.startDate)} → ${_formatDate(phase.endDate)}',
+
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],
@@ -496,7 +521,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            day.date ?? '',
+                          _formatDate(day.date),
+
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 10,
@@ -603,9 +629,18 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      setState(() {
-                        locallyCompletedMissionIds.add(missionId);
-                      });
+                      // Get current phase ID from the selected phase
+                      final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
+                      quitPhaseState.when(
+                        data: (quitPhase) {
+                          if (quitPhase != null && quitPhase.phases != null && selectedPhaseIndex < quitPhase.phases!.length) {
+                            final currentPhase = quitPhase.phases![selectedPhaseIndex];
+                            _showMissionCompleteDialog(mission, currentPhase.id ?? 0);
+                          }
+                        },
+                        loading: () {},
+                        error: (error, stack) {},
+                      );
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: color,
@@ -618,7 +653,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Mark Done'),
+                    child: const Text('Complete Mission'),
                   ),
                 ),
               ],
@@ -628,6 +663,17 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       }).toList(),
     );
   }
+
+  String _formatDate(String? dateString) {
+  if (dateString == null || dateString.isEmpty) return '';
+  try {
+    final date = DateTime.parse(dateString);
+    return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+  } catch (e) {
+    return dateString; // fallback nếu parse lỗi
+  }
+}
+
 
   IconData _getPhaseIcon(String phaseName) {
     switch (phaseName.toLowerCase()) {

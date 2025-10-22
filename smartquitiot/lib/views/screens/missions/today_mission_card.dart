@@ -1,117 +1,38 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-import '../../../repositories/auth_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../viewmodels/today_mission_view_model.dart';
+import '../../../providers/mission_refresh_provider.dart';
 import '../quitplans/quit_plan_screen.dart';
 
-class Mission {
-  final String title;
-  final String description;
-  final IconData icon;
-
-  Mission({
-    required this.title,
-    required this.description,
-    this.icon = Icons.self_improvement,
-  });
-}
-
-class TodayMissionCard extends StatefulWidget {
+class TodayMissionCard extends ConsumerStatefulWidget {
   const TodayMissionCard({super.key});
 
   @override
-  State<TodayMissionCard> createState() => _TodayMissionCardState();
+  ConsumerState<TodayMissionCard> createState() => _TodayMissionCardState();
 }
 
-class _TodayMissionCardState extends State<TodayMissionCard> {
-  List<Mission> missions = [];
-  bool isLoading = true;
-  String? error;
-
-  final AuthRepository _authRepository = AuthRepository();
-
+class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
   @override
   void initState() {
     super.initState();
-    fetchMissions();
-  }
-
-  Future<void> fetchMissions() async {
-    final url = dotenv.env['API_QUIT_PLAN_URL'];
-    if (url == null) {
-      setState(() {
-        error = "API_QUIT_PLAN_URL not set in .env";
-        isLoading = false;
-      });
-      return;
-    }
-
-    try {
-      final accessToken = await _authRepository.getAccessToken();
-      if (accessToken == null) {
-        setState(() {
-          error = "No access token found";
-          isLoading = false;
-        });
-        return;
-      }
-
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final phases = data['phases'] as List;
-        if (phases.isEmpty) {
-          setState(() {
-            error = "No phases found in quit plan";
-            isLoading = false;
-          });
-          return;
-        }
-
-        final firstPhase = phases.first;
-        final firstDay = firstPhase['details'].first;
-        final missionsJson = firstDay['missions'] as List;
-
-        final fetchedMissions = missionsJson.map((m) {
-          return Mission(
-            title: m['name'] ?? '',
-            description: m['description'] ?? '',
-            icon: Icons.self_improvement,
-          );
-        }).toList();
-
-        setState(() {
-          missions = fetchedMissions;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          error = 'Failed to load missions: ${response.statusCode}';
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        error = e.toString();
-        isLoading = false;
-      });
-    }
+    // Load missions when widget initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) return const Center(child: CircularProgressIndicator());
-    if (error != null)
-      return Text('Error: $error', style: const TextStyle(color: Colors.red));
+    final state = ref.watch(todayMissionViewModelProvider);
+    
+    // Listen for mission refresh trigger
+    ref.listen(missionRefreshProvider, (previous, next) {
+      if (previous != next) {
+        // Refresh missions when trigger changes
+        ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+      }
+    });
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(20),
@@ -157,79 +78,251 @@ class _TodayMissionCardState extends State<TodayMissionCard> {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-          Column(
-            children: missions.map((mission) {
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const QuitPlanScreen()),
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00D09E),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.green.withOpacity(0.15),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+          _buildContent(state),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(state) {
+    if (state.isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: CircularProgressIndicator(
+            color: Color(0xFF00D09E),
+          ),
+        ),
+      );
+    }
+
+    if (state.hasError) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Error: ${state.error}',
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontSize: 14,
+                    ),
                   ),
-                  child: Row(
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[700],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                child: const Text('Retry', style: TextStyle(fontSize: 12)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (state.allMissionsCompleted) {
+      return _buildCongratulationsMessage();
+    }
+
+    if (!state.hasMissions) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.grey, size: 20),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'No missions available today',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: state.missions.map<Widget>((mission) {
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const QuitPlanScreen()),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00D09E),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withOpacity(0.15),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.self_improvement,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          mission.icon,
+                      Text(
+                        mission.name,
+                        style: const TextStyle(
                           color: Colors.white,
-                          size: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              mission.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              mission.description,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 4),
+                      Text(
+                        mission.description,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                         ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.white,
-                        size: 16,
                       ),
                     ],
                   ),
                 ),
-              );
-            }).toList(),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ],
+            ),
           ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCongratulationsMessage() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00D09E), Color(0xFF00B894)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00D09E).withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.celebration,
+            color: Colors.white,
+            size: 48,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '🎉 Outstanding Achievement!',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'You\'ve conquered all today\'s missions!\nYour dedication is truly inspiring.',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '✨ Every step forward is a victory against smoking.\nCome back tomorrow for new challenges!',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          // SizedBox(
+          //   width: double.infinity,
+          //   child: ElevatedButton(
+          //     onPressed: () {
+          //       ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+          //     },
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: Colors.white,
+          //       foregroundColor: const Color(0xFF00D09E),
+          //       padding: const EdgeInsets.symmetric(vertical: 12),
+          //       shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(8),
+          //       ),
+          //     ),
+          //     child: const Text(
+          //       'Check for New Missions',
+          //       style: TextStyle(
+          //         fontWeight: FontWeight.w600,
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

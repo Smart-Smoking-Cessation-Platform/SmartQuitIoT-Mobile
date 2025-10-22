@@ -1,17 +1,17 @@
-﻿class PostMedia {
-  final int id;
+class PostMedia {
+  final int? id;
   final String mediaUrl;
   final String mediaType;
 
   const PostMedia({
-    required this.id,
+    this.id,
     required this.mediaUrl,
     required this.mediaType,
   });
 
   factory PostMedia.fromJson(Map<String, dynamic> json) {
     return PostMedia(
-      id: json['id'] as int,
+      id: json['id'] as int?,
       mediaUrl: json['mediaUrl'] as String,
       mediaType: json['mediaType'] as String,
     );

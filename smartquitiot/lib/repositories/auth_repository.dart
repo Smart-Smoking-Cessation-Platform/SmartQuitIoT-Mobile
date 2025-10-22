@@ -62,18 +62,28 @@ class AuthRepository {
         throw AuthException('Password cannot be empty');
       }
 
+      print('🔐 [AuthRepository] Logging in...');
       final loginRequest = LoginRequest(
         usernameOrEmail: usernameOrEmail.trim(),
         password: password,
       );
       final loginResponse = await _authService.login(loginRequest);
+      
+      print('💾 [AuthRepository] Saving tokens...');
+      print('   Access Token: ${loginResponse.accessToken.substring(0, 20)}...');
       await _tokenStorageService.saveTokens(
         loginResponse.accessToken,
         loginResponse.refreshToken,
       );
+      print('✅ [AuthRepository] Tokens saved successfully!');
+      
+      // Verify tokens were saved
+      final savedToken = await _tokenStorageService.getAccessToken();
+      print('🔍 [AuthRepository] Verifying saved token: ${savedToken?.substring(0, 20)}...');
 
       return loginResponse;
     } catch (e) {
+      print('❌ [AuthRepository] Login failed: $e');
       if (e is AuthException) {
         rethrow;
       }
@@ -149,7 +159,16 @@ class AuthRepository {
   }
 
   Future<String?> getAccessToken() async {
-    return await _tokenStorageService.getAccessToken();
+    print('🔍 [AuthRepository] Getting access token...');
+    final token = await _tokenStorageService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      print('⚠️ [AuthRepository] Token is NULL or EMPTY!');
+      final isAuth = await isAuthenticated();
+      print('⚠️ [AuthRepository] isAuthenticated: $isAuth');
+    } else {
+      print('✅ [AuthRepository] Token retrieved: ${token.substring(0, 20)}...');
+    }
+    return token;
   }
 
   Future<String?> getRefreshToken() async {

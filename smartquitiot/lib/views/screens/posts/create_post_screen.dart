@@ -1,11 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:image_picker/image_picker.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:SmartQuitIoT/services/cloudinary_service.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
 import '../../../models/post.dart';
+import '../../../utils/notification_helper.dart';
 
 class CreatePostScreen extends ConsumerStatefulWidget {
   final Post? post;
@@ -37,7 +40,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       _thumbnailUrl = widget.post!.thumbnail;
       if (widget.post!.media != null) {
         _mediaList = widget.post!.media!
-            .map((m) => {'mediaUrl': m.mediaUrl, 'mediaType': m.mediaType})
+            .map(
+              (m) => {
+                'mediaUrl': m.mediaUrl,
+                'mediaType': m.mediaType,
+                'thumbUrl': m.mediaType == 'VIDEO' ? m.mediaUrl : '',
+              },
+            )
             .toList();
       }
     }
@@ -102,7 +111,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             hint: 'Enter post title',
           ),
           const SizedBox(height: 20),
-
           _buildTextField(
             controller: _descriptionController,
             label: 'Description',
@@ -110,17 +118,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             maxLines: 2,
           ),
           const SizedBox(height: 20),
-
           _buildThumbnailPicker(),
           const SizedBox(height: 20),
-
           _buildMediaSection(),
           const SizedBox(height: 20),
-
           _buildRichTextEditor(),
           const SizedBox(height: 30),
-
-          _buildSaveButton(), // ✅ Save button moved here
+          _buildSaveButton(),
         ],
       ),
     );
@@ -242,6 +246,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           children: [
             ..._mediaList.map((media) {
               final isVideo = media['mediaType'] == 'VIDEO';
+              final thumbData = media['thumbUrl']?.isNotEmpty == true
+                  ? Image.memory(
+                      base64Decode(media['thumbUrl']!),
+                      fit: BoxFit.cover,
+                      width: 100,
+                      height: 100,
+                    )
+                  : null;
+
               return Stack(
                 children: [
                   Container(
@@ -250,22 +263,31 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.grey[200],
-                      image: isVideo
-                          ? null
-                          : DecorationImage(
-                              image: NetworkImage(media['mediaUrl']!),
-                              fit: BoxFit.cover,
-                            ),
                     ),
                     child: isVideo
-                        ? const Center(
-                            child: Icon(
-                              Icons.videocam,
-                              size: 40,
-                              color: Colors.grey,
-                            ),
+                        ? Stack(
+                            children: [
+                              if (thumbData != null)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: thumbData,
+                                ),
+                              const Center(
+                                child: Icon(
+                                  Icons.play_circle_fill,
+                                  size: 40,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
                           )
-                        : null,
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              media['mediaUrl']!,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                   ),
                   Positioned(
                     right: 0,
@@ -326,7 +348,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           ),
           child: Column(
             children: [
-              // Sử dụng đúng `config` và `QuillSimpleToolbarConfig`
               quill.QuillSimpleToolbar(
                 controller: _quillController,
                 config: const quill.QuillSimpleToolbarConfig(
@@ -337,7 +358,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   showColorButton: true,
                   showHeaderStyle: true,
                   showAlignmentButtons: true,
-                  // ẩn những nút ít dùng
                   showListBullets: false,
                   showListNumbers: false,
                   showListCheck: false,
@@ -348,10 +368,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   showLink: false,
                 ),
               ),
-
               Divider(height: 1, color: Colors.grey[300]),
-
-              // Editor: giữ cấu trúc tương tự code bạn đang chạy
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -360,21 +377,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 ),
                 child: Container(
                   constraints: const BoxConstraints(
-                    minHeight: 300, // 👈 Chiều cao tối thiểu cho vùng viết
-                    maxHeight: 600, // Giới hạn cao nhất (có thể chỉnh tùy UI)
+                    minHeight: 300,
+                    maxHeight: 600,
                   ),
                   child: SingleChildScrollView(
                     child: quill.QuillEditor.basic(
                       controller: _quillController,
                       focusNode: _editorFocusNode,
-                      // Nếu version của bạn cần config, thêm lại đoạn này:
-                      // config: const quill.QuillEditorConfig(
-                      //   placeholder: 'Write your content here...',
-                      //   padding: EdgeInsets.all(8),
-                      //   autoFocus: false,
-                      //   expands: false,
-                      //   scrollable: true,
-                      // ),
                     ),
                   ),
                 ),
@@ -430,40 +439,141 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     if (file != null) {
       setState(() => _isLoading = true);
       try {
-        final url = await CloudinaryService().uploadImage(File(file.path));
-        final String type = file.path.endsWith('.mp4') ? 'VIDEO' : 'IMAGE';
+        String url;
+        String type;
+        String? thumbUrl;
+
+        if (file.path.endsWith('.mp4')) {
+          print('🎬 [CreatePost] Uploading video...');
+          url = await CloudinaryService().uploadVideo(File(file.path));
+          type = 'VIDEO';
+          print('✅ [CreatePost] Video uploaded: $url');
+
+          // Generate and upload thumbnail to Cloudinary
+          print('📸 [CreatePost] Generating video thumbnail...');
+          final uint8list = await VideoThumbnail.thumbnailData(
+            video: file.path,
+            imageFormat: ImageFormat.JPEG,
+            maxWidth: 300,
+            quality: 85,
+          );
+          
+          if (uint8list != null) {
+            print('📤 [CreatePost] Uploading thumbnail to Cloudinary...');
+            // Save thumbnail as temporary file
+            final tempDir = Directory.systemTemp;
+            final tempFile = File('${tempDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg');
+            await tempFile.writeAsBytes(uint8list);
+            
+            // Upload thumbnail to Cloudinary
+            thumbUrl = await CloudinaryService().uploadImage(tempFile);
+            
+            // Clean up temp file
+            await tempFile.delete();
+            print('✅ [CreatePost] Thumbnail uploaded: $thumbUrl');
+          } else {
+            print('⚠️ [CreatePost] Failed to generate thumbnail');
+          }
+        } else {
+          print('🖼️ [CreatePost] Uploading image...');
+          url = await CloudinaryService().uploadImage(File(file.path));
+          type = 'IMAGE';
+          print('✅ [CreatePost] Image uploaded: $url');
+        }
+
         setState(() {
-          _mediaList.add({'mediaUrl': url, 'mediaType': type});
+          _mediaList.add({
+            'mediaUrl': url,
+            'mediaType': type,
+            'thumbUrl': thumbUrl ?? '', // Cloudinary URL instead of base64
+          });
           _isLoading = false;
         });
-      } catch (e) {
+        
+        print('✅ [CreatePost] Media added to list');
+      } catch (e, stack) {
+        print('❌ [CreatePost] Upload error: $e');
+        print('🧩 [CreatePost] Stack trace: $stack');
         setState(() => _isLoading = false);
       }
     }
   }
 
   Future<void> _savePost() async {
-    if (_titleController.text.trim().isEmpty) return;
+    if (_titleController.text.trim().isEmpty) {
+      if (!mounted) return;
+      NotificationHelper.showTopNotification(
+        context,
+        title: 'Error',
+        message: 'Title cannot be empty',
+        isError: true,
+      );
+      return;
+    }
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
-    try {
-      final postData = {
-        'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'content': _quillController.document.toPlainText().trim(),
-        'thumbnail': _thumbnailUrl ?? '',
-        'media': _mediaList,
-      };
 
+    final postData = {
+      'title': _titleController.text.trim(),
+      'description': _descriptionController.text.trim(),
+      'content': _quillController.document.toPlainText().trim(),
+      'thumbnail': _thumbnailUrl ?? '',
+      'media': _mediaList,
+    };
+
+    // Show loading dialog
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation(Color(0xFF00D09E)),
+        ),
+      ),
+    );
+
+    try {
       if (widget.post != null) {
         await ref
             .read(postViewModelProvider.notifier)
             .updatePost(widget.post!.id, postData);
+        
+        if (!mounted) return;
+        NotificationHelper.showTopNotification(
+          context,
+          title: 'Success',
+          message: 'Post updated successfully!',
+        );
       } else {
         await ref.read(postViewModelProvider.notifier).createPost(postData);
+        
+        if (!mounted) return;
+        NotificationHelper.showTopNotification(
+          context,
+          title: 'Success',
+          message: 'Post created successfully!',
+        );
       }
 
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) {
+        // Pop dialog
+        Navigator.of(context, rootNavigator: true).pop();
+
+        // Pop screen
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        NotificationHelper.showTopNotification(
+          context,
+          title: 'Error',
+          message: 'Failed to save post: $e',
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -7,6 +7,7 @@ import '../models/response/error_response.dart';
 import '../models/response/post_detail_response.dart';
 import '../models/response/post_like_response.dart';
 import '../models/response/post_list_response.dart';
+import 'dart:io'; // <-- thêm dòng này để dùng SocketException
 
 class PostService {
   static final String _baseUrl =
@@ -18,13 +19,19 @@ class PostService {
     int limit = 5,
   }) async {
     try {
+      final url = Uri.parse('$_baseUrl/latest?limit=$limit');
+      print('📡 [API] GET: $url');
+
       final response = await http.get(
-        Uri.parse('$_baseUrl/latest?limit=$limit'),
+        url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
         },
       );
+
+      print('✅ [API] Status: ${response.statusCode}');
+      print('📦 [API] Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -32,16 +39,23 @@ class PostService {
       } else {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
         final errorResponse = ErrorResponse.fromJson(errorData);
-        throw PostException(errorResponse.message);
+        throw PostException(
+          'Server returned ${response.statusCode}: ${errorResponse.message}',
+        );
       }
-    } on http.ClientException {
-      throw PostException('Network error. Please check your connection.');
-    } on FormatException {
-      throw PostException('Invalid response format from server.');
-    } catch (e) {
-      if (e is PostException) {
-        rethrow;
-      }
+    } on http.ClientException catch (e) {
+      print('🚨 [ClientException] ${e.message}');
+      print('🧩 [StackTrace]: ${StackTrace.current}');
+      throw PostException('ClientException: ${e.message}');
+    } on SocketException catch (e) {
+      print('🚫 [SocketException] ${e.message}');
+      throw PostException('SocketException: ${e.message}');
+    } on FormatException catch (e) {
+      print('⚠️ [FormatException] ${e.message}');
+      throw PostException('Invalid response format: ${e.message}');
+    } catch (e, stack) {
+      print('🔥 [Unexpected Error] $e');
+      print('🧩 [StackTrace]: $stack');
       throw PostException('Failed to get latest posts: ${e.toString()}');
     }
   }
