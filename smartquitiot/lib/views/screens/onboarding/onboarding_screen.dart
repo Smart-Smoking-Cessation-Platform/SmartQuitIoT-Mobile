@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/request/create_quit_plan_request.dart';
 import '../../../providers/quit_plan_provider.dart';
+import '../../../providers/mission_refresh_provider.dart';
 import '../../../utils/notification_helper.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/common/page_indicator.dart';
@@ -425,15 +426,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   await ref
                                       .read(quitPlanViewModelProvider.notifier)
                                       .createPlan(request);
+                                  
+                                  print('✅ [OnboardingScreen] Quit plan created successfully');
+                                  
                                   NotificationHelper.showTopNotification(
                                     context,
                                     title: "Success",
                                     message:
                                         "Quit plan \"${_quitPlanNameController.text.trim()}\" created successfully",
                                   );
+                                  
+                                  // Give backend time to initialize phase and missions
+                                  print('⏳ [OnboardingScreen] Waiting for backend to initialize phase...');
                                   await Future.delayed(
-                                    const Duration(seconds: 1),
+                                    const Duration(seconds: 2),
                                   );
+                                  
+                                  // Trigger refresh for quit plan and missions cards
+                                  print('🔄 [OnboardingScreen] Backend ready, triggering cards refresh...');
+                                  ref.read(missionRefreshProvider.notifier).refreshAll();
+                                  
+                                  // Give time for cards to refresh
+                                  await Future.delayed(
+                                    const Duration(milliseconds: 500),
+                                  );
+                                  
+                                  print('🚀 [OnboardingScreen] Navigating to main screen...');
                                   Navigator.pushReplacementNamed(
                                     context,
                                     '/main',

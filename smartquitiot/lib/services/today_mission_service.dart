@@ -58,12 +58,20 @@ class TodayMissionService {
         throw TodayMissionException('Network error. Please check your connection.');
       } else if (e.response != null) {
         final statusCode = e.response!.statusCode;
+        print('❌ [Response Status]: $statusCode');
+        print('📦 [Response Data]: ${e.response!.data}');
+        print('📋 [Response Headers]: ${e.response!.headers}');
+        
         if (statusCode == 401) {
           throw TodayMissionException('Unauthorized. Please login again.');
         } else if (statusCode == 403) {
           throw TodayMissionException('Access forbidden.');
         } else if (statusCode == 404) {
           throw TodayMissionException('Missions not found.');
+        } else if (statusCode == 400) {
+          // Log chi tiết lỗi 400
+          print('⚠️ [400 Bad Request] Response body: ${e.response!.data}');
+          throw TodayMissionException('Bad request (400): ${e.response!.data}');
         } else if (statusCode! >= 500) {
           throw TodayMissionException('Server error. Please try again later.');
         } else {
