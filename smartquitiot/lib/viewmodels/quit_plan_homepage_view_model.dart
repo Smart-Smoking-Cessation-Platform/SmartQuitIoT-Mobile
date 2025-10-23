@@ -9,22 +9,54 @@ class QuitPlanHomepageViewModel extends StateNotifier<QuitPlanHomepageState> {
 
   /// Load quit plan home page data
   Future<void> loadQuitPlanHomePage() async {
+    print('🔄 [QuitPlanHomepageViewModel] Starting to load quit plan...');
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      print('📞 [QuitPlanHomepageViewModel] Calling repository...');
       final quitPlan = await _quitPlanHomepageRepository.getQuitPlanHomePage();
+      
+      print('✅ [QuitPlanHomepageViewModel] Quit plan received from repository');
+      print('📋 [QuitPlanHomepageViewModel] Plan details:');
+      print('   - ID: ${quitPlan.id}');
+      print('   - Name: ${quitPlan.name}');
+      print('   - Total Missions: ${quitPlan.totalMissions}');
+      print('   - Completed Missions: ${quitPlan.completedMissions}');
+      print('   - Progress: ${quitPlan.progress}%');
+      print('   - Current Phase: ${quitPlan.currentPhaseDetail.name}');
+      print('   - Day Index: ${quitPlan.currentPhaseDetail.dayIndex}');
+      
       state = state.copyWith(
         quitPlan: quitPlan,
         isLoading: false,
         error: null,
       );
-      print('✅ [QuitPlanHomepageViewModel] Loaded quit plan: ${quitPlan.name}');
+      
+      print('✅ [QuitPlanHomepageViewModel] State updated successfully');
+      print('📊 [QuitPlanHomepageViewModel] hasQuitPlan: ${state.hasQuitPlan}');
     } catch (e, st) {
-      print('🔥 [QuitPlanHomepageViewModel] Load quit plan error: $e\n$st');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      final errorString = e.toString();
+      print('🔥 [QuitPlanHomepageViewModel] Load quit plan error: $errorString');
+      print('🧩 [QuitPlanHomepageViewModel] Stack trace: $st');
+      
+      // Handle 400 as empty state for new users without quit plan
+      if (errorString.contains('status: 400') || errorString.contains('Bad request (400)') || errorString.contains('not found')) {
+        print('ℹ️ [QuitPlanHomepageViewModel] Detected 400 error - treating as empty state');
+        print('💡 [QuitPlanHomepageViewModel] This likely means user has no quit plan yet');
+        state = state.copyWith(
+          quitPlan: null,
+          isLoading: false,
+          error: null, // No error, just empty
+        );
+        print('✅ [QuitPlanHomepageViewModel] State set to empty (no error)');
+      } else {
+        // Real errors (network, server, etc.)
+        print('❌ [QuitPlanHomepageViewModel] Real error detected, showing error state');
+        state = state.copyWith(
+          isLoading: false,
+          error: errorString,
+        );
+      }
     }
   }
 

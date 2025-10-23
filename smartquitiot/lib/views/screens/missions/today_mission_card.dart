@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../viewmodels/today_mission_view_model.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 import '../../../providers/mission_refresh_provider.dart';
 import '../quitplans/quit_plan_screen.dart';
 
@@ -12,24 +13,73 @@ class TodayMissionCard extends ConsumerStatefulWidget {
 }
 
 class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
+  bool _hasLoadedMissions = false;
+  bool _lastQuitPlanState = false; // Track previous quit plan state
+
   @override
   void initState() {
     super.initState();
-    // Load missions when widget initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
-    });
+    // Don't load missions here - wait for quit plan to load first
+    print('📋 [TodayMissionCard] Initialized, waiting for quit plan...');
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(todayMissionViewModelProvider);
-    
+    final quitPlanState = ref.watch(quitPlanHomepageViewModelProvider);
+
+    // Debug current states
+    print(
+      '🔍 [TodayMissionCard] States - hasQuitPlan: ${quitPlanState.hasQuitPlan}, isLoading: ${quitPlanState.isLoading}, hasLoadedMissions: $_hasLoadedMissions, lastQuitPlanState: $_lastQuitPlanState',
+    );
+
+    // Load missions AFTER quit plan is loaded and ready
+    if (!_hasLoadedMissions &&
+        quitPlanState.hasQuitPlan &&
+        !quitPlanState.isLoading) {
+      print('✅ [TodayMissionCard] Quit plan loaded, now loading missions...');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
+        _hasLoadedMissions = true;
+        _lastQuitPlanState = true;
+      });
+    }
+
+    // Detect when quit plan state changes from false to true (new quit plan created)
+    if (!_lastQuitPlanState &&
+        quitPlanState.hasQuitPlan &&
+        !quitPlanState.isLoading) {
+      print(
+        '🆕 [TodayMissionCard] New quit plan detected! Retrying missions...',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+        _hasLoadedMissions = true;
+        _lastQuitPlanState = true;
+      });
+    }
+
+    // Handle case when quit plan is lost (e.g., logout/login)
+    if (_lastQuitPlanState &&
+        !quitPlanState.hasQuitPlan &&
+        !quitPlanState.isLoading) {
+      print('⚠️ [TodayMissionCard] Quit plan lost, resetting mission state...');
+      _hasLoadedMissions = false;
+      _lastQuitPlanState = false;
+    }
+
+    // Update last quit plan state
+    _lastQuitPlanState = quitPlanState.hasQuitPlan;
+
     // Listen for mission refresh trigger
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != next) {
+        print('🔄 [TodayMissionCard] Refresh triggered by provider');
+        // Reset loading state to allow fresh load
+        _hasLoadedMissions = false;
         // Refresh missions when trigger changes
         ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+        _hasLoadedMissions = true;
       }
     });
 
@@ -86,13 +136,38 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
   }
 
   Widget _buildContent(state) {
+    final quitPlanState = ref.watch(quitPlanHomepageViewModelProvider);
+
+    // Show loading only if we're actually loading missions
     if (state.isLoading) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20.0),
-          child: CircularProgressIndicator(
-            color: Color(0xFF00D09E),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF00D09E)),
+        ),
+      );
+    }
+
+    // If no quit plan exists, show appropriate message
+    if (!quitPlanState.hasQuitPlan && !quitPlanState.isLoading) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.orange, size: 20),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Please complete your quit plan setup to see today\'s missions',
+                style: TextStyle(color: Colors.orange, fontSize: 14),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -114,10 +189,7 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
                 Expanded(
                   child: Text(
                     'Error: ${state.error}',
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.red[700], fontSize: 14),
                   ),
                 ),
               ],
@@ -127,7 +199,9 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+                  ref
+                      .read(todayMissionViewModelProvider.notifier)
+                      .refreshMissions();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red[700],
@@ -160,10 +234,7 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
             Expanded(
               child: Text(
                 'No missions available today',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ),
           ],
@@ -264,11 +335,7 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
       ),
       child: Column(
         children: [
-          const Icon(
-            Icons.celebration,
-            color: Colors.white,
-            size: 48,
-          ),
+          const Icon(Icons.celebration, color: Colors.white, size: 48),
           const SizedBox(height: 16),
           const Text(
             '🎉 Outstanding Achievement!',
@@ -293,11 +360,7 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
           const SizedBox(height: 8),
           const Text(
             '✨ Every step forward is a victory against smoking.\nCome back tomorrow for new challenges!',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              height: 1.4,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),

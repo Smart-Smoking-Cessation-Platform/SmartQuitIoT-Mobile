@@ -9,11 +9,14 @@ class TodayMissionViewModel extends StateNotifier<TodayMissionState> {
 
   /// Load today's missions (only incompleted ones)
   Future<void> loadTodayMissions() async {
+    print('🔄 [TodayMissionViewModel] Starting to load today missions...');
     state = state.copyWith(isLoading: true, error: null);
 
     try {
       // First check if all missions are completed
+      print('📞 [TodayMissionViewModel] Checking if all missions completed...');
       final allCompleted = await _todayMissionRepository.areAllMissionsCompleted();
+      print('📊 [TodayMissionViewModel] All completed: $allCompleted');
       
       if (allCompleted) {
         // If all completed, set empty missions list and flag
@@ -23,25 +26,51 @@ class TodayMissionViewModel extends StateNotifier<TodayMissionState> {
           error: null,
           allMissionsCompleted: true,
         );
-        print('✅ [TodayMissionViewModel] All missions completed');
+        print('✅ [TodayMissionViewModel] All missions completed - showing congratulations');
       } else {
         // Load incompleted missions
+        print('📞 [TodayMissionViewModel] Loading incompleted missions...');
         final missions = await _todayMissionRepository.getTodayMissions();
+        
+        print('✅ [TodayMissionViewModel] Missions received: ${missions.length}');
+        for (var i = 0; i < missions.length; i++) {
+          print('   ${i + 1}. ${missions[i].name} - ${missions[i].description}');
+        }
+        
         state = state.copyWith(
           missions: missions,
           isLoading: false,
           error: null,
           allMissionsCompleted: false,
         );
-        print('✅ [TodayMissionViewModel] Loaded ${missions.length} incompleted missions');
+        print('✅ [TodayMissionViewModel] State updated with ${missions.length} missions');
+        print('📊 [TodayMissionViewModel] hasMissions: ${state.hasMissions}');
       }
     } catch (e, st) {
-      print('🔥 [TodayMissionViewModel] Load missions error: $e\n$st');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-        allMissionsCompleted: false,
-      );
+      final errorString = e.toString();
+      print('🔥 [TodayMissionViewModel] Load missions error: $errorString');
+      print('🧩 [TodayMissionViewModel] Stack trace: $st');
+      
+      // Handle 400 as empty state for new users without missions
+      if (errorString.contains('status: 400') || errorString.contains('Bad request (400)') || errorString.contains('not found')) {
+        print('ℹ️ [TodayMissionViewModel] Detected 400 error - treating as empty state');
+        print('💡 [TodayMissionViewModel] This likely means user has no missions yet');
+        state = state.copyWith(
+          missions: [],
+          isLoading: false,
+          error: null, // No error, just empty
+          allMissionsCompleted: false,
+        );
+        print('✅ [TodayMissionViewModel] State set to empty (no error)');
+      } else {
+        // Real errors (network, server, etc.)
+        print('❌ [TodayMissionViewModel] Real error detected, showing error state');
+        state = state.copyWith(
+          isLoading: false,
+          error: errorString,
+          allMissionsCompleted: false,
+        );
+      }
     }
   }
 
