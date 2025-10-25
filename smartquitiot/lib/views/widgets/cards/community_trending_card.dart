@@ -5,9 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:SmartQuitIoT/services/token_storage_service.dart';
-
-import '../../screens/posts/post_detail_screen.dart';
-import '../../screens/posts/post_list_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class CommunityTrendingCard extends StatefulWidget {
   const CommunityTrendingCard({super.key});
@@ -98,12 +96,7 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PostListScreen(),
-                    ),
-                  );
+                  context.push('/posts');
                 },
                 child: Text(
                   'view_more'.tr(),
@@ -178,12 +171,7 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
   Widget _buildPostCard(dynamic post) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PostDetailScreen(postId: post['id']),
-          ),
-        );
+        context.push('/posts/${post['id']}');
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 6),

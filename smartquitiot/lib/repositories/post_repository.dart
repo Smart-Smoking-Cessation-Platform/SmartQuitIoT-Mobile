@@ -143,25 +143,55 @@ class PostRepository {
     }
   }
 
-  Future<Post> updatePost(int postId, Map<String, dynamic> updateData) async {
+  Future<PostDetail> updatePost({
+    required int postId,
+    required String title,
+    required String description,
+    String? content,
+    String? thumbnail,
+    List<Map<String, dynamic>>? media,
+  }) async {
     try {
-      final accessToken = await _authRepository.getAccessToken();
+      print('✏️ [PostRepository] Updating post $postId');
+
+      final accessToken = await _authRepository.getValidAccessToken();
       if (accessToken == null) {
         throw PostException('Access token not found. Please login again.');
       }
 
-      final response = await _postService.updatePost(
+      final updateData = <String, dynamic>{
+        'title': title,
+        'description': description,
+      };
+
+      if (content != null) {
+        updateData['content'] = content;
+      }
+
+      if (thumbnail != null) {
+        updateData['thumbnail'] = thumbnail;
+      }
+
+      if (media != null && media.isNotEmpty) {
+        updateData['media'] = media;
+      }
+
+      print('📦 [PostRepository] Update data: $updateData');
+
+      final updatedPost = await _postService.updatePost(
         accessToken: accessToken,
         postId: postId,
         updateData: updateData,
       );
 
-      return response.data;
-    } catch (e) {
-      if (e is PostException) {
-        rethrow;
-      }
-      throw PostException('Failed to update post: ${e.toString()}');
+      print('✅ [PostRepository] Post updated successfully');
+      return updatedPost;
+    } on PostException {
+      rethrow;
+    } catch (e, stack) {
+      print('❌ [PostRepository] Error updating post: $e');
+      print('🧩 [PostRepository] Stack trace: $stack');
+      throw PostException('Failed to update post: $e');
     }
   }
 

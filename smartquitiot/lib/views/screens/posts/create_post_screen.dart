@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:SmartQuitIoT/services/cloudinary_service.dart';
@@ -246,14 +247,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           children: [
             ..._mediaList.map((media) {
               final isVideo = media['mediaType'] == 'VIDEO';
-              final thumbData = media['thumbUrl']?.isNotEmpty == true
-                  ? Image.memory(
-                      base64Decode(media['thumbUrl']!),
-                      fit: BoxFit.cover,
-                      width: 100,
-                      height: 100,
-                    )
-                  : null;
+              final thumbUrl = media['thumbUrl'];
 
               return Stack(
                 children: [
@@ -267,10 +261,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     child: isVideo
                         ? Stack(
                             children: [
-                              if (thumbData != null)
+                              if (thumbUrl != null && thumbUrl.isNotEmpty)
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: thumbData,
+                                  child: Image.network(
+                                    thumbUrl, // ✅ dùng Image.network thay vì base64Decode
+                                    fit: BoxFit.cover,
+                                    width: 100,
+                                    height: 100,
+                                  ),
                                 ),
                               const Center(
                                 child: Icon(
@@ -457,17 +456,19 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             maxWidth: 300,
             quality: 85,
           );
-          
+
           if (uint8list != null) {
             print('📤 [CreatePost] Uploading thumbnail to Cloudinary...');
             // Save thumbnail as temporary file
             final tempDir = Directory.systemTemp;
-            final tempFile = File('${tempDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg');
+            final tempFile = File(
+              '${tempDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            );
             await tempFile.writeAsBytes(uint8list);
-            
+
             // Upload thumbnail to Cloudinary
             thumbUrl = await CloudinaryService().uploadImage(tempFile);
-            
+
             // Clean up temp file
             await tempFile.delete();
             print('✅ [CreatePost] Thumbnail uploaded: $thumbUrl');
@@ -489,7 +490,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           });
           _isLoading = false;
         });
-        
+
         print('✅ [CreatePost] Media added to list');
       } catch (e, stack) {
         print('❌ [CreatePost] Upload error: $e');
@@ -514,10 +515,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
+    // Convert Quill document to JSON Delta format to preserve rich text formatting
+    final deltaJson = jsonEncode(_quillController.document.toDelta().toJson());
+    
     final postData = {
       'title': _titleController.text.trim(),
       'description': _descriptionController.text.trim(),
-      'content': _quillController.document.toPlainText().trim(),
+      'content': deltaJson,
       'thumbnail': _thumbnailUrl ?? '',
       'media': _mediaList,
     };
@@ -538,9 +542,19 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       if (widget.post != null) {
         await ref
             .read(postViewModelProvider.notifier)
-            .updatePost(widget.post!.id, postData);
-        
+            .updatePost(
+              postId: widget.post!.id,
+              title: _titleController.text.trim(),
+              description: _descriptionController.text.trim(),
+              content: deltaJson,
+              thumbnail: _thumbnailUrl ?? '',
+              media: _mediaList,
+            );
+
         if (!mounted) return;
+        // Close loading dialog first
+        Navigator.of(context).pop();
+        
         NotificationHelper.showTopNotification(
           context,
           title: 'Success',
@@ -548,8 +562,11 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         );
       } else {
         await ref.read(postViewModelProvider.notifier).createPost(postData);
-        
+
         if (!mounted) return;
+        // Close loading dialog first
+        Navigator.of(context).pop();
+        
         NotificationHelper.showTopNotification(
           context,
           title: 'Success',
@@ -557,16 +574,19 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         );
       }
 
+      // Navigate back after showing notification
       if (mounted) {
-        // Pop dialog
-        Navigator.of(context, rootNavigator: true).pop();
-
-        // Pop screen
-        Navigator.of(context).pop(true);
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            context.pop(true);
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
+        // Close loading dialog
+        Navigator.of(context).pop();
+        
         NotificationHelper.showTopNotification(
           context,
           title: 'Error',

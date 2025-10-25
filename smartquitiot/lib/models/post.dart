@@ -33,7 +33,9 @@ class Post {
 
   factory Post.fromJson(Map<String, dynamic> json) {
     return Post(
-      id: json['id'] as int,
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse(json['id'].toString()) ?? 0,
       title: json['title'] as String,
       description: json['description'] as String,
       content: json['content'] as String?,
@@ -53,7 +55,9 @@ class Post {
                 .map((e) => PostComment.fromJson(e as Map<String, dynamic>))
                 .toList()
           : null,
-      likeCount: json['likeCount'] as int,
+      likeCount: json['likeCount'] is int
+          ? json['likeCount'] as int
+          : int.tryParse(json['likeCount'].toString()) ?? 0,
       isLiked: json['isLiked'] as bool?,
     );
   }

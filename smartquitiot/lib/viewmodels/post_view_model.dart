@@ -128,33 +128,63 @@ class PostViewModel extends StateNotifier<PostState> {
     }
   }
 
-  /// Update a post
-  Future<void> updatePost(int postId, Map<String, dynamic> updateData) async {
+  Future<void> updatePost({
+    required int postId,
+    required String title,
+    required String description,
+    String? content,
+    String? thumbnail,
+    List<Map<String, dynamic>>? media,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+
     try {
-      final updatedPost = await _postRepository.updatePost(postId, updateData);
+      final updatedPostDetail = await _postRepository.updatePost(
+        postId: postId,
+        title: title,
+        description: description,
+        content: content,
+        thumbnail: thumbnail,
+        media: media,
+      );
+
+      // Convert PostDetail to Post for the list
+      final updatedPost = Post(
+        id: updatedPostDetail.id,
+        title: updatedPostDetail.title,
+        description: updatedPostDetail.description,
+        content: updatedPostDetail.content,
+        thumbnail: updatedPostDetail.thumbnail,
+        createdAt: updatedPostDetail.createdAt,
+        updatedAt: updatedPostDetail.updatedAt,
+        account: updatedPostDetail.account,
+        media: updatedPostDetail.media,
+        comments: updatedPostDetail.comments,
+        likeCount: updatedPostDetail.likeCount,
+        isLiked: updatedPostDetail.isLiked,
+      );
 
       // Update the post in the list
-      final updatedPosts = <Post>[];
-      for (final post in state.posts) {
-        if (post.id == postId) {
-          updatedPosts.add(updatedPost);
-        } else {
-          updatedPosts.add(post);
-        }
+      final updatedPosts = List<Post>.from(state.posts);
+      final index = updatedPosts.indexWhere((p) => p.id == postId);
+      if (index != -1) {
+        updatedPosts[index] = updatedPost;
       }
 
-      // Update selected post if it's the same post
-      Post? updatedSelectedPost = state.selectedPost;
-      if (state.selectedPost != null && state.selectedPost!.id == postId) {
-        updatedSelectedPost = updatedPost;
+      // Update selected post if it's the same
+      Post? selectedPost = state.selectedPost;
+      if (selectedPost?.id == postId) {
+        selectedPost = updatedPost;
       }
 
       state = state.copyWith(
         posts: updatedPosts,
-        selectedPost: updatedSelectedPost,
+        selectedPost: selectedPost,
+        isLoading: false,
+        error: null,
       );
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 

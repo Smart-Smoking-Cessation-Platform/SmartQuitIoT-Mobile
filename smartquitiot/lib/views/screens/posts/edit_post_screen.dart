@@ -42,10 +42,7 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
 
     if (widget.post.media != null && widget.post.media!.isNotEmpty) {
       _mediaList = widget.post.media!
-          .map((m) => {
-                'mediaUrl': m.mediaUrl,
-                'mediaType': m.mediaType,
-              })
+          .map((m) => {'mediaUrl': m.mediaUrl, 'mediaType': m.mediaType})
           .toList();
     }
 
@@ -75,23 +72,23 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
       );
       if (image != null) {
         setState(() => _isLoading = true);
-        
+
         print('📤 [EditPost] Uploading thumbnail...');
         final url = await CloudinaryService().uploadImage(File(image.path));
-        
+
         setState(() {
           _thumbnailUrl = url;
           _isLoading = false;
         });
-        
+
         print('✅ [EditPost] Thumbnail uploaded: $url');
       }
     } catch (e, stack) {
       print('❌ [EditPost] Thumbnail upload error: $e');
       print('🧩 [EditPost] Stack: $stack');
-      
+
       setState(() => _isLoading = false);
-      
+
       _showErrorFlushbar('Failed to upload thumbnail: $e');
     }
   }
@@ -151,19 +148,16 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
         }
 
         setState(() {
-          _mediaList.add({
-            'mediaUrl': url,
-            'mediaType': type,
-          });
+          _mediaList.add({'mediaUrl': url, 'mediaType': type});
           _isLoading = false;
         });
       }
     } catch (e, stack) {
       print('❌ [EditPost] Media upload error: $e');
       print('🧩 [EditPost] Stack: $stack');
-      
+
       setState(() => _isLoading = false);
-      
+
       _showErrorFlushbar('Failed to upload media: $e');
     }
   }
@@ -200,7 +194,14 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
     setState(() => _isLoading = true);
 
     final postNotifier = ref.read(postViewModelProvider.notifier);
-    await postNotifier.updatePost(widget.post.id, updateData);
+    await postNotifier.updatePost(
+      postId: widget.post.id,
+      title: title,
+      description: description,
+      content: content,
+      thumbnail: _thumbnailUrl ?? '',
+      media: _mediaList,
+    );
 
     final state = ref.read(postViewModelProvider);
 
@@ -208,7 +209,7 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
 
     if (state.error == null && mounted) {
       print('✅ [EditPost] Post updated successfully');
-      
+
       Flushbar(
         message: '✅ Post updated successfully!',
         icon: const Icon(Icons.check_circle, size: 28, color: Colors.white),
@@ -305,9 +306,7 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
             Container(
               color: Colors.black26,
               child: const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF00D09E),
-                ),
+                child: CircularProgressIndicator(color: Color(0xFF00D09E)),
               ),
             ),
         ],
@@ -371,7 +370,10 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
                       children: [
                         Icon(Icons.image, size: 48, color: Colors.grey),
                         SizedBox(height: 8),
-                        Text('Tap to upload thumbnail', style: TextStyle(color: Colors.grey)),
+                        Text(
+                          'Tap to upload thumbnail',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ],
                     ),
                   ),
@@ -437,7 +439,8 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
                           : Image.network(
                               media['mediaUrl']!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.error),
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.error),
                             ),
                     ),
                   ),

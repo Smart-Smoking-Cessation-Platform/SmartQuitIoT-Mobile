@@ -1,9 +1,15 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/post.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/comment_card.dart';
+import 'package:video_player/video_player.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:SmartQuitIoT/services/cloudinary_service.dart';
+import 'dart:io';
 import '../../../models/post_media.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final int postId;
@@ -17,12 +23,17 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
+  List<PostMedia> _selectedMedia = [];
+  bool _isUploadingMedia = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+      // Load comments from the post detail will be done after post loads
     });
   }
 
@@ -134,11 +145,26 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             onSelected: (value) {
-              if (value == 'delete') {
-                _showDeleteConfirmation(post);
+              switch (value) {
+                case 'edit':
+                  _editPost(post);
+                  break;
+                case 'delete':
+                  _showDeleteConfirmation(post);
+                  break;
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 20, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Edit', style: TextStyle(color: Colors.blue)),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'delete',
                 child: Row(
@@ -166,10 +192,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (post.content != null && post.content!.isNotEmpty)
-            Text(
-              post.content!,
-              style: const TextStyle(fontSize: 16, height: 1.5),
-            ),
+            _buildRichTextContent(post.content!),
           if (post.media != null && post.media!.isNotEmpty) ...[
             const SizedBox(height: 12),
             _buildInlineMedia(post.media!),
@@ -177,6 +200,33 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ],
       ),
     );
+  }
+
+  /// Hiển thị rich text content với styling
+  Widget _buildRichTextContent(String content) {
+    try {
+      // Try to parse as Delta JSON format (from Quill editor)
+      final deltaJson = jsonDecode(content);
+      final document = quill.Document.fromJson(deltaJson);
+      final controller = quill.QuillController(
+        document: document,
+        selection: const TextSelection.collapsed(offset: 0),
+        readOnly: true,
+      );
+
+      return quill.QuillEditor.basic(
+        controller: controller,
+        config: const quill.QuillEditorConfig(
+          padding: EdgeInsets.zero,
+        ),
+      );
+    } catch (e) {
+      // Fallback to plain text if not valid JSON or Delta format
+      return Text(
+        content,
+        style: const TextStyle(fontSize: 16, height: 1.5),
+      );
+    }
   }
 
   /// Hiển thị ảnh/video xen giữa nội dung
@@ -204,19 +254,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         } else if (item.mediaType == 'VIDEO') {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                color: Colors.black12,
-                child: const Center(
-                  child: Icon(
-                    Icons.play_circle_fill,
-                    size: 60,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
-            ),
+            child: _VideoPlayerWidget(videoUrl: item.mediaUrl),
           );
         } else {
           return const SizedBox.shrink();
@@ -296,6 +334,23 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   // }
 
   Widget _buildCommentsSection(Post post) {
+    final commentState = ref.watch(commentViewModelProvider);
+
+    // Load comments from post if comment state is empty
+    if (commentState.comments.isEmpty &&
+        post.comments != null &&
+        post.comments!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(commentViewModelProvider.notifier)
+            .loadCommentsFromPost(widget.postId, post.comments!);
+      });
+    }
+
+    final comments = commentState.comments.isNotEmpty
+        ? commentState.comments
+        : (post.comments ?? []);
+
     return Container(
       color: Colors.white,
       margin: const EdgeInsets.only(top: 8),
@@ -305,11 +360,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Comments (${post.comments?.length ?? 0})',
+              'Comments (${comments.length})',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
-          if (post.comments == null || post.comments!.isEmpty)
+          if (comments.isEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
               child: Center(
@@ -323,10 +378,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: post.comments!.length,
+              itemCount: comments.length,
               itemBuilder: (_, index) {
-                final comment = post.comments![index];
-                return CommentCard(comment: comment);
+                final comment = comments[index];
+                return CommentCard(
+                  comment: comment,
+                  onReply: (parentId) => _replyToComment(parentId),
+                  onEdit: (commentId) => _editComment(commentId),
+                  onDelete: (commentId) => _deleteComment(commentId),
+                );
               },
             ),
         ],
@@ -335,6 +395,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 
   Widget _buildCommentInputBar(Post post) {
+    final commentState = ref.watch(commentViewModelProvider);
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -343,44 +405,360 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         color: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: SafeArea(
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: TextField(
-                  controller: _commentController,
-                  decoration: InputDecoration(
-                    hintText: 'Write a comment...',
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
+              // Selected media preview
+              if (_selectedMedia.isNotEmpty) ...[
+                Container(
+                  height: 60,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _selectedMedia.length,
+                    itemBuilder: (context, index) {
+                      final media = _selectedMedia[index];
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                media.mediaUrl,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.error),
+                                  );
+                                },
+                              ),
+                            ),
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedMedia.removeAt(index);
+                                  });
+                                },
+                                child: Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.send, color: Color(0xFF00D09E)),
-                onPressed: () {
-                  final text = _commentController.text.trim();
-                  if (text.isNotEmpty) {
-                    FocusScope.of(context).unfocus();
-                    _commentController.clear();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Comment sent!')),
-                    );
-                  }
-                },
+              ],
+
+              // Input row
+              Row(
+                children: [
+                  // Media picker button
+                  IconButton(
+                    icon: Icon(
+                      Icons.attach_file,
+                      color: _isUploadingMedia
+                          ? Colors.grey
+                          : const Color(0xFF00D09E),
+                    ),
+                    onPressed: _isUploadingMedia ? null : _showMediaPicker,
+                  ),
+
+                  // Text input
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      decoration: InputDecoration(
+                        hintText: 'Write a comment...',
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Send button
+                  IconButton(
+                    icon: commentState.isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF00D09E),
+                              ),
+                            ),
+                          )
+                        : const Icon(Icons.send, color: Color(0xFF00D09E)),
+                    onPressed: commentState.isSubmitting
+                        ? null
+                        : _submitComment,
+                  ),
+                ],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showMediaPicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Select Media',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildMediaOption(
+                  icon: Icons.photo_camera,
+                  label: 'Camera',
+                  onTap: () => _pickMedia(ImageSource.camera),
+                ),
+                _buildMediaOption(
+                  icon: Icons.photo_library,
+                  label: 'Gallery',
+                  onTap: () => _pickMedia(ImageSource.gallery),
+                ),
+                _buildMediaOption(
+                  icon: Icons.videocam,
+                  label: 'Video',
+                  onTap: () => _pickVideo(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: const Color(0xFF00D09E).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(icon, color: const Color(0xFF00D09E), size: 30),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickMedia(ImageSource source) async {
+    try {
+      setState(() => _isUploadingMedia = true);
+
+      final XFile? image = await _imagePicker.pickImage(source: source);
+      if (image != null) {
+        await _uploadMedia(image.path, 'IMAGE');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+    } finally {
+      setState(() => _isUploadingMedia = false);
+    }
+  }
+
+  Future<void> _pickVideo() async {
+    try {
+      setState(() => _isUploadingMedia = true);
+
+      final XFile? video = await _imagePicker.pickVideo(
+        source: ImageSource.gallery,
+      );
+      if (video != null) {
+        await _uploadMedia(video.path, 'VIDEO');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking video: $e')));
+    } finally {
+      setState(() => _isUploadingMedia = false);
+    }
+  }
+
+  Future<void> _uploadMedia(String filePath, String mediaType) async {
+    try {
+      final file = File(filePath);
+      String? uploadResult;
+
+      if (mediaType == 'IMAGE') {
+        uploadResult = await _cloudinaryService.uploadImage(file);
+      } else if (mediaType == 'VIDEO') {
+        uploadResult = await _cloudinaryService.uploadVideo(file);
+      }
+
+      if (uploadResult != null) {
+        final media = PostMedia(
+          id: 0, // Temporary ID
+          mediaUrl: uploadResult,
+          mediaType: mediaType,
+        );
+
+        setState(() {
+          _selectedMedia.add(media);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Media uploaded successfully!')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error uploading media: $e')));
+    }
+  }
+
+  Future<void> _submitComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty && _selectedMedia.isEmpty) return;
+
+    try {
+      await ref
+          .read(commentViewModelProvider.notifier)
+          .createComment(
+            postId: widget.postId,
+            content: text,
+            media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
+          );
+
+      // Clear input and media
+      _commentController.clear();
+      setState(() {
+        _selectedMedia.clear();
+      });
+
+      // Reload post to show new comment
+      ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment posted successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error posting comment: $e')));
+    }
+  }
+
+  void _replyToComment(int parentId) {
+    // TODO: Implement reply functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Reply functionality coming soon!')),
+    );
+  }
+
+  void _editComment(int commentId) {
+    // TODO: Implement edit functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Edit functionality coming soon!')),
+    );
+  }
+
+  Future<void> _deleteComment(int commentId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Comment'),
+        content: const Text('Are you sure you want to delete this comment?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref
+            .read(commentViewModelProvider.notifier)
+            .deleteComment(commentId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment deleted successfully!')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting comment: $e')));
+      }
+    }
+  }
+
+  void _editPost(Post post) {
+    // TODO: Navigate to edit post screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Edit post functionality coming soon!')),
     );
   }
 
@@ -437,4 +815,132 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   Widget _buildEmptyState() => const Center(
     child: Text('Post not found', style: TextStyle(color: Colors.grey)),
   );
+}
+
+class _VideoPlayerWidget extends StatefulWidget {
+  final String videoUrl;
+
+  const _VideoPlayerWidget({required this.videoUrl});
+
+  @override
+  State<_VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
+}
+
+class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
+  VideoPlayerController? _controller;
+  bool _isInitialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+      );
+      await _controller!.initialize();
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasError) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 50, color: Colors.grey),
+              SizedBox(height: 8),
+              Text(
+                'Failed to load video',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!_isInitialized || _controller == null) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+          ),
+        ),
+      );
+    }
+
+    return AspectRatio(
+      aspectRatio: _controller!.value.aspectRatio,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          children: [
+            VideoPlayer(_controller!),
+            Center(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (_controller!.value.isPlaying) {
+                      _controller!.pause();
+                    } else {
+                      _controller!.play();
+                    }
+                  });
+                },
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _controller!.value.isPlaying
+                        ? Icons.pause
+                        : Icons.play_arrow,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

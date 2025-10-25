@@ -1,6 +1,9 @@
 import 'package:SmartQuitIoT/views/screens/common/_relaunch_screen.dart';
 import 'package:SmartQuitIoT/views/screens/diary/create_diary_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/success_payment_screen.dart';
+import 'package:SmartQuitIoT/views/screens/posts/create_post_screen.dart';
+import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
+import 'package:SmartQuitIoT/views/screens/posts/post_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,7 +18,6 @@ import 'package:SmartQuitIoT/views/screens/onboarding/welcome_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
-import 'package:SmartQuitIoT/views/screens/payment/payment_success_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -34,6 +36,26 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/main', builder: (_, __) => const MainNavigationScreen()),
     GoRoute(path: '/relaunch', builder: (_, __) => const RelaunchScreen()),
     GoRoute(path: '/debug-home', builder: (_, __) => const DebugHomeScreen()),
+    GoRoute(
+      path: '/create-post',
+      builder: (context, state) => const CreatePostScreen(),
+    ),
+    GoRoute(
+      path: '/posts',
+      builder: (context, state) => const PostListScreen(),
+    ),
+    GoRoute(
+      path: '/posts/:id',
+      builder: (context, state) {
+        final idStr = state.pathParameters['id'];
+        final id = int.tryParse(idStr ?? '');
+        if (id == null) {
+          return const Scaffold(body: Center(child: Text('Invalid Post ID')));
+        }
+        return PostDetailScreen(postId: id);
+      },
+    ),
+
     GoRoute(
       path: '/premium',
       builder: (_, __) => const PremiumMembershipScreen(),
@@ -64,7 +86,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/payment/cancel',
       builder: (context, state) {
-        final args = state.extra as Map<String, dynamic>? ?? {};
         return const PaymentCancelScreen();
       },
     ),

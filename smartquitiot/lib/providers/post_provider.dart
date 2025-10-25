@@ -1,12 +1,33 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/post_repository.dart';
+import '../repositories/comment_repository.dart';
+import '../services/comment_service.dart';
+import '../services/token_storage_service.dart';
 import '../viewmodels/post_view_model.dart';
+import '../viewmodels/comment_view_model.dart';
 import '../models/state/post_state.dart';
 import '../models/post.dart';
 
 /// Repository Provider
 final postRepositoryProvider = Provider<PostRepository>((ref) {
   return PostRepository();
+});
+
+/// Comment Service Provider
+final commentServiceProvider = Provider<CommentService>((ref) {
+  return CommentService();
+});
+
+/// Token Storage Provider
+final tokenStorageProvider = Provider<TokenStorageService>((ref) {
+  return TokenStorageService();
+});
+
+/// Comment Repository Provider
+final commentRepositoryProvider = Provider<CommentRepository>((ref) {
+  final commentService = ref.read(commentServiceProvider);
+  final tokenStorage = ref.read(tokenStorageProvider);
+  return CommentRepository(commentService, tokenStorage);
 });
 
 /// ViewModel Provider
@@ -16,6 +37,13 @@ final postViewModelProvider = StateNotifierProvider<PostViewModel, PostState>((
   final repo = ref.read(postRepositoryProvider);
   return PostViewModel(repo);
 });
+
+/// Comment ViewModel Provider
+final commentViewModelProvider =
+    StateNotifierProvider<CommentViewModel, CommentState>((ref) {
+      final repo = ref.read(commentRepositoryProvider);
+      return CommentViewModel(repo);
+    });
 
 /// Individual post provider for specific post IDs
 final postDetailProvider = Provider.family<Post?, int>((ref, postId) {

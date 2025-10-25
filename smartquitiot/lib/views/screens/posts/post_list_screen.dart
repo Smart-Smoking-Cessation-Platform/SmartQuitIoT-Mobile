@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/post.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
-import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
-import 'package:SmartQuitIoT/views/screens/posts/create_post_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class PostListScreen extends ConsumerStatefulWidget {
   const PostListScreen({super.key});
@@ -129,11 +128,14 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreatePostScreen()),
-          );
+        onPressed: () async {
+          final result = await context.push<bool>(
+            '/create-post',
+          ); // hoặc GoRouter path
+          if (result == true) {
+            // nếu post mới tạo thành công → reload danh sách
+            ref.read(postViewModelProvider.notifier).loadAllPosts();
+          }
         },
         backgroundColor: const Color(0xFF00D09E),
         foregroundColor: Colors.white,
@@ -163,13 +165,9 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PostDetailScreen(postId: post.id),
-              ),
-            );
+            context.push('/posts/${post.id}');
           },
+
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(

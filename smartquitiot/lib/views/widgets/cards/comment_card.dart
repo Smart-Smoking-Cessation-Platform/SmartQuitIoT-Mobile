@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/models/post.dart';
-
 import '../../../models/post_comment.dart';
 import '../../../models/post_media.dart';
 
 class CommentCard extends StatelessWidget {
   final PostComment comment;
+  final Function(int)? onReply;
+  final Function(int)? onEdit;
+  final Function(int)? onDelete;
 
-  const CommentCard({super.key, required this.comment});
+  const CommentCard({
+    super.key,
+    required this.comment,
+    this.onReply,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +63,54 @@ class CommentCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              // Action buttons
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'reply':
+                      onReply?.call(comment.id);
+                      break;
+                    case 'edit':
+                      onEdit?.call(comment.id);
+                      break;
+                    case 'delete':
+                      onDelete?.call(comment.id);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'reply',
+                    child: Row(
+                      children: [
+                        Icon(Icons.reply, size: 16),
+                        SizedBox(width: 8),
+                        Text('Reply'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 16),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, size: 16, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

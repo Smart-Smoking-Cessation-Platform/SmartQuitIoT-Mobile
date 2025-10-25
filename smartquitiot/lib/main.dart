@@ -7,7 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:app_links/app_links.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:flutter_localizations/flutter_localizations.dart';
 // Services & Providers
 import 'package:SmartQuitIoT/providers/membership_provider.dart';
 import 'package:SmartQuitIoT/services/token_storage_service.dart';
@@ -152,6 +152,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       debugShowCheckedModeBanner: false,
       localizationsDelegates: [
         ...context.localizationDelegates,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
         FlutterQuillLocalizations.delegate,
       ],
       supportedLocales: context.supportedLocales,

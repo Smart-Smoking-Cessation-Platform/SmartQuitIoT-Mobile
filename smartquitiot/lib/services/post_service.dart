@@ -231,42 +231,6 @@ class PostService {
     }
   }
 
-  Future<PostDetailResponse> updatePost({
-    required String accessToken,
-    required int postId,
-    required Map<String, dynamic> updateData,
-  }) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$_baseUrl/$postId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken',
-        },
-        body: jsonEncode(updateData),
-      );
-      // .timeout(_timeout);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return PostDetailResponse.fromJson(data);
-      } else {
-        final Map<String, dynamic> errorData = jsonDecode(response.body);
-        final errorResponse = ErrorResponse.fromJson(errorData);
-        throw PostException(errorResponse.message);
-      }
-    } on http.ClientException {
-      throw PostException('Network error. Please check your connection.');
-    } on FormatException {
-      throw PostException('Invalid response format from server.');
-    } catch (e) {
-      if (e is PostException) {
-        rethrow;
-      }
-      throw PostException('Failed to update post: ${e.toString()}');
-    }
-  }
-
   Future<void> deletePost({
     required String accessToken,
     required int postId,
@@ -279,7 +243,6 @@ class PostService {
           'Authorization': 'Bearer $accessToken',
         },
       );
-      // .timeout(_timeout);
 
       if (response.statusCode != 200) {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
@@ -295,6 +258,66 @@ class PostService {
         rethrow;
       }
       throw PostException('Failed to delete post: ${e.toString()}');
+    }
+  }
+
+  /// Update an existing post
+  /// PUT /api/posts/{postId}
+  Future<PostDetail> updatePost({
+    required String accessToken,
+    required int postId,
+    required Map<String, dynamic> updateData,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/$postId');
+      print('✏️ [PostService] Updating post $postId...');
+      print('🌐 [PostService] URL: $url');
+      print('📦 [PostService] Request Body: ${jsonEncode(updateData)}');
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode(updateData),
+      );
+
+      print('📊 [PostService] Response Status: ${response.statusCode}');
+      print('📦 [PostService] Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        try {
+          final Map<String, dynamic> data = jsonDecode(response.body);
+          print('✅ [PostService] Post updated successfully');
+          return PostDetail.fromJson(data);
+        } catch (parseError, stack) {
+          print('❌ [PostService] JSON Parsing Error: $parseError');
+          print('🧩 [PostService] Stack Trace: $stack');
+          throw PostException('Failed to parse updated post: $parseError');
+        }
+      } else {
+        try {
+          final Map<String, dynamic> errorData = jsonDecode(response.body);
+          final errorResponse = ErrorResponse.fromJson(errorData);
+          print('❌ [PostService] Server Error: ${errorResponse.message}');
+          throw PostException(errorResponse.message);
+        } catch (e) {
+          print('❌ [PostService] Error Response: ${response.body}');
+          throw PostException('Server error: ${response.statusCode}');
+        }
+      }
+    } on SocketException catch (e) {
+      print('🚫 [PostService] SocketException: ${e.message}');
+      throw PostException('Network error: ${e.message}');
+    } on http.ClientException catch (e) {
+      print('🚨 [PostService] ClientException: ${e.message}');
+      throw PostException('Client error: ${e.message}');
+    } catch (e, stack) {
+      print('🔥 [PostService] Unexpected Error: $e');
+      print('🧩 [PostService] Stack Trace: $stack');
+      if (e is PostException) rethrow;
+      throw PostException('Failed to update post: $e');
     }
   }
 }
