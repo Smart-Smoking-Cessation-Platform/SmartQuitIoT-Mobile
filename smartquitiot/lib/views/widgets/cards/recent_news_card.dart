@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:SmartQuitIoT/models/news.dart';
 import 'package:SmartQuitIoT/providers/news_provider.dart';
 import 'package:SmartQuitIoT/views/screens/news/news_list_screen.dart';
+import 'package:SmartQuitIoT/utils/date_formatter.dart';
 
 import '../../screens/news/news_detail_screen.dart';
 
@@ -213,7 +214,7 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatTimeAgo(news.createdAt),
+                    DateFormatter.formatCompactDate(news.createdAt),
                     style: const TextStyle(color: Colors.white70, fontSize: 10),
                   ),
                 ],
@@ -306,12 +307,4 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
     ),
   );
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-    if (difference.inDays > 0) return '${difference.inDays}d ago';
-    if (difference.inHours > 0) return '${difference.inHours}h ago';
-    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
-    return 'Just now';
-  }
 }

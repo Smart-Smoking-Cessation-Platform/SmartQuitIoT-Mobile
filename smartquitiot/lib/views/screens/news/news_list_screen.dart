@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/news.dart';
 import 'package:SmartQuitIoT/providers/news_provider.dart';
+import 'package:SmartQuitIoT/utils/date_formatter.dart';
 
 class NewsListScreen extends ConsumerStatefulWidget {
   const NewsListScreen({super.key});
@@ -142,7 +143,7 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
           ),
         ),
         subtitle: Text(
-          _formatTimeAgo(news.createdAt),
+          DateFormatter.formatPostDate(news.createdAt),
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
       ),
@@ -161,13 +162,4 @@ class _NewsListScreenState extends ConsumerState<NewsListScreen> {
     );
   }
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) return '${difference.inDays}d ago';
-    if (difference.inHours > 0) return '${difference.inHours}h ago';
-    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
-    return 'Just now';
-  }
 }

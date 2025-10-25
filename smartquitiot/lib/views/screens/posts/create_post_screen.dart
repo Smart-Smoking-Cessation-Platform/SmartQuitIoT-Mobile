@@ -33,11 +33,30 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   @override
   void initState() {
     super.initState();
-    _quillController = quill.QuillController.basic();
+    
+    // Initialize Quill controller with existing content if editing
+    if (widget.post != null && widget.post!.content != null) {
+      try {
+        // Try to parse existing content as Delta JSON
+        final deltaJson = jsonDecode(widget.post!.content!);
+        final document = quill.Document.fromJson(deltaJson);
+        _quillController = quill.QuillController(
+          document: document,
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+      } catch (e) {
+        // If parsing fails, create empty controller
+        print('⚠️ [CreatePost] Failed to parse existing content: $e');
+        _quillController = quill.QuillController.basic();
+      }
+    } else {
+      _quillController = quill.QuillController.basic();
+    }
 
+    // Load other post data if editing
     if (widget.post != null) {
       _titleController.text = widget.post!.title;
-      _descriptionController.text = widget.post!.description ?? '';
+      _descriptionController.text = widget.post!.description;
       _thumbnailUrl = widget.post!.thumbnail;
       if (widget.post!.media != null) {
         _mediaList = widget.post!.media!
@@ -406,10 +425,16 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        icon: const Icon(Icons.save, color: Colors.white),
-        label: const Text(
-          'Save Post',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        icon: Icon(
+          widget.post != null ? Icons.update : Icons.save,
+          color: Colors.white,
+        ),
+        label: Text(
+          widget.post != null ? 'Update Post' : 'Save Post',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -572,9 +597,21 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           title: 'Success',
           message: 'Post created successfully!',
         );
+
+        // Navigate to post list screen and trigger refresh
+        Future.delayed(const Duration(milliseconds: 500), () async {
+          if (mounted) {
+            // Navigate back to post list screen
+            context.go('/posts');
+            // Trigger refresh of posts list
+            await Future.delayed(const Duration(milliseconds: 100));
+            ref.read(postViewModelProvider.notifier).loadAllPosts();
+          }
+        });
+        return;
       }
 
-      // Navigate back after showing notification
+      // Navigate back after showing notification (for edit case)
       if (mounted) {
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {

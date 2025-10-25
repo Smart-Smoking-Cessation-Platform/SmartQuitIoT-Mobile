@@ -39,7 +39,15 @@ class CommentViewModel extends StateNotifier<CommentState> {
 
   /// Load comments from post detail
   void loadCommentsFromPost(int postId, List<PostComment> comments) {
-    state = state.copyWith(comments: comments);
+    print('📝 [CommentViewModel] Loading ${comments.length} comments for post $postId');
+    // ALWAYS replace comments to avoid showing old comments from previous posts
+    state = CommentState(comments: comments);
+  }
+  
+  /// Clear all comments (call when leaving post detail)
+  void clearComments() {
+    print('🧹 [CommentViewModel] Clearing all comments');
+    state = const CommentState();
   }
 
   /// Create a new comment

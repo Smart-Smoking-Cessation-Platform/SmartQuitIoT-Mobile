@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:SmartQuitIoT/services/token_storage_service.dart';
+import 'package:SmartQuitIoT/utils/date_formatter.dart';
 import 'package:go_router/go_router.dart';
 
 class CommunityTrendingCard extends StatefulWidget {
@@ -286,7 +287,7 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
                           ),
                         ),
                         Text(
-                          _formatTimeAgo(
+                          DateFormatter.formatCompactDate(
                             DateTime.parse(
                               post['createdAt'] ?? DateTime.now().toString(),
                             ),
@@ -321,13 +322,4 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
   Widget _buildEmptyState() =>
       SizedBox(height: 260, child: Center(child: Text('No posts available')));
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) return '${difference.inDays}d ago';
-    if (difference.inHours > 0) return '${difference.inHours}h ago';
-    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
-    return 'Just now';
-  }
 }

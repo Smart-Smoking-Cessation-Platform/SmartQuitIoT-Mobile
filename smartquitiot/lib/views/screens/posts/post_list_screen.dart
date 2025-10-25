@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/post.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
+import 'package:SmartQuitIoT/utils/date_formatter.dart';
 import 'package:go_router/go_router.dart';
 
 class PostListScreen extends ConsumerStatefulWidget {
@@ -202,7 +203,7 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
                             ),
                           ),
                           Text(
-                            _formatTimeAgo(post.createdAt),
+                            DateFormatter.formatPostDate(post.createdAt),
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 12,
@@ -399,12 +400,4 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
     ),
   );
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-    if (difference.inDays > 0) return '${difference.inDays}d ago';
-    if (difference.inHours > 0) return '${difference.inHours}h ago';
-    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
-    return 'Just now';
-  }
 }

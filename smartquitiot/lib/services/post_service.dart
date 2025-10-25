@@ -213,7 +213,22 @@ class PostService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        return PostDetailResponse.fromJson(data);
+        
+        // Check if response is wrapped or direct Post object
+        if (data.containsKey('data') && data.containsKey('success')) {
+          // Wrapped response: { "success": true, "data": {...} }
+          return PostDetailResponse.fromJson(data);
+        } else {
+          // Direct Post object response: { "id": 9, "title": ... }
+          print('⚠️ [PostService] Direct post response detected, wrapping...');
+          return PostDetailResponse.fromJson({
+            'success': true,
+            'message': 'Post created successfully',
+            'data': data,
+            'code': response.statusCode,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          });
+        }
       } else {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
         final errorResponse = ErrorResponse.fromJson(errorData);

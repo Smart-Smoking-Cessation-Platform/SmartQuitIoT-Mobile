@@ -36,28 +36,32 @@ class Post {
       id: json['id'] is int
           ? json['id'] as int
           : int.tryParse(json['id'].toString()) ?? 0,
-      title: json['title'] as String,
-      description: json['description'] as String,
+      title: (json['title'] as String?) ?? '',
+      description: (json['description'] as String?) ?? '',
       content: json['content'] as String?,
       thumbnail: json['thumbnail'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
-      account: PostAccount.fromJson(json['account'] as Map<String, dynamic>),
+      account: json['account'] != null
+          ? PostAccount.fromJson(json['account'] as Map<String, dynamic>)
+          : PostAccount(id: 0, username: 'Unknown'),
       media: json['media'] != null
-          ? (json['media'] as List)
-                .map((e) => PostMedia.fromJson(e as Map<String, dynamic>))
+          ? (json['media'] as List?)
+                ?.map((e) => PostMedia.fromJson(e as Map<String, dynamic>))
                 .toList()
           : null,
       comments: json['comments'] != null
-          ? (json['comments'] as List)
-                .map((e) => PostComment.fromJson(e as Map<String, dynamic>))
+          ? (json['comments'] as List?)
+                ?.map((e) => PostComment.fromJson(e as Map<String, dynamic>))
                 .toList()
           : null,
       likeCount: json['likeCount'] is int
           ? json['likeCount'] as int
-          : int.tryParse(json['likeCount'].toString()) ?? 0,
+          : int.tryParse(json['likeCount']?.toString() ?? '0') ?? 0,
       isLiked: json['isLiked'] as bool?,
     );
   }

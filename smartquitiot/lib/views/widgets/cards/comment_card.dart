@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/post_comment.dart';
 import '../../../models/post_media.dart';
+import '../../../utils/date_formatter.dart';
 
 class CommentCard extends StatelessWidget {
   final PostComment comment;
@@ -58,7 +59,7 @@ class CommentCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatTimeAgo(comment.createdAt),
+                      DateFormatter.formatPostDate(comment.createdAt),
                       style: TextStyle(color: Colors.grey[600], fontSize: 11),
                     ),
                   ],
@@ -225,7 +226,7 @@ class CommentCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              _formatTimeAgo(reply.createdAt),
+                              DateFormatter.formatPostDate(reply.createdAt),
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 10,
@@ -257,18 +258,4 @@ class CommentCard extends StatelessWidget {
     );
   }
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
 }

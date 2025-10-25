@@ -4,11 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/post.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/comment_card.dart';
+import 'package:SmartQuitIoT/views/screens/posts/create_post_screen.dart';
+import 'package:SmartQuitIoT/views/widgets/dialogs/edit_reply_comment_dialog.dart';
+import 'package:SmartQuitIoT/utils/date_formatter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:SmartQuitIoT/services/cloudinary_service.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'dart:io';
 import '../../../models/post_media.dart';
+import '../../../models/post_comment.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class PostDetailScreen extends ConsumerStatefulWidget {
@@ -31,9 +36,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   @override
   void initState() {
     super.initState();
+    // Clear old comments first to avoid showing comments from previous post
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(commentViewModelProvider.notifier).clearComments();
       ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
-      // Load comments from the post detail will be done after post loads
     });
   }
 
@@ -41,6 +47,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   void dispose() {
     _scrollController.dispose();
     _commentController.dispose();
+    // Clear comments when leaving this screen
+    ref.read(commentViewModelProvider.notifier).clearComments();
     super.dispose();
   }
 
@@ -133,7 +141,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   ),
                 ),
                 Text(
-                  _formatTimeAgo(post.createdAt),
+                  DateFormatter.formatPostDate(post.createdAt),
                   style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
               ],
@@ -336,20 +344,21 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   Widget _buildCommentsSection(Post post) {
     final commentState = ref.watch(commentViewModelProvider);
 
-    // Load comments from post if comment state is empty
-    if (commentState.comments.isEmpty &&
-        post.comments != null &&
-        post.comments!.isNotEmpty) {
+    // Always sync comments from post to comment state when post changes
+    if (post.comments != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref
-            .read(commentViewModelProvider.notifier)
-            .loadCommentsFromPost(widget.postId, post.comments!);
+        // Only load if different from current state
+        if (post.comments!.length != commentState.comments.length ||
+            (post.comments!.isNotEmpty && commentState.comments.isEmpty)) {
+          ref
+              .read(commentViewModelProvider.notifier)
+              .loadCommentsFromPost(widget.postId, post.comments!);
+        }
       });
     }
 
-    final comments = commentState.comments.isNotEmpty
-        ? commentState.comments
-        : (post.comments ?? []);
+    // ALWAYS use commentState.comments (not fallback to post.comments)
+    final comments = commentState.comments;
 
     return Container(
       color: Colors.white,
@@ -693,31 +702,113 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         _selectedMedia.clear();
       });
 
-      // Reload post to show new comment
-      ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+      // Force clear and reload to show new comment
+      ref.read(commentViewModelProvider.notifier).clearComments();
+      await Future.delayed(const Duration(milliseconds: 100));
+      await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Comment posted successfully!')),
-      );
+      if (mounted) {
+        Flushbar(
+          message: 'Comment posted successfully!',
+          icon: const Icon(Icons.check_circle, color: Colors.white),
+          backgroundColor: const Color(0xFF00D09E),
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(8),
+        ).show(context);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error posting comment: $e')));
+      if (mounted) {
+        Flushbar(
+          message: 'Error posting comment: $e',
+          icon: const Icon(Icons.error_outline, color: Colors.white),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(8),
+        ).show(context);
+      }
     }
   }
 
-  void _replyToComment(int parentId) {
-    // TODO: Implement reply functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reply functionality coming soon!')),
+  void _replyToComment(int parentId) async {
+    // Show reply dialog with parentId
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // Prevent closing by tapping outside
+      builder: (context) => EditReplyCommentDialog(
+        postId: widget.postId,
+        parentId: parentId,
+      ),
     );
+
+    // Reload post detail if reply was successful
+    if (result == true && mounted) {
+      // Force clear and reload to show new reply
+      ref.read(commentViewModelProvider.notifier).clearComments();
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+      }
+    }
   }
 
-  void _editComment(int commentId) {
-    // TODO: Implement edit functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit functionality coming soon!')),
+  void _editComment(int commentId) async {
+    // Find the comment to edit
+    final commentState = ref.read(commentViewModelProvider);
+    PostComment? commentToEdit;
+
+    // Search in comments list
+    for (final comment in commentState.comments) {
+      if (comment.id == commentId) {
+        commentToEdit = comment;
+        break;
+      }
+      // Also search in replies
+      if (comment.replies != null) {
+        for (final reply in comment.replies!) {
+          if (reply.id == commentId) {
+            commentToEdit = reply;
+            break;
+          }
+        }
+      }
+      if (commentToEdit != null) break;
+    }
+
+    if (commentToEdit == null) {
+      if (mounted) {
+        Flushbar(
+          message: 'Comment not found',
+          icon: const Icon(Icons.warning, color: Colors.white),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(8),
+        ).show(context);
+      }
+      return;
+    }
+
+    // Show edit dialog
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // Prevent closing by tapping outside
+      builder: (context) => EditReplyCommentDialog(
+        postId: widget.postId,
+        comment: commentToEdit,
+      ),
     );
+
+    // Reload post detail if edit was successful
+    if (result == true && mounted) {
+      // Force clear and reload to show edited comment
+      ref.read(commentViewModelProvider.notifier).clearComments();
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+      }
+    }
   }
 
   Future<void> _deleteComment(int commentId) async {
@@ -744,22 +835,61 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         await ref
             .read(commentViewModelProvider.notifier)
             .deleteComment(commentId);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Comment deleted successfully!')),
-        );
+        
+        // Reload post to show updated comments
+        if (mounted) {
+          await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+        }
+        
+        if (mounted) {
+          Flushbar(
+            message: 'Comment deleted successfully!',
+            icon: const Icon(Icons.delete_sweep, color: Colors.white),
+            backgroundColor: const Color(0xFF00D09E),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(8),
+          ).show(context);
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error deleting comment: $e')));
+        if (mounted) {
+          Flushbar(
+            message: 'Error deleting comment: $e',
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(8),
+          ).show(context);
+        }
       }
     }
   }
 
-  void _editPost(Post post) {
-    // TODO: Navigate to edit post screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit post functionality coming soon!')),
+  void _editPost(Post post) async {
+    // Navigate to create/edit post screen with existing post data
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreatePostScreen(post: post),
+      ),
     );
+
+    // If edit was successful, reload the post detail
+    if (result == true && mounted) {
+      ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+      
+      if (mounted) {
+        Flushbar(
+          message: 'Post updated! Refreshing...',
+          icon: const Icon(Icons.refresh, color: Colors.white),
+          backgroundColor: const Color(0xFF00D09E),
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(8),
+        ).show(context);
+      }
+    }
   }
 
   void _showDeleteConfirmation(Post post) {
@@ -800,13 +930,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     );
   }
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'Just now';
-  }
 
   Widget _buildErrorState(String error) => Center(
     child: Text('Error: $error', style: const TextStyle(color: Colors.red)),
