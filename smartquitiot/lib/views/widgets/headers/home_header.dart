@@ -5,7 +5,6 @@ import '../../../providers/auth_provider.dart';
 import '../../screens/notifications/notification_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../../utils/snackbar_helper.dart';
-import '../../../../viewmodels/auth_view_model.dart';
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});

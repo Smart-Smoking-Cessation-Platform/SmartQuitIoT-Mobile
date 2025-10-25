@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/providers/metrics_provider.dart';
 import 'package:SmartQuitIoT/models/health_recovery.dart';
-import 'package:intl/intl.dart';
 
 class HealthRecoveryScreen extends ConsumerWidget {
   const HealthRecoveryScreen({super.key});
@@ -123,7 +122,7 @@ class HealthRecoveryScreen extends ConsumerWidget {
           else
             ...response.healthRecoveries.map((recovery) => 
               _buildRecoveryCard(recovery)
-            ).toList(),
+            ),
         ],
       ),
     );

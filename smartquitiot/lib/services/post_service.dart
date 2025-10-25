@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../core/errors/exception.dart';
-import '../models/post_detail.dart';
 import '../models/response/error_response.dart';
 import '../models/response/post_detail_response.dart';
 import '../models/response/post_like_response.dart';

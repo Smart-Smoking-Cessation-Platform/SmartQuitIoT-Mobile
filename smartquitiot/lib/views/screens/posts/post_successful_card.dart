@@ -17,6 +17,8 @@ class PostSuccessfulModal {
 }
 
 class PostSuccessfulWidget extends StatelessWidget {
+  const PostSuccessfulWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -196,6 +198,8 @@ class PostSuccessfulWidget extends StatelessWidget {
 
 // Example usage:
 class ExampleUsage extends StatelessWidget {
+  const ExampleUsage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

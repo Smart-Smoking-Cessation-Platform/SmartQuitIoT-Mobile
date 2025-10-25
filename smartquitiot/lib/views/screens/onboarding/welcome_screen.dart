@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
-import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../providers/auth_provider.dart';
 

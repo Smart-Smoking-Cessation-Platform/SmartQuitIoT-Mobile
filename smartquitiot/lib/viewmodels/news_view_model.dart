@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/news_repository.dart';
 import '../models/state/news_state.dart';
-import '../models/news.dart';
 
 class NewsViewModel extends StateNotifier<NewsState> {
   final NewsRepository repository;

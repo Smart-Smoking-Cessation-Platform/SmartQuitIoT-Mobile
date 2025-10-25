@@ -1,4 +1,3 @@
-﻿import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/health_metrics/diary_metric_screen.dart';
 import 'package:SmartQuitIoT/views/screens/health_metrics/health_improvement_screen.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +6,7 @@ import 'connect_button.dart';
 import 'health_chart.dart';
 
 class HealthMetricsScreen extends StatefulWidget {
-  const HealthMetricsScreen({Key? key}) : super(key: key);
+  const HealthMetricsScreen({super.key});
 
   @override
   State<HealthMetricsScreen> createState() => _HealthMetricsScreenState();

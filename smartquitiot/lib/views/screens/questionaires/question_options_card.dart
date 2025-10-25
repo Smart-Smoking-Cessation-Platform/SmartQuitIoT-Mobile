@@ -1,4 +1,4 @@
-﻿import 'package:SmartQuitIoT/views/screens/questionaires/question_card.dart';
+import 'package:SmartQuitIoT/views/screens/questionaires/question_card.dart';
 import 'package:flutter/material.dart';
 
 class QuestionOptionsCard extends StatefulWidget {
@@ -49,7 +49,7 @@ class _QuestionOptionsCardState extends State<QuestionOptionsCard> {
               ),
               title: Text(option),
             );
-          }).toList(),
+          }),
 
           // Hiển thị error text nếu có
           if (widget.errorText != null)

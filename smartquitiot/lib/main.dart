@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:app_links/app_links.dart';
-import 'services/token_storage_service.dart';
 import 'services/app_token_manager.dart';
 
 // Screens
@@ -72,12 +71,10 @@ class _MyAppState extends ConsumerState<MyApp> {
     _appLinks = AppLinks();
 
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) async {
-      if (uri != null) {
-        debugPrint('Deep link nhận được (stream): $uri');
-        await Future.delayed(const Duration(milliseconds: 300));
-        _onDeepLink(uri);
-      }
-    });
+      debugPrint('Deep link nhận được (stream): $uri');
+      await Future.delayed(const Duration(milliseconds: 300));
+      _onDeepLink(uri);
+        });
 
     final initialUri = await _appLinks.getInitialLink();
     if (initialUri != null) {

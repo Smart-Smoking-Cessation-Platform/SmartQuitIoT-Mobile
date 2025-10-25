@@ -1,6 +1,5 @@
 import '../core/errors/exception.dart';
 import '../models/post.dart';
-import '../models/post_detail.dart';
 import '../models/response/post_list_response.dart';
 import '../services/post_service.dart';
 import '../repositories/auth_repository.dart';

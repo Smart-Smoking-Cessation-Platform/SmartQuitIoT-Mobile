@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'coach_list_items.dart';
 
 class TimeSlotItem extends StatelessWidget {
@@ -7,32 +7,35 @@ class TimeSlotItem extends StatelessWidget {
   final VoidCallback? onTap;
 
   const TimeSlotItem({
-    Key? key,
+    super.key,
     required this.slot,
     required this.isSelected,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: _getBackgroundColor(),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _getBorderColor(),
-            width: 1.5,
+    // Use Material + InkWell so ripple + hit testing work correctly inside scroll views
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: _getBackgroundColor(),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _getBorderColor(), width: 1.5),
           ),
-        ),
-        child: Center(
-          child: Text(
-            slot.time,
-            style: TextStyle(
-              color: _getTextColor(),
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
+          child: Center(
+            child: Text(
+              slot.time ?? '',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _getTextColor(),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
           ),
         ),
@@ -40,24 +43,21 @@ class TimeSlotItem extends StatelessWidget {
     );
   }
 
-  // ✅ Màu nền
   Color _getBackgroundColor() {
-    if (!slot.available) return Colors.grey[200]!;       // slot không khả dụng
-    if (isSelected) return const Color(0xFF00D09E);      // slot được chọn → xanh
-    return Colors.white;                                 // slot khả dụng chưa chọn
+    if (slot.available == false) return Colors.grey[200]!;
+    if (isSelected) return const Color(0xFF00D09E);
+    return Colors.white;
   }
 
-  // ✅ Màu viền
   Color _getBorderColor() {
-    if (!slot.available) return Colors.grey[300]!;
+    if (slot.available == false) return Colors.grey[300]!;
     if (isSelected) return const Color(0xFF00D09E);
     return Colors.grey[300]!;
   }
 
-  // ✅ Màu chữ
   Color _getTextColor() {
-    if (!slot.available) return Colors.grey[400]!; // disable
-    if (isSelected) return Colors.white;           // khi chọn → trắng
-    return Colors.black87;                         // mặc định
+    if (slot.available == false) return Colors.grey[400]!;
+    if (isSelected) return Colors.white;
+    return Colors.black87;
   }
 }

@@ -7,10 +7,10 @@ class QRPaymentScreen extends StatelessWidget {
   final String paymentMethod;
 
   const QRPaymentScreen({
-    Key? key,
+    super.key,
     required this.selectedPlan,
     required this.paymentMethod,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

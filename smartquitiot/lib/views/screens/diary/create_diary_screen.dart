@@ -6,7 +6,6 @@ import 'package:SmartQuitIoT/providers/metrics_provider.dart';
 import 'package:SmartQuitIoT/models/diary_record.dart';
 import 'package:intl/intl.dart';
 import 'package:health/health.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class CreateDiaryScreen extends ConsumerStatefulWidget {
   const CreateDiaryScreen({super.key});
@@ -474,7 +473,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
               ),
               Switch(
                 value: isUseNrt,
-                activeColor: const Color(0xFF00D09E),
+                activeThumbColor: const Color(0xFF00D09E),
                 onChanged: (value) {
                   setState(() {
                     isUseNrt = value;

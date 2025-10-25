@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/token_storage_service.dart';
-import '../../../utils/snackbar_helper.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/auth_header.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';

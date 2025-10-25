@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -208,7 +208,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   pushNotifications = value;
                                 });
                               },
-                              activeColor: const Color(0xFF1DD1A1),
+                              activeThumbColor: const Color(0xFF1DD1A1),
                             ),
                           ],
                         ),
@@ -229,7 +229,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   darkTheme = value;
                                 });
                               },
-                              activeColor: const Color(0xFF1DD1A1),
+                              activeThumbColor: const Color(0xFF1DD1A1),
                             ),
                           ],
                         ),

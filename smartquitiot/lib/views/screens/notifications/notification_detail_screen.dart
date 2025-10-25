@@ -7,12 +7,12 @@ class NotificationDetailScreen extends StatelessWidget {
   final Color iconColor;
 
   const NotificationDetailScreen({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.iconColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
