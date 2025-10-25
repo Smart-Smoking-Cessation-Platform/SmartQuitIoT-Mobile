@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:SmartQuitIoT/services/token_storage_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -22,12 +23,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    final bool isLoggedIn = await _tokenStorage.isLoggedIn();
-    if (isLoggedIn) {
-      Navigator.pushReplacementNamed(context, '/auth');
-    } else {
-      Navigator.pushReplacementNamed(context, '/welcome');
-    }
+    // ✅ Tạm thời luôn chuyển đến welcome
+    context.go('/welcome');
   }
 
   @override
@@ -39,7 +36,11 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset('lib/assets/logo/logo-2.png', width: 230, height: 230),
+              Image.asset(
+                'lib/assets/logo/logo-2.png',
+                width: 230,
+                height: 230,
+              ),
               const SizedBox(height: 20),
               Text(
                 'SmartQuit',

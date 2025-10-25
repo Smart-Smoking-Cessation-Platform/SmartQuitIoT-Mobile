@@ -1,14 +1,35 @@
 import 'package:SmartQuitIoT/views/screens/profile/edit_profile_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_top_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/widgets/lists/profile_menu_item.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_header_section.dart';
+import 'package:SmartQuitIoT/viewmodels/user_view_model.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load user profile when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(userViewModelProvider.notifier).loadUserProfile();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final userState = ref.watch(userViewModelProvider);
+    final user = userState.user;
+    final isLoading = userState.isLoading;
+    final error = userState.error;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -50,13 +71,75 @@ class ProfileScreen extends StatelessWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // Avatar + Name + Status
                       const SizedBox(height: 20),
-                      ProfileHeaderSection(
-                        name: 'John Doe',
-                        status: 'I Am Gey',
-                        avatarPath: "lib/assets/images/profile.png",
-                      ),
+
+                      // Loading state
+                      if (isLoading)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20.0),
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF1DD1A1),
+                            ),
+                          ),
+                        )
+                      // Error state
+                      else if (error != null)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Column(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 48,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Error loading profile',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.red[700],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  error,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    ref
+                                        .read(userViewModelProvider.notifier)
+                                        .loadUserProfile();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF1DD1A1),
+                                  ),
+                                  child: const Text(
+                                    'Retry',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      // Success state - Avatar + Name + Status
+                      else if (user != null)
+                        ProfileHeaderSection(
+                          name: user.displayName,
+                          status: 'Active Member', // You can customize this
+                          avatarPath: user.avatarUrl.isNotEmpty
+                              ? user.avatarUrl
+                              : "lib/assets/images/profile.png",
+                        ),
 
                       // Menu Items
                       ProfileMenuItem(

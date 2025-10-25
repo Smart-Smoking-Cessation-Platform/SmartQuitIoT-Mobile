@@ -2,7 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-import 'home_screen.dart';
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
+import 'package:SmartQuitIoT/views/screens/achievements/achievements_card.dart';
+import 'package:SmartQuitIoT/views/screens/appointments/coach_appointment_card.dart';
+import 'package:SmartQuitIoT/views/screens/common/membership_shortcut_card.dart';
+import 'package:SmartQuitIoT/views/widgets/headers/home_header.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/smoke_free_timer_card.dart';
+import 'package:SmartQuitIoT/views/screens/stats_table/stats_table_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/health_improvement_card.dart';
+import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_card.dart';
+import 'package:SmartQuitIoT/views/screens/missions/today_mission_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/analysis_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/community_trending_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/recent_news_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/diary_record_card.dart';
+
 import 'package:SmartQuitIoT/views/screens/coach_chat/chat_screen.dart';
 import 'package:SmartQuitIoT/views/screens/diary/diary_screen.dart';
 import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_screen.dart';
@@ -19,8 +33,9 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
+  /// Danh sách các màn hình con
+  late final List<Widget> _screens = [
+    _buildHomeContent(), // 👈 trang home chính
     const ChatScreen(),
     const DiaryScreen(),
     const QuitPlanScreen(),
@@ -37,7 +52,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     'lib/assets/animations/leaderboard.json',
   ];
 
-  /// Key song ngữ cho từng tab
   final List<String> lottieLabels = [
     'home',
     'chat',
@@ -46,6 +60,47 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     'achievements',
     'leaderboard',
   ];
+
+  /// Hàm build riêng cho trang Home
+  Widget _buildHomeContent() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1FFF3),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 80),
+          child: Column(
+            children: const [
+              HomeHeader(),
+              SmokeFreeTimerCard(),
+              MembershipShortcutCard(),
+              DiaryRecordCard(),
+              CoachAppointmentCard(),
+              StatsTableCard(),
+              HealthImprovementCard(),
+              AchievementsCard(),
+              QuitPlanCard(),
+              TodayMissionCard(),
+              AnalysisCard(),
+              CommunityTrendingCard(),
+              RecentNewsCard(),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AiChatWelcomeScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFF00D09E),
+        elevation: 8,
+        child: const Icon(Icons.smart_toy, color: Colors.white, size: 28),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +122,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 animate: _currentIndex == index,
               ),
             ),
-            label: lottieLabels[index].tr(), // <-- dùng easy_localization
+            label: lottieLabels[index].tr(),
           );
         }),
       ),

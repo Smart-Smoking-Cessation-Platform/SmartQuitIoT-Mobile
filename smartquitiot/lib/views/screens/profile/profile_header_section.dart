@@ -14,9 +14,12 @@ class ProfileHeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isNetworkImage = avatarPath.startsWith('http');
+
     return Column(
       children: [
         const SizedBox(height: 20),
+
         // Avatar
         Container(
           width: 100,
@@ -29,11 +32,16 @@ class ProfileHeaderSection extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: 48,
-            backgroundImage: AssetImage(avatarPath),
-            backgroundColor: Colors.transparent,
+            backgroundColor: Colors.grey[200],
+            backgroundImage: isNetworkImage
+                ? NetworkImage(avatarPath)
+                : AssetImage(avatarPath) as ImageProvider,
+            onBackgroundImageError: (_, __) {},
           ),
         ),
+
         const SizedBox(height: 15),
+
         // Name
         Text(
           name,
@@ -43,9 +51,12 @@ class ProfileHeaderSection extends StatelessWidget {
             color: Colors.black87,
           ),
         ),
+
         const SizedBox(height: 4),
+
         // Status
         Text(status, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+
         const SizedBox(height: 20),
       ],
     );

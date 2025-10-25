@@ -1,113 +1,98 @@
-import '../models/user_profile.dart';
-import '../services/api_service.dart';
+import 'package:SmartQuitIoT/models/user_model.dart';
+import 'package:SmartQuitIoT/services/user_service.dart';
 
-/// Repository layer - acts as a bridge between ViewModels and API services
-/// This layer handles data transformation, caching, and business logic
 class UserRepository {
-  final ApiService _apiService;
+  final UserService _userService;
 
-  UserRepository({ApiService? apiService})
-    : _apiService = apiService ?? ApiService();
+  UserRepository({required UserService userService})
+    : _userService = userService;
 
-  /// Get user profile with error handling and data transformation
-  Future<UserProfile> getUserProfile(String userId) async {
+  /// Get user profile with error handling
+  Future<UserModel> getUserProfile() async {
     try {
-      final userProfile = await _apiService.getUserProfile(userId);
-
-      // Repository can add business logic here
-      // For example: data validation, transformation, caching, etc.
-
+      print('📦 [UserRepository] Getting user profile...');
+      final userProfile = await _userService.getUserProfile();
+      print('✅ [UserRepository] User profile retrieved successfully');
       return userProfile;
     } catch (e) {
-      // Repository handles errors and can provide fallback data
-      throw UserRepositoryException('Failed to fetch user profile: $e');
+      print('❌ [UserRepository] Error getting user profile: $e');
+      rethrow;
     }
   }
 
   /// Update user profile with validation
-  Future<UserProfile> updateUserProfile(UserProfile profile) async {
+  Future<UserModel> updateUserProfile({
+    required String firstName,
+    required String lastName,
+    required String dob,
+    required String avatarUrl,
+  }) async {
     try {
-      // Repository can add validation logic
-      if (profile.name.isEmpty) {
-        throw UserRepositoryException('User name cannot be empty');
+      print('📦 [UserRepository] Updating user profile...');
+
+      // Basic validation
+      if (firstName.trim().isEmpty) {
+        throw Exception('First name cannot be empty');
+      }
+      if (lastName.trim().isEmpty) {
+        throw Exception('Last name cannot be empty');
+      }
+      if (dob.trim().isEmpty) {
+        throw Exception('Date of birth cannot be empty');
       }
 
-      if (profile.email.isEmpty || !profile.email.contains('@')) {
-        throw UserRepositoryException('Invalid email format');
-      }
+      final updateData = UpdateUserProfileModel(
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        dob: dob.trim(),
+        avatarUrl: avatarUrl.trim(),
+      );
 
-      final updatedProfile = await _apiService.updateUserProfile(profile);
+      final updatedProfile = await _userService.updateUserProfile(updateData);
+      print('✅ [UserRepository] User profile updated successfully');
       return updatedProfile;
     } catch (e) {
-      if (e is UserRepositoryException) {
-        rethrow;
+      print('❌ [UserRepository] Error updating user profile: $e');
+      rethrow;
+    }
+  }
+
+  /// Validate date format (optional helper)
+  bool isValidDateFormat(String date) {
+    try {
+      DateTime.parse(date);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Format date for display (optional helper)
+  String formatDateForDisplay(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    } catch (e) {
+      return dateString; // Return original if parsing fails
+    }
+  }
+
+  /// Format date for API (optional helper)
+  String formatDateForAPI(String dateString) {
+    try {
+      // If input is in DD/MM/YYYY format, convert to YYYY-MM-DD
+      if (dateString.contains('/')) {
+        final parts = dateString.split('/');
+        if (parts.length == 3) {
+          final day = parts[0].padLeft(2, '0');
+          final month = parts[1].padLeft(2, '0');
+          final year = parts[2];
+          return '$year-$month-$day';
+        }
       }
-      throw UserRepositoryException('Failed to update user profile: $e');
-    }
-  }
-
-  /// Get user statistics with data transformation
-  Future<Map<String, dynamic>> getUserStatistics(String userId) async {
-    try {
-      final stats = await _apiService.getUserStatistics(userId);
-
-      // Repository can transform data before returning
-      final transformedStats = {
-        ...stats,
-        'formattedMoneySaved': '\$${stats['moneySaved']?.toStringAsFixed(2)}',
-        'healthLevel': _getHealthLevel(stats['healthScore'] as int),
-        'lastUpdatedFormatted': _formatDate(stats['lastUpdated'] as String),
-      };
-
-      return transformedStats;
+      return dateString; // Return original if not in expected format
     } catch (e) {
-      throw UserRepositoryException('Failed to fetch user statistics: $e');
+      return dateString;
     }
   }
-
-  /// Get multiple users' profiles (example of repository aggregation)
-  Future<List<UserProfile>> getMultipleUserProfiles(
-    List<String> userIds,
-  ) async {
-    try {
-      final List<UserProfile> profiles = [];
-
-      for (final userId in userIds) {
-        final profile = await getUserProfile(userId);
-        profiles.add(profile);
-      }
-
-      return profiles;
-    } catch (e) {
-      throw UserRepositoryException(
-        'Failed to fetch multiple user profiles: $e',
-      );
-    }
-  }
-
-  // Private helper methods for data transformation
-  String _getHealthLevel(int healthScore) {
-    if (healthScore >= 80) return 'Excellent';
-    if (healthScore >= 60) return 'Good';
-    if (healthScore >= 40) return 'Fair';
-    return 'Poor';
-  }
-
-  String _formatDate(String isoString) {
-    try {
-      final date = DateTime.parse(isoString);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return 'Unknown';
-    }
-  }
-}
-
-/// Custom exception for repository layer
-class UserRepositoryException implements Exception {
-  final String message;
-  UserRepositoryException(this.message);
-
-  @override
-  String toString() => 'UserRepositoryException: $message';
 }

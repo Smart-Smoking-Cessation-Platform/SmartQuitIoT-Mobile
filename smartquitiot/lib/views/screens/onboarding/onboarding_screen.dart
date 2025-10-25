@@ -9,6 +9,7 @@ import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/common/page_indicator.dart';
 import '../questionaires/question_input_card.dart';
 import '../questionaires/question_options_card.dart';
+import 'package:go_router/go_router.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -426,40 +427,50 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   await ref
                                       .read(quitPlanViewModelProvider.notifier)
                                       .createPlan(request);
-                                  
-                                  print('✅ [OnboardingScreen] Quit plan created successfully');
-                                  
+
+                                  print(
+                                    '✅ [OnboardingScreen] Quit plan created successfully',
+                                  );
+
                                   NotificationHelper.showTopNotification(
                                     context,
                                     title: "Success",
                                     message:
                                         "Quit plan \"${_quitPlanNameController.text.trim()}\" created successfully",
                                   );
-                                  
+
                                   // Give backend time to initialize phase and missions
-                                  print('⏳ [OnboardingScreen] Waiting for backend to initialize phase...');
+                                  print(
+                                    '⏳ [OnboardingScreen] Waiting for backend to initialize phase...',
+                                  );
                                   await Future.delayed(
                                     const Duration(seconds: 2),
                                   );
-                                  
+
                                   // Trigger refresh for quit plan and missions cards
-                                  print('🔄 [OnboardingScreen] Backend ready, triggering cards refresh...');
-                                  ref.read(missionRefreshProvider.notifier).refreshAll();
-                                  
+                                  print(
+                                    '🔄 [OnboardingScreen] Backend ready, triggering cards refresh...',
+                                  );
+                                  ref
+                                      .read(missionRefreshProvider.notifier)
+                                      .refreshAll();
+
                                   // Give time for cards to refresh
                                   await Future.delayed(
                                     const Duration(milliseconds: 500),
                                   );
-                                  
-                                  print('🚀 [OnboardingScreen] Navigating to main screen...');
-                                  Navigator.pushReplacementNamed(
-                                    context,
-                                    '/main',
+
+                                  print(
+                                    '🚀 [OnboardingScreen] Navigating to main screen...',
                                   );
+                                  context.go('/main');
                                 } catch (e) {
+                                  print(
+                                    '❌ [OnboardingScreen] Error creating quit plan: $e',
+                                  );
                                   NotificationHelper.showTopNotification(
                                     context,
-                                    title: "Error",
+                                    title: 'Error',
                                     message: e.toString(),
                                     isError: true,
                                   );
@@ -473,7 +484,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            "Error: ${quitPlanState.error}",
+                            'Error: ${quitPlanState.error}',
                             style: const TextStyle(color: Colors.red),
                           ),
                         ),

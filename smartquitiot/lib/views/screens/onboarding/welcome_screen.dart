@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
 import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../providers/auth_provider.dart';
 
@@ -23,16 +24,19 @@ class WelcomeScreen extends ConsumerWidget {
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
-      if (next.isAuthenticated && (previous == null || !previous.isAuthenticated)) {
+      if (next.isAuthenticated &&
+          (previous == null || !previous.isAuthenticated)) {
         if (next.isFirstLogin == true) {
-          Navigator.of(context).pushReplacementNamed('/onboarding');
+          context.go('/onboarding');
         } else {
-          Navigator.of(context).pushReplacementNamed('/home');
+          context.go('/main');
         }
       }
     });
 
-    final isLoading = ref.watch(authViewModelProvider.select((state) => state.isLoading));
+    final isLoading = ref.watch(
+      authViewModelProvider.select((state) => state.isLoading),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
@@ -81,8 +85,9 @@ class WelcomeScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(25),
                         ),
                         child: ElevatedButton(
-                          onPressed: isLoading ? null : () =>
-                              Navigator.pushNamed(context, '/login'),
+                          onPressed: isLoading
+                              ? null
+                              : () => context.go('/login'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -115,8 +120,9 @@ class WelcomeScreen extends ConsumerWidget {
                           ),
                         ),
                         child: OutlinedButton(
-                          onPressed: isLoading ? null : () =>
-                              Navigator.pushNamed(context, '/signup'),
+                          onPressed: isLoading
+                              ? null
+                              : () => context.go('/signup'),
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             side: BorderSide.none,
@@ -142,14 +148,23 @@ class WelcomeScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Container(height: 1.2, color: Colors.grey.withOpacity(0.5)),
+                        child: Container(
+                          height: 1.2,
+                          color: Colors.grey.withOpacity(0.5),
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('or'.tr(), style: TextStyle(color: Colors.grey.withOpacity(0.8))),
+                        child: Text(
+                          'or'.tr(),
+                          style: TextStyle(color: Colors.grey.withOpacity(0.8)),
+                        ),
                       ),
                       Expanded(
-                        child: Container(height: 1.2, color: Colors.grey.withOpacity(0.5)),
+                        child: Container(
+                          height: 1.2,
+                          color: Colors.grey.withOpacity(0.5),
+                        ),
                       ),
                     ],
                   ),
@@ -174,7 +189,9 @@ class WelcomeScreen extends ConsumerWidget {
                       SocialButton(
                         onTap: isLoading
                             ? () {}
-                            : () => ref.read(authViewModelProvider.notifier).loginWithGoogle(),
+                            : () => ref
+                                  .read(authViewModelProvider.notifier)
+                                  .loginWithGoogle(),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -230,7 +247,7 @@ class WelcomeScreen extends ConsumerWidget {
                   /// Forgot Password
                   Center(
                     child: GestureDetector(
-                      onTap: isLoading ? null : () => Navigator.pushNamed(context, '/forgot'),
+                      onTap: isLoading ? null : () => context.go('/forgot'),
                       child: RichText(
                         text: TextSpan(
                           text: '${'forgot_password'.tr()} ',
@@ -266,7 +283,7 @@ class WelcomeScreen extends ConsumerWidget {
                 onTap: () {
                   showDialog(
                     context: context,
-                    builder: (dialogContext) => AlertDialog(
+                    builder: (_) => AlertDialog(
                       title: Text('select_language'.tr()),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -276,7 +293,7 @@ class WelcomeScreen extends ConsumerWidget {
                             title: const Text("English"),
                             onTap: () async {
                               await context.setLocale(const Locale('en'));
-                              Navigator.pop(dialogContext);
+                              context.pop();
                             },
                           ),
                           ListTile(
@@ -284,7 +301,7 @@ class WelcomeScreen extends ConsumerWidget {
                             title: const Text("Tiếng Việt"),
                             onTap: () async {
                               await context.setLocale(const Locale('vi'));
-                              Navigator.pop(dialogContext);
+                              context.pop();
                             },
                           ),
                         ],
