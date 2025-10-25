@@ -1,3 +1,5 @@
+import 'package:SmartQuitIoT/providers/auth_provider.dart';
+import 'package:SmartQuitIoT/utils/snackbar_helper.dart';
 import 'package:SmartQuitIoT/views/screens/profile/edit_profile_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_top_header.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/widgets/lists/profile_menu_item.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_header_section.dart';
 import 'package:SmartQuitIoT/viewmodels/user_view_model.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -181,8 +184,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         icon: Icons.logout,
                         title: 'Logout',
                         iconColor: const Color(0xFF0984E3),
-                        onTap: () {},
+                        onTap: () async {
+                          // Gọi logout trong ViewModel
+                          await ref
+                              .read(authViewModelProvider.notifier)
+                              .logout();
+
+                          if (context.mounted) {
+                            SnackBarHelper.showSuccess(
+                              context,
+                              'Logout successfully!',
+                            );
+                            // Dùng GoRouter để về /login
+                            context.go('/login');
+                          }
+                        },
                       ),
+
                       const SizedBox(height: 20),
                     ],
                   ),

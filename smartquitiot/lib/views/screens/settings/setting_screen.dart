@@ -2,22 +2,27 @@
 import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class SettingsScreen extends StatelessWidget {
+import '../../../providers/auth_provider.dart';
+import '../../../../utils/snackbar_helper.dart';
+
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF00D09E), // màu xanh đậm status bar
+        statusBarColor: Color(0xFF00D09E),
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFF00D09E),
         body: Column(
           children: [
-            // Header kéo dài
+            // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: const BoxDecoration(
@@ -63,11 +68,11 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
 
-            // Content xanh nhạt
+            // Content
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF1FFF3), // xanh nhạt
+                  color: Color(0xFFF1FFF3),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(24),
                     topRight: Radius.circular(24),
@@ -83,7 +88,9 @@ class SettingsScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileScreen(),
+                            ),
                           );
                         },
                       ),
@@ -98,7 +105,9 @@ class SettingsScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
                           );
                         },
                       ),
@@ -149,10 +158,48 @@ class SettingsScreen extends StatelessWidget {
                         title: 'FAQ',
                         onTap: () {},
                       ),
+
+                      // 🔥 Log out button có GoRouter + Snackbar
                       _buildSettingItem(
                         icon: Icons.logout,
                         title: 'Log out',
-                        onTap: () {},
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              title: const Text('Confirm Logout'),
+                              content: const Text(
+                                'Are you sure you want to log out?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(dialogContext),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    Navigator.pop(dialogContext);
+                                    await ref
+                                        .read(authViewModelProvider.notifier)
+                                        .logout();
+
+                                    if (context.mounted) {
+                                      SnackBarHelper.showSuccess(
+                                        context,
+                                        'Logout successfully!',
+                                      );
+                                      context.go('/login');
+                                    }
+                                  },
+                                  child: const Text(
+                                    'Logout',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ]),
                   ],
@@ -179,9 +226,7 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 
@@ -198,11 +243,7 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: titleColor ?? const Color(0xFF6B7280),
-              size: 24,
-            ),
+            Icon(icon, color: titleColor ?? const Color(0xFF6B7280), size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
