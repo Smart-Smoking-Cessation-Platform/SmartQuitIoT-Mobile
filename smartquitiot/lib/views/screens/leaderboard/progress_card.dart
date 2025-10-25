@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 class ProgressCard extends StatelessWidget {
@@ -9,13 +9,13 @@ class ProgressCard extends StatelessWidget {
   final Color valueColor;  // Màu chữ value
 
   const ProgressCard({
-    Key? key,
+    super.key,
     required this.animationPath,
     required this.title,
     required this.value,
     this.borderColor = const Color(0xFF00D09E), // mặc định xanh mint
     this.valueColor = Colors.black,             // mặc định đen
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

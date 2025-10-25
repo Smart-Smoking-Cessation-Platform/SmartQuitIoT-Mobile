@@ -37,7 +37,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool? _smokeMoreMorning;
   bool? _smokeEvenSick;
   bool _useNRT = false;
-  List<String> _selectedInterests = [];
+  final List<String> _selectedInterests = [];
 
   // Validation flag
   bool _submitted = false;

@@ -42,9 +42,9 @@ class CoachRepository {
           response.statusCode,
         );
       }
-    } on http.ClientException catch (e) {
+    } on http.ClientException {
       throw const CoachException('Network error: Unable to connect to server');
-    } on FormatException catch (e) {
+    } on FormatException {
       throw const CoachException('Invalid response format from server');
     } catch (e) {
       throw CoachException('Unexpected error: $e');

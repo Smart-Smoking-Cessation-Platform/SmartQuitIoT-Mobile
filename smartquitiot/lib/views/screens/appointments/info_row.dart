@@ -1,4 +1,4 @@
-﻿// lib/features/coaching/widgets/info_row.dart
+// lib/features/coaching/widgets/info_row.dart
 import 'package:flutter/material.dart';
 
 class InfoRow extends StatelessWidget {
@@ -7,11 +7,11 @@ class InfoRow extends StatelessWidget {
   final Color iconColor;
 
   const InfoRow({
-    Key? key,
+    super.key,
     required this.icon,
     required this.text,
     this.iconColor = const Color(0xFF6366F1),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

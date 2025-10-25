@@ -1,4 +1,4 @@
-﻿// lib/features/coaching/widgets/rating_display.dart
+// lib/features/coaching/widgets/rating_display.dart
 import 'package:flutter/material.dart';
 
 class RatingDisplay extends StatelessWidget {
@@ -8,12 +8,12 @@ class RatingDisplay extends StatelessWidget {
   final double fontSize;
 
   const RatingDisplay({
-    Key? key,
+    super.key,
     required this.rating,
     required this.reviews,
     this.iconSize = 18,
     this.fontSize = 14,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

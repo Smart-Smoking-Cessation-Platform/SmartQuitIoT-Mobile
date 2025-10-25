@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../../../models/post_comment.dart';
 import '../../../models/post_media.dart';
-import '../../../utils/date_formatter.dart';
 
 class CommentCard extends StatelessWidget {
   final PostComment comment;
-  final Function(int)? onReply;
-  final Function(int)? onEdit;
-  final Function(int)? onDelete;
 
-  const CommentCard({
-    super.key,
-    required this.comment,
-    this.onReply,
-    this.onEdit,
-    this.onDelete,
-  });
+  const CommentCard({super.key, required this.comment});
 
   @override
   Widget build(BuildContext context) {
@@ -59,59 +50,11 @@ class CommentCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      DateFormatter.formatPostDate(comment.createdAt),
+                      _formatTimeAgo(comment.createdAt),
                       style: TextStyle(color: Colors.grey[600], fontSize: 11),
                     ),
                   ],
                 ),
-              ),
-              // Action buttons
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'reply':
-                      onReply?.call(comment.id);
-                      break;
-                    case 'edit':
-                      onEdit?.call(comment.id);
-                      break;
-                    case 'delete':
-                      onDelete?.call(comment.id);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'reply',
-                    child: Row(
-                      children: [
-                        Icon(Icons.reply, size: 16),
-                        SizedBox(width: 8),
-                        Text('Reply'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 16),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 16, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -140,7 +83,7 @@ class CommentCard extends StatelessWidget {
   }
 
   Widget _buildCommentMedia(List<PostMedia> media) {
-    return Container(
+    return SizedBox(
       height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -226,7 +169,7 @@ class CommentCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              DateFormatter.formatPostDate(reply.createdAt),
+                              _formatTimeAgo(reply.createdAt),
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 10,
@@ -258,4 +201,18 @@ class CommentCard extends StatelessWidget {
     );
   }
 
+  String _formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
 }

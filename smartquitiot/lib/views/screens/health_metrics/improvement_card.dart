@@ -1,4 +1,4 @@
-﻿// components/improvement_card.dart
+// components/improvement_card.dart
 import 'package:flutter/material.dart';
 
 class ImprovementCard extends StatelessWidget {
@@ -8,12 +8,12 @@ class ImprovementCard extends StatelessWidget {
   final bool isGood;
 
   const ImprovementCard({
-    Key? key,
+    super.key,
     required this.score,
     required this.title,
     required this.description,
     required this.isGood,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

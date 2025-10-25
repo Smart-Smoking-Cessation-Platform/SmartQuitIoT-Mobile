@@ -1,8 +1,8 @@
-﻿import 'package:SmartQuitIoT/views/screens/leaderboard/progress_card.dart';
+import 'package:SmartQuitIoT/views/screens/leaderboard/progress_card.dart';
 import 'package:flutter/material.dart';
 
 class CommunityProgressSection extends StatelessWidget {
-  const CommunityProgressSection({Key? key}) : super(key: key);
+  const CommunityProgressSection({super.key});
 
   @override
   Widget build(BuildContext context) {
