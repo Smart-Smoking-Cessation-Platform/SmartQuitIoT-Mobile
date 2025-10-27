@@ -16,8 +16,10 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
   void initState() {
     super.initState();
     print('📋 [TodayMissionCard] Initialized');
-    // Auto-load missions when widget is created
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Delay để tránh race condition khi navigate từ onboarding
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      print('⏳ [TodayMissionCard] Waiting 500ms before initial load...');
+      await Future.delayed(const Duration(milliseconds: 500));
       print('🚀 [TodayMissionCard] Auto-loading missions...');
       ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
     });
@@ -31,7 +33,7 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != next) {
         print('🔄 [TodayMissionCard] Refresh triggered - reloading missions...');
-        ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+        ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
       }
     });
 

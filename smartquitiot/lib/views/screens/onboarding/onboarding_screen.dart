@@ -485,7 +485,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     '⏳ [OnboardingScreen] Waiting for backend to initialize phase...',
                                   );
                                   await Future.delayed(
-                                    const Duration(seconds: 2),
+                                    const Duration(seconds: 3),
                                   );
 
                                   // Trigger refresh for quit plan and missions cards
@@ -496,14 +496,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       .read(missionRefreshProvider.notifier)
                                       .refreshAll();
 
-                                  // Give time for cards to refresh
-                                  await Future.delayed(
-                                    const Duration(milliseconds: 500),
-                                  );
-
                                   print(
                                     '🚀 [OnboardingScreen] Navigating to main screen...',
                                   );
+                                  // Navigate immediately, cards sẽ tự retry nếu chưa sẵn sàng
                                   context.go('/main');
                                 } catch (e) {
                                   print(

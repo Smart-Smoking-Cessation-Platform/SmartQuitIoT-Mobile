@@ -25,11 +25,12 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    // Load quit plan khi widget khởi tạo
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(quitPlanHomepageViewModelProvider.notifier)
-          .loadQuitPlanHomePage();
+    // Delay để tránh race condition khi navigate từ onboarding
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      print('⏳ [QuitPlanCard] Waiting 500ms before initial load...');
+      await Future.delayed(const Duration(milliseconds: 500));
+      print('🚀 [QuitPlanCard] Auto-loading quit plan...');
+      ref.read(quitPlanHomepageViewModelProvider.notifier).loadQuitPlanHomePage();
     });
   }
 
@@ -46,8 +47,8 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
     // Listen for mission refresh trigger
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != next) {
-        // Refresh quit plan data when missions are completed
-        ref.read(quitPlanHomepageViewModelProvider.notifier).refreshQuitPlan();
+        print('🔄 [QuitPlanCard] Refresh triggered - reloading quit plan...');
+        ref.read(quitPlanHomepageViewModelProvider.notifier).loadQuitPlanHomePage();
       }
     });
 

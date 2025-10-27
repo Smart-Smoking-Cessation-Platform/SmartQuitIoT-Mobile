@@ -26,8 +26,8 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   // Health instance
   final Health _health = Health();
   
-  // Money formatter without VND symbol
-  final NumberFormat moneyFormatter = NumberFormat('#,###', 'vi_VN');
+  // Money formatter without VND symbol (dấu phẩy)
+  final NumberFormat moneyFormatter = NumberFormat('#,###', 'en_US');
 
   // Triggers
   List<String> selectedTriggers = [];
@@ -477,7 +477,10 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
                 onChanged: (value) {
                   setState(() {
                     isUseNrt = value;
-                    if (!value) moneySpentOnNrt = 0.0;
+                    if (!value) {
+                      moneySpentOnNrt = 0.0;
+                      moneyController.clear();
+                    }
                   });
                 },
               ),
@@ -491,7 +494,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
             ),
             const SizedBox(height: 8),
             TextField(
-              controller: localMoneyController,
+              controller: moneyController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 hintText: '0',
@@ -506,19 +509,32 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
               onChanged: (value) {
                 // Loại bỏ ký tự không phải số
                 final numericString = value.replaceAll(RegExp(r'[^0-9]'), '');
-                final parsed = double.tryParse(numericString) ?? 0;
-                setState(() {
-                  moneySpentOnNrt = parsed;
-                  // Cập nhật lại controller với format (no VND)
-                  localMoneyController.value = TextEditingValue(
-                    text: parsed == 0 ? '' : moneyFormatter.format(parsed),
-                    selection: TextSelection.collapsed(
-                      offset: parsed == 0
-                          ? 0
-                          : moneyFormatter.format(parsed).length,
-                    ),
+                if (numericString.isEmpty) {
+                  setState(() {
+                    moneySpentOnNrt = 0.0;
+                  });
+                  return;
+                }
+                final parsed = int.tryParse(numericString) ?? 0;
+                final formatted = moneyFormatter.format(parsed);
+                
+                // Chỉ update khi format khác với text hiện tại
+                if (formatted != value) {
+                  setState(() {
+                    moneySpentOnNrt = parsed.toDouble();
+                  });
+                  
+                  // Tính toán cursor position
+                  final cursorPosition = formatted.length;
+                  moneyController.value = TextEditingValue(
+                    text: formatted,
+                    selection: TextSelection.collapsed(offset: cursorPosition),
                   );
-                });
+                } else {
+                  setState(() {
+                    moneySpentOnNrt = parsed.toDouble();
+                  });
+                }
               },
             ),
           ],
