@@ -1,3 +1,5 @@
+import 'package:SmartQuitIoT/models/post_detail.dart';
+
 import '../core/errors/exception.dart';
 import '../models/post.dart';
 import '../models/response/post_list_response.dart';

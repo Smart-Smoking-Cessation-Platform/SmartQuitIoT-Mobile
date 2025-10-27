@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:SmartQuitIoT/models/post_detail.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../core/errors/exception.dart';
