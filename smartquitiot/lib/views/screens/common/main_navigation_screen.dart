@@ -80,7 +80,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               AchievementsCard(),
               QuitPlanCard(),
               TodayMissionCard(),
-              AnalysisCard(),
+              // AnalysisCard(),
               CommunityTrendingCard(),
               RecentNewsCard(),
             ],

@@ -29,6 +29,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _cigarettesPerPackController =
       TextEditingController();
   final TextEditingController _quitPlanNameController = TextEditingController();
+  final TextEditingController _nicotineAmountController = TextEditingController();
 
   // Options
   int? _selectedFirstCigaretteOptionMinutes;
@@ -80,6 +81,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         }
       }
     });
+
+    // Format nicotine amount with thousand separator
+    _nicotineAmountController.addListener(() {
+      final text = _nicotineAmountController.text.replaceAll(',', '');
+      if (text.isEmpty) return;
+      final number = double.tryParse(text);
+      if (number != null) {
+        final formatted = NumberFormat('#,###.##', 'en_US').format(number);
+        if (formatted != _nicotineAmountController.text) {
+          _nicotineAmountController.value = TextEditingValue(
+            text: formatted,
+            selection: TextSelection.collapsed(offset: formatted.length),
+          );
+        }
+      }
+    });
   }
 
   /// Validate and return first error page index, -1 if no error
@@ -87,9 +104,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() => _submitted = true);
 
     // Page 3 errors
-    if (_yearsController.text.isEmpty ||
+    if (_smokeAvgController.text.isEmpty ||
+        _yearsController.text.isEmpty ||
         _moneyController.text.isEmpty ||
         _cigarettesPerPackController.text.isEmpty ||
+        _nicotineAmountController.text.isEmpty ||
         _selectedFirstCigaretteOptionMinutes == null) {
       return 2;
     }
@@ -203,6 +222,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             : null,
                       ),
                       QuestionInputCard(
+                        question: 'Average cigarettes smoked per day',
+                        controller: _smokeAvgController,
+                        hintText: 'Enter number of cigarettes',
+                        keyboardType: TextInputType.number,
+                        errorText: _submitted && _smokeAvgController.text.isEmpty
+                            ? 'You must enter a value'
+                            : null,
+                      ),
+                      QuestionInputCard(
                         question: 'How many years have you smoked?',
                         controller: _yearsController,
                         hintText: 'Enter number of years',
@@ -228,6 +256,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         errorText:
                             _submitted &&
                                 _cigarettesPerPackController.text.isEmpty
+                            ? 'You must enter a value'
+                            : null,
+                      ),
+                      QuestionInputCard(
+                        question: 'Amount of nicotine per cigarette (mg)',
+                        controller: _nicotineAmountController,
+                        hintText: 'Enter nicotine amount (e.g., 1.2)',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        errorText:
+                            _submitted &&
+                                _nicotineAmountController.text.isEmpty
                             ? 'You must enter a value'
                             : null,
                       ),
@@ -420,7 +459,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   morningSmokingFrequency: _smokeMoreMorning!,
                                   smokeWhenSick: _smokeEvenSick!,
                                   interests: _selectedInterests,
-                                  amountOfNicotinePerCigarettes: 0,
+                                  amountOfNicotinePerCigarettes: double.parse(
+                                    _nicotineAmountController.text.replaceAll(',', ''),
+                                  ),
                                 );
 
                                 try {

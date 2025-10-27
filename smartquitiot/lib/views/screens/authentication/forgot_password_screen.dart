@@ -4,7 +4,7 @@ import 'package:SmartQuitIoT/utils/notification_helper.dart';
 import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/otp_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
-
+import 'package:go_router/go_router.dart';
 import '../../../providers/auth_provider.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -180,16 +180,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 24),
               Center(
-                child: TextButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                  child: const Text(
-                    'Back to Login',
-                    style: TextStyle(
-                      color: Color(0xFF00D09E),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                child:TextButton(
+  onPressed: () => context.go('/login'), // ✅ Dùng GoRouter
+  child: const Text(
+    'Back to Login',
+    style: TextStyle(
+      color: Color(0xFF00D09E),
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+),
+
               ),
               const SizedBox(height: 32),
             ],

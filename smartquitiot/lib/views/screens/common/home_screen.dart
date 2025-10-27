@@ -8,7 +8,7 @@ import 'package:SmartQuitIoT/views/screens/stats_table/stats_table_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/health_improvement_card.dart';
 import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_card.dart';
 import 'package:SmartQuitIoT/views/screens/missions/today_mission_card.dart';
-import 'package:SmartQuitIoT/views/widgets/cards/analysis_card.dart';
+// import 'package:SmartQuitIoT/views/widgets/cards/analysis_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/community_trending_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/recent_news_card.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
@@ -36,7 +36,7 @@ class HomeScreen extends StatelessWidget {
               AchievementsCard(),
               QuitPlanCard(),
               TodayMissionCard(),
-              AnalysisCard(),
+              // AnalysisCard(),
               CommunityTrendingCard(),
              
               RecentNewsCard(),

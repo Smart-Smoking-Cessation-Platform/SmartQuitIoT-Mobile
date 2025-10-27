@@ -15,6 +15,7 @@ class TodayMissionCard extends ConsumerStatefulWidget {
 class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
   bool _hasLoadedMissions = false;
   bool _lastQuitPlanState = false; // Track previous quit plan state
+  bool _isFirstBuild = true; // Track if this is the first build after navigation
 
   @override
   void initState() {
@@ -30,7 +31,7 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
 
     // Debug current states
     print(
-      '🔍 [TodayMissionCard] States - hasQuitPlan: ${quitPlanState.hasQuitPlan}, isLoading: ${quitPlanState.isLoading}, hasLoadedMissions: $_hasLoadedMissions, lastQuitPlanState: $_lastQuitPlanState',
+      '🔍 [TodayMissionCard] States - hasQuitPlan: ${quitPlanState.hasQuitPlan}, isLoading: ${quitPlanState.isLoading}, hasLoadedMissions: $_hasLoadedMissions, lastQuitPlanState: $_lastQuitPlanState, isFirstBuild: $_isFirstBuild',
     );
 
     // Load missions AFTER quit plan is loaded and ready
@@ -40,8 +41,11 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
       print('✅ [TodayMissionCard] Quit plan loaded, now loading missions...');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
-        _hasLoadedMissions = true;
-        _lastQuitPlanState = true;
+        setState(() {
+          _hasLoadedMissions = true;
+          _lastQuitPlanState = true;
+          _isFirstBuild = false;
+        });
       });
     }
 
@@ -54,8 +58,11 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
-        _hasLoadedMissions = true;
-        _lastQuitPlanState = true;
+        setState(() {
+          _hasLoadedMissions = true;
+          _lastQuitPlanState = true;
+          _isFirstBuild = false;
+        });
       });
     }
 
@@ -64,22 +71,34 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
         !quitPlanState.hasQuitPlan &&
         !quitPlanState.isLoading) {
       print('⚠️ [TodayMissionCard] Quit plan lost, resetting mission state...');
-      _hasLoadedMissions = false;
-      _lastQuitPlanState = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _hasLoadedMissions = false;
+          _lastQuitPlanState = false;
+        });
+      });
     }
-
-    // Update last quit plan state
-    _lastQuitPlanState = quitPlanState.hasQuitPlan;
 
     // Listen for mission refresh trigger
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != next) {
         print('🔄 [TodayMissionCard] Refresh triggered by provider');
-        // Reset loading state to allow fresh load
-        _hasLoadedMissions = false;
-        // Refresh missions when trigger changes
-        ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
-        _hasLoadedMissions = true;
+        
+        // If quit plan exists, refresh immediately
+        if (quitPlanState.hasQuitPlan && !quitPlanState.isLoading) {
+          print('✅ [TodayMissionCard] Quit plan ready, refreshing missions now...');
+          ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
+          setState(() {
+            _hasLoadedMissions = true;
+            _isFirstBuild = false;
+          });
+        } else {
+          // If quit plan not ready yet, mark to load when ready
+          print('⏳ [TodayMissionCard] Quit plan not ready, marking for refresh...');
+          setState(() {
+            _hasLoadedMissions = false;
+          });
+        }
       }
     });
 

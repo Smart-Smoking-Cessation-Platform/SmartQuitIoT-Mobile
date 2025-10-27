@@ -9,6 +9,7 @@ import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/headers/auth_header.dart';
 import '../../widgets/inputs/custom_text_field.dart';
 import 'custom_date_picker.dart';
+import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -52,7 +53,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final DateTime currentDate = DateTime.now();
     int age = currentDate.year - birthDate.year;
     if (currentDate.month < birthDate.month ||
-        (currentDate.month == birthDate.month && currentDate.day < birthDate.day)) {
+        (currentDate.month == birthDate.month &&
+            currentDate.day < birthDate.day)) {
       age--;
     }
     return age;
@@ -67,7 +69,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       lastDate: DateTime.now(),
     );
     if (pickedDate != null) {
-      final String formattedDate = DateFormat('dd / MM / yyyy').format(pickedDate);
+      final String formattedDate = DateFormat(
+        'dd / MM / yyyy',
+      ).format(pickedDate);
       setState(() {
         _dobController.text = formattedDate;
       });
@@ -86,16 +90,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final dateUi = DateFormat('dd / MM / yyyy').parse(_dobController.text);
     final formattedDobApi = DateFormat('yyyy-MM-dd').format(dateUi);
 
-    final success = await ref.read(authViewModelProvider.notifier).register(
-      username: _usernameController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      confirmPassword: _confirmController.text,
-      firstName: _firstNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-      gender: _selectedGender!,
-      dob: formattedDobApi,
-    );
+    final success = await ref
+        .read(authViewModelProvider.notifier)
+        .register(
+          username: _usernameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          confirmPassword: _confirmController.text,
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          gender: _selectedGender!,
+          dob: formattedDobApi,
+        );
 
     if (mounted) {
       if (success) {
@@ -106,7 +112,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         );
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
-          Navigator.pushReplacementNamed(context, '/login');
+          context.go('/login'); // ✅ dùng GoRouter thay Navigator
         }
       } else {
         final error = ref.read(authViewModelProvider).error;
@@ -131,9 +137,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     return Theme(
       data: Theme.of(context).copyWith(
-        colorScheme: Theme.of(context).colorScheme.copyWith(
-          primary: greenBorderColor,
-        ),
+        colorScheme: Theme.of(
+          context,
+        ).colorScheme.copyWith(primary: greenBorderColor),
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFF1FFF3),
@@ -154,7 +160,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       // --- 2. Thêm onChanged trực tiếp vào Form ---
                       onChanged: () {
                         setState(() {
-                          _isFormValid = _formKey.currentState?.validate() ?? false;
+                          _isFormValid =
+                              _formKey.currentState?.validate() ?? false;
                         });
                       },
                       child: Column(
@@ -205,7 +212,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your email';
                               }
-                              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                              if (!RegExp(
+                                r'^[^@]+@[^@]+\.[^@]+',
+                              ).hasMatch(value)) {
                                 return 'Please enter a valid email address';
                               }
                               return null;
@@ -224,7 +233,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
                               DateTime? birthDate;
                               try {
-                                birthDate = DateFormat('dd / MM / yyyy').parse(value);
+                                birthDate = DateFormat(
+                                  'dd / MM / yyyy',
+                                ).parse(value);
                               } catch (e) {
                                 return 'Invalid date format';
                               }
@@ -251,7 +262,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                   children: [
                                     TextSpan(
                                       text: ' *',
-                                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -271,11 +285,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                      borderRadius: borderRadius,
-                                      borderSide: const BorderSide(
-                                        color: greenBorderColor,
-                                        width: 2.0,
-                                      )
+                                    borderRadius: borderRadius,
+                                    borderSide: const BorderSide(
+                                      color: greenBorderColor,
+                                      width: 2.0,
+                                    ),
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: borderRadius,
@@ -322,13 +336,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             label: 'Password',
                             hint: '••••••••',
                             obscure: _obscure1,
-                            onToggle: () => setState(() => _obscure1 = !_obscure1),
+                            onToggle: () =>
+                                setState(() => _obscure1 = !_obscure1),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter a password';
                               }
                               final passwordRegex = RegExp(
-                                  r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$');
+                                r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+                              );
                               if (!passwordRegex.hasMatch(value)) {
                                 return 'Password needs 8+ chars, with uppercase, lowercase, number & special character.';
                               }
@@ -341,7 +357,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             label: 'Confirm Password',
                             hint: '••••••••',
                             obscure: _obscure2,
-                            onToggle: () => setState(() => _obscure2 = !_obscure2),
+                            onToggle: () =>
+                                setState(() => _obscure2 = !_obscure2),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please confirm your password';
@@ -350,24 +367,31 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 return 'Passwords do not match';
                               }
                               return null;
-                              },
+                            },
                           ),
                           const SizedBox(height: 32),
                           authState.isLoading
                               ? const Center(child: CircularProgressIndicator())
                               : PrimaryButton(
-                            text: 'Sign Up',
-                            // 3. Vô hiệu hóa nút bấm nếu form không hợp lệ
-                            onPressed: _isFormValid ? _handleSignUp : null,
-                          ),
+                                  text: 'Sign Up',
+                                  // 3. Vô hiệu hóa nút bấm nếu form không hợp lệ
+                                  onPressed: _isFormValid
+                                      ? _handleSignUp
+                                      : null,
+                                ),
                           const SizedBox(height: 16),
                           Center(
                             child: TextButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => context.go(
+                                '/login',
+                              ), // ✅ thay vì Navigator.pop
                               child: RichText(
                                 text: const TextSpan(
                                   text: 'Already have an account? ',
-                                  style: TextStyle(color: Colors.black54, fontSize: 14),
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 14,
+                                  ),
                                   children: [
                                     TextSpan(
                                       text: 'Log In',
