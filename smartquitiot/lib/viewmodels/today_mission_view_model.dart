@@ -10,7 +10,7 @@ class TodayMissionViewModel extends StateNotifier<TodayMissionState> {
   /// Load today's missions (only incompleted ones)
   Future<void> loadTodayMissions() async {
     print('🔄 [TodayMissionViewModel] Starting to load today missions...');
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       // First check if all missions are completed
@@ -23,7 +23,7 @@ class TodayMissionViewModel extends StateNotifier<TodayMissionState> {
         state = state.copyWith(
           missions: [],
           isLoading: false,
-          error: null,
+          clearError: true,
           allMissionsCompleted: true,
         );
         print('✅ [TodayMissionViewModel] All missions completed - showing congratulations');
@@ -40,7 +40,7 @@ class TodayMissionViewModel extends StateNotifier<TodayMissionState> {
         state = state.copyWith(
           missions: missions,
           isLoading: false,
-          error: null,
+          clearError: true,
           allMissionsCompleted: false,
         );
         print('✅ [TodayMissionViewModel] State updated with ${missions.length} missions');
@@ -58,7 +58,7 @@ class TodayMissionViewModel extends StateNotifier<TodayMissionState> {
         state = state.copyWith(
           missions: [],
           isLoading: false,
-          error: null, // No error, just empty
+          clearError: true, // Clear error for empty state
           allMissionsCompleted: false,
         );
         print('✅ [TodayMissionViewModel] State set to empty (no error)');
@@ -81,7 +81,7 @@ class TodayMissionViewModel extends StateNotifier<TodayMissionState> {
 
   /// Clear error state
   void clearError() {
-    state = state.copyWith(error: null);
+    state = state.copyWith(clearError: true);
   }
 }
 

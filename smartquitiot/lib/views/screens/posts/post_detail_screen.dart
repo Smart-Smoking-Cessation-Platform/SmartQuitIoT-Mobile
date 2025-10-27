@@ -6,6 +6,7 @@ import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/comment_card.dart';
 import 'package:SmartQuitIoT/views/screens/posts/create_post_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/dialogs/edit_reply_comment_dialog.dart';
+import 'package:SmartQuitIoT/views/widgets/dialogs/media_viewer_dialog.dart';
 import 'package:SmartQuitIoT/utils/date_formatter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:image_picker/image_picker.dart';
@@ -241,20 +242,37 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   Widget _buildInlineMedia(List<PostMedia> media) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: media.map((item) {
+      children: media.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        
         if (item.mediaType == 'IMAGE') {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                item.mediaUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 200,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.broken_image, color: Colors.grey),
+            child: GestureDetector(
+              onTap: () {
+                // Open full screen image viewer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MediaViewerDialog(
+                      mediaList: media,
+                      initialIndex: index,
+                    ),
+                  ),
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  item.mediaUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  ),
                 ),
               ),
             ),
@@ -262,7 +280,42 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         } else if (item.mediaType == 'VIDEO') {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: _VideoPlayerWidget(videoUrl: item.mediaUrl),
+            child: GestureDetector(
+              onTap: () {
+                // Open full screen video viewer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MediaViewerDialog(
+                      mediaList: media,
+                      initialIndex: index,
+                    ),
+                  ),
+                );
+              },
+              child: Stack(
+                children: [
+                  _VideoPlayerWidget(videoUrl: item.mediaUrl),
+                  // Fullscreen icon overlay
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.fullscreen,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         } else {
           return const SizedBox.shrink();

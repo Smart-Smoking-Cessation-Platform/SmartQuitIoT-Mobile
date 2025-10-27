@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../viewmodels/today_mission_view_model.dart';
-import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 import '../../../providers/mission_refresh_provider.dart';
 import '../quitplans/quit_plan_screen.dart';
 
@@ -13,92 +12,26 @@ class TodayMissionCard extends ConsumerStatefulWidget {
 }
 
 class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
-  bool _hasLoadedMissions = false;
-  bool _lastQuitPlanState = false; // Track previous quit plan state
-  bool _isFirstBuild = true; // Track if this is the first build after navigation
-
   @override
   void initState() {
     super.initState();
-    // Don't load missions here - wait for quit plan to load first
-    print('📋 [TodayMissionCard] Initialized, waiting for quit plan...');
+    print('📋 [TodayMissionCard] Initialized');
+    // Auto-load missions when widget is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🚀 [TodayMissionCard] Auto-loading missions...');
+      ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(todayMissionViewModelProvider);
-    final quitPlanState = ref.watch(quitPlanHomepageViewModelProvider);
 
-    // Debug current states
-    print(
-      '🔍 [TodayMissionCard] States - hasQuitPlan: ${quitPlanState.hasQuitPlan}, isLoading: ${quitPlanState.isLoading}, hasLoadedMissions: $_hasLoadedMissions, lastQuitPlanState: $_lastQuitPlanState, isFirstBuild: $_isFirstBuild',
-    );
-
-    // Load missions AFTER quit plan is loaded and ready
-    if (!_hasLoadedMissions &&
-        quitPlanState.hasQuitPlan &&
-        !quitPlanState.isLoading) {
-      print('✅ [TodayMissionCard] Quit plan loaded, now loading missions...');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
-        setState(() {
-          _hasLoadedMissions = true;
-          _lastQuitPlanState = true;
-          _isFirstBuild = false;
-        });
-      });
-    }
-
-    // Detect when quit plan state changes from false to true (new quit plan created)
-    if (!_lastQuitPlanState &&
-        quitPlanState.hasQuitPlan &&
-        !quitPlanState.isLoading) {
-      print(
-        '🆕 [TodayMissionCard] New quit plan detected! Retrying missions...',
-      );
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
-        setState(() {
-          _hasLoadedMissions = true;
-          _lastQuitPlanState = true;
-          _isFirstBuild = false;
-        });
-      });
-    }
-
-    // Handle case when quit plan is lost (e.g., logout/login)
-    if (_lastQuitPlanState &&
-        !quitPlanState.hasQuitPlan &&
-        !quitPlanState.isLoading) {
-      print('⚠️ [TodayMissionCard] Quit plan lost, resetting mission state...');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _hasLoadedMissions = false;
-          _lastQuitPlanState = false;
-        });
-      });
-    }
-
-    // Listen for mission refresh trigger
+    // Auto-refresh missions khi có trigger từ mission refresh provider
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != next) {
-        print('🔄 [TodayMissionCard] Refresh triggered by provider');
-        
-        // If quit plan exists, refresh immediately
-        if (quitPlanState.hasQuitPlan && !quitPlanState.isLoading) {
-          print('✅ [TodayMissionCard] Quit plan ready, refreshing missions now...');
-          ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
-          setState(() {
-            _hasLoadedMissions = true;
-            _isFirstBuild = false;
-          });
-        } else {
-          // If quit plan not ready yet, mark to load when ready
-          print('⏳ [TodayMissionCard] Quit plan not ready, marking for refresh...');
-          setState(() {
-            _hasLoadedMissions = false;
-          });
-        }
+        print('🔄 [TodayMissionCard] Refresh triggered - reloading missions...');
+        ref.read(todayMissionViewModelProvider.notifier).refreshMissions();
       }
     });
 
@@ -155,38 +88,12 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
   }
 
   Widget _buildContent(state) {
-    final quitPlanState = ref.watch(quitPlanHomepageViewModelProvider);
-
-    // Show loading only if we're actually loading missions
+    // Show loading while fetching missions
     if (state.isLoading) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20.0),
           child: CircularProgressIndicator(color: Color(0xFF00D09E)),
-        ),
-      );
-    }
-
-    // If no quit plan exists, show appropriate message
-    if (!quitPlanState.hasQuitPlan && !quitPlanState.isLoading) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange.withOpacity(0.3)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.info_outline, color: Colors.orange, size: 20),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Please complete your quit plan setup to see today\'s missions',
-                style: TextStyle(color: Colors.orange, fontSize: 14),
-              ),
-            ),
-          ],
         ),
       );
     }

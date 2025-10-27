@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/post_comment.dart';
 import '../../../models/post_media.dart';
 import '../../../utils/date_formatter.dart';
+import '../dialogs/media_viewer_dialog.dart';
 
 class CommentCard extends StatelessWidget {
   final PostComment comment;
@@ -126,7 +127,7 @@ class CommentCard extends StatelessWidget {
           // Comment Media
           if (comment.media != null && comment.media!.isNotEmpty) ...[
             const SizedBox(height: 8),
-            _buildCommentMedia(comment.media!),
+            CommentMediaList(media: comment.media!),
           ],
 
           // Replies
@@ -135,45 +136,6 @@ class CommentCard extends StatelessWidget {
             _buildReplies(comment.replies!),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildCommentMedia(List<PostMedia> media) {
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: media.length,
-        itemBuilder: (context, index) {
-          final mediaItem = media[index];
-          return Container(
-            margin: const EdgeInsets.only(right: 8),
-            width: 100,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[200],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                mediaItem.mediaUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -248,7 +210,7 @@ class CommentCard extends StatelessWidget {
                   // Reply Media
                   if (reply.media != null && reply.media!.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    _buildCommentMedia(reply.media!),
+                    CommentMediaList(media: reply.media!),
                   ],
                 ],
               ),
@@ -258,4 +220,94 @@ class CommentCard extends StatelessWidget {
     );
   }
 
+}
+
+/// Separate widget for comment media list to ensure proper context for navigation
+class CommentMediaList extends StatelessWidget {
+  final List<PostMedia> media;
+
+  const CommentMediaList({super.key, required this.media});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: media.length,
+        itemBuilder: (context, index) {
+          final mediaItem = media[index];
+          final isVideo = mediaItem.mediaType == 'VIDEO';
+          
+          return GestureDetector(
+            onTap: () {
+              print('🖼️ [CommentMediaList] Tapped on media item $index');
+              print('🔗 [CommentMediaList] Media URL: ${mediaItem.mediaUrl}');
+              print('📹 [CommentMediaList] Is Video: $isVideo');
+              
+              // Open full screen viewer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MediaViewerDialog(
+                    mediaList: media,
+                    initialIndex: index,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              width: 100,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[200],
+              ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      mediaItem.mediaUrl,
+                      fit: BoxFit.cover,
+                      width: 100,
+                      height: 100,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // Video play icon overlay
+                  if (isVideo)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.black.withOpacity(0.3),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
