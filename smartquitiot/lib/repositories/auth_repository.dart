@@ -1,6 +1,5 @@
 // repositories/auth_repository.dart
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../core/errors/exception.dart';
 import '../models/request/login_request.dart';
@@ -10,7 +9,6 @@ import '../models/response/register_response.dart';
 import '../services/auth_service.dart';
 import '../services/token_storage_service.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 
 class AuthRepository {
   final AuthService _authService;
@@ -115,7 +113,7 @@ class AuthRepository {
   Future<LoginResponse> loginWithGoogle() async {
     try {
       print('[AuthRepository] Step 1: Starting Google Sign-In...');
-      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance
           .authenticate(
             scopeHint: [
               'openid',
@@ -123,12 +121,8 @@ class AuthRepository {
               'https://www.googleapis.com/auth/userinfo.profile',
             ],
           );
-      if (googleUser == null) {
-        print('[AuthRepository] User cancelled sign-in');
-        throw AuthException('Google sign-in cancelled');
-      }
       print('[AuthRepository] Got Google user: ${googleUser.email}');
-      final googleAuth = await googleUser.authentication;
+      final googleAuth = googleUser.authentication;
       final idToken = googleAuth.idToken;
       if (idToken == null) {
         throw AuthException('Failed to get Google ID Token');

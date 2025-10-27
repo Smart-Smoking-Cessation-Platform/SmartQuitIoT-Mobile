@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 
@@ -8,8 +8,7 @@ const tempToken =
 
 class VideoCallScreen extends StatefulWidget {
   final String channelName;
-  const VideoCallScreen({Key? key, required this.channelName})
-      : super(key: key);
+  const VideoCallScreen({super.key, required this.channelName});
 
   @override
   State<VideoCallScreen> createState() => _VideoCallScreenState();

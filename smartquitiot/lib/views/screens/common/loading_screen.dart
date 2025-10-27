@@ -6,10 +6,10 @@ class LoadingScreen extends StatefulWidget {
   final String paymentMethod;
 
   const LoadingScreen({
-    Key? key,
+    super.key,
     required this.selectedPlan,
     required this.paymentMethod,
-  }) : super(key: key);
+  });
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();

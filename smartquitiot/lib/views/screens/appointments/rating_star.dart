@@ -1,4 +1,4 @@
-﻿// lib/features/coaching/widgets/rating_stars.dart
+// lib/features/coaching/widgets/rating_stars.dart
 import 'package:flutter/material.dart';
 
 class RatingStars extends StatelessWidget {
@@ -8,12 +8,12 @@ class RatingStars extends StatelessWidget {
   final Color color;
 
   const RatingStars({
-    Key? key,
+    super.key,
     required this.rating,
     required this.onRatingChanged,
     this.size = 48,
     this.color = Colors.amber,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

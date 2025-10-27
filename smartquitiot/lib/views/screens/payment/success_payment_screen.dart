@@ -9,10 +9,10 @@ class SuccessScreen extends StatefulWidget {
   final String paymentMethod;
 
   const SuccessScreen({
-    Key? key,
+    super.key,
     required this.selectedPlan,
     required this.paymentMethod,
-  }) : super(key: key);
+  });
 
   @override
   State<SuccessScreen> createState() => _SuccessScreenState();

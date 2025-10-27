@@ -1,4 +1,4 @@
-﻿// ========================================
+// ========================================
 // ChatScreenDetail.dart
 // ========================================
 import 'package:flutter/material.dart';
@@ -67,7 +67,9 @@ class _ChatScreenDetailState extends State<ChatScreenDetail> {
   void _sendMessage(String text) {
     if (text
         .trim()
-        .isEmpty) return;
+        .isEmpty) {
+      return;
+    }
 
     final now = TimeOfDay.now();
     setState(() {

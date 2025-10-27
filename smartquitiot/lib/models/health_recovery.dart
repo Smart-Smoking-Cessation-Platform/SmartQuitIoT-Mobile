@@ -144,28 +144,28 @@ class DetailedMetrics {
 
   factory DetailedMetrics.fromJson(Map<String, dynamic> json) {
     // Helper to safely convert num to int
-    int _toInt(dynamic value) => (value ?? 0) is int ? value : (value ?? 0).toInt();
+    int toInt(dynamic value) => (value ?? 0) is int ? value : (value ?? 0).toInt();
     
     return DetailedMetrics(
-      id: _toInt(json['id']),
-      streaks: _toInt(json['streaks']),
-      relapseCountInPhase: _toInt(json['relapseCountInPhase']),
+      id: toInt(json['id']),
+      streaks: toInt(json['streaks']),
+      relapseCountInPhase: toInt(json['relapseCountInPhase']),
       avgCravingLevel: (json['avgCravingLevel'] ?? 0.0).toDouble(),
       avgMood: (json['avgMood'] ?? 0.0).toDouble(),
       avgAnxiety: (json['avgAnxiety'] ?? 0.0).toDouble(),
       avgConfidentLevel: (json['avgConfidentLevel'] ?? 0.0).toDouble(),
-      avgCigarettesPerDay: _toInt(json['avgCigarettesPerDay']),
-      currentCravingLevel: _toInt(json['currentCravingLevel']),
-      currentMoodLevel: _toInt(json['currentMoodLevel']),
-      currentConfidenceLevel: _toInt(json['currentConfidenceLevel']),
-      currentAnxietyLevel: _toInt(json['currentAnxietyLevel']),
-      steps: _toInt(json['steps']),
-      heartRate: _toInt(json['heartRate']),
-      spo2: _toInt(json['spo2']),
-      activityMinutes: _toInt(json['activityMinutes']),
-      respiratoryRate: _toInt(json['respiratoryRate']),
+      avgCigarettesPerDay: toInt(json['avgCigarettesPerDay']),
+      currentCravingLevel: toInt(json['currentCravingLevel']),
+      currentMoodLevel: toInt(json['currentMoodLevel']),
+      currentConfidenceLevel: toInt(json['currentConfidenceLevel']),
+      currentAnxietyLevel: toInt(json['currentAnxietyLevel']),
+      steps: toInt(json['steps']),
+      heartRate: toInt(json['heartRate']),
+      spo2: toInt(json['spo2']),
+      activityMinutes: toInt(json['activityMinutes']),
+      respiratoryRate: toInt(json['respiratoryRate']),
       sleepDuration: (json['sleepDuration'] ?? 0.0).toDouble(),
-      sleepQuality: _toInt(json['sleepQuality']),
+      sleepQuality: toInt(json['sleepQuality']),
       annualSaved: (json['annualSaved'] ?? 0.0).toDouble(),
       moneySaved: (json['moneySaved'] ?? 0.0).toDouble(),
       reductionPercentage: (json['reductionPercentage'] ?? 0.0).toDouble(),

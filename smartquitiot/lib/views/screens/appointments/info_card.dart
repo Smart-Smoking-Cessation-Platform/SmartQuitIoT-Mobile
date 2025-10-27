@@ -1,4 +1,4 @@
-﻿// lib/features/coaching/widgets/info_card.dart
+// lib/features/coaching/widgets/info_card.dart
 import 'package:flutter/material.dart';
 
 class InfoCard extends StatelessWidget {
@@ -7,11 +7,11 @@ class InfoCard extends StatelessWidget {
   final EdgeInsets? padding;
 
   const InfoCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.child,
     this.padding,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -140,7 +140,7 @@ class CommentCard extends StatelessWidget {
   }
 
   Widget _buildCommentMedia(List<PostMedia> media) {
-    return Container(
+    return SizedBox(
       height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class TagChip extends StatelessWidget {
   final String label;
@@ -6,11 +6,11 @@ class TagChip extends StatelessWidget {
   final VoidCallback onTap;
 
   const TagChip({
-    Key? key,
+    super.key,
     required this.label,
     required this.isSelected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

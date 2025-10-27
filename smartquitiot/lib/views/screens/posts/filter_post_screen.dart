@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class FilterPostsPage extends StatefulWidget {
+  const FilterPostsPage({super.key});
+
   @override
   _FilterPostsPageState createState() => _FilterPostsPageState();
 }

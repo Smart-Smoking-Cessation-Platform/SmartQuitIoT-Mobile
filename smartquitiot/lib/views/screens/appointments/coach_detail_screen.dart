@@ -1,41 +1,214 @@
-﻿// lib/features/coaching/screens/coach_detail_screen.dart
+﻿// lib/views/screens/appointments/coach_detail_screen.dart
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
 import 'package:SmartQuitIoT/views/screens/appointments/coach_list_items.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/info_card.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/time_slot_grid.dart';
-import 'package:flutter/material.dart';
 
+import '../../../../models/slot_available.dart';
+import '../../../providers/coach_detail_provider.dart';
 import 'coach_rating_screen.dart';
 import 'custom_button.dart';
 import 'info_row.dart';
+import '../../../models/request/appointment_request.dart';
+import '../../../services/appointment_service.dart';
+import '../../../services/token_storage_service.dart';
 
-class CoachDetailScreen extends StatefulWidget {
+class CoachDetailScreen extends ConsumerStatefulWidget {
   final Coach coach;
 
-  const CoachDetailScreen({Key? key, required this.coach}) : super(key: key);
+  const CoachDetailScreen({super.key, required this.coach});
 
   @override
-  State<CoachDetailScreen> createState() => _CoachDetailScreenState();
+  ConsumerState<CoachDetailScreen> createState() => _CoachDetailScreenState();
 }
 
-class _CoachDetailScreenState extends State<CoachDetailScreen> {
+class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
   String? selectedSlot;
-  String selectedDate = 'Monday, Oct 02, 2025';
+  DateTime selectedDateTime = DateTime.now();
+  String selectedDate = DateFormat('EEEE, MMM dd, yyyy').format(DateTime.now());
 
-  final List<TimeSlot> timeSlots = [
-    TimeSlot(time: '09:00 AM', available: true),
-    TimeSlot(time: '10:00 AM', available: true),
-    TimeSlot(time: '11:00 AM', available: false),
-    TimeSlot(time: '01:00 PM', available: true),
-    TimeSlot(time: '02:00 PM', available: true),
-    TimeSlot(time: '03:00 PM', available: true),
-    TimeSlot(time: '04:00 PM', available: false),
-    TimeSlot(time: '05:00 PM', available: true),
-  ];
+  List<SlotAvailable> availableSlots = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('[DEBUG] initState: loading coach detail for today');
+      _loadCoachDetail();
+    });
+  }
+
+  Future<void> _loadCoachDetail({String? dateIso}) async {
+    debugPrint('[DEBUG] _loadCoachDetail called with dateIso=$dateIso');
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final viewModel = ref.read(coachDetailViewModelProvider.notifier);
+      final formattedDate =
+          dateIso ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
+      debugPrint('[DEBUG] formattedDate used = $formattedDate');
+
+      final coachId = int.tryParse(widget.coach.id);
+      if (coachId == null) {
+        throw Exception('Coach id không phải số: ${widget.coach.id}');
+      }
+
+      await viewModel.loadCoachDetail(coachId, formattedDate);
+
+      final state = ref.read(coachDetailViewModelProvider);
+      final slots = state.slots ?? [];
+
+      debugPrint('[DEBUG] _loadCoachDetail: received slots count=${slots.length}');
+
+      setState(() {
+        availableSlots = slots;
+        isLoading = false;
+      });
+    } catch (e, st) {
+      debugPrint('[ERROR] _loadCoachDetail exception: $e\n$st');
+      setState(() {
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _openDatePickerBottomSheet(BuildContext context) async {
+    debugPrint('[DEBUG] _openDatePickerBottomSheet called');
+    try {
+      DateTime today = DateTime.now();
+      final firstDate = DateTime(today.year, today.month, today.day);
+      final lastDate = firstDate.add(const Duration(days: 60));
+
+      DateTime tempSelected = selectedDateTime.isBefore(firstDate) ? firstDate : selectedDateTime;
+
+      // show the real stateful modal with CalendarDatePicker
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (ctx2, setModalState) {
+              return SafeArea(
+                child: Padding(
+                  padding: MediaQuery.of(ctx2).viewInsets +
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 12),
+                      CalendarDatePicker(
+                        initialDate: tempSelected,
+                        firstDate: firstDate,
+                        lastDate: lastDate,
+                        onDateChanged: (d) {
+                          setModalState(() => tempSelected = d);
+                          debugPrint('[DEBUG] bottom sheet tempSelected updated = $d');
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(ctx2).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // Validate date not in past (server sẽ trả 400 nếu trước ngày hôm nay)
+                                final chosen = DateTime(tempSelected.year, tempSelected.month, tempSelected.day);
+                                final nowDate = DateTime.now();
+                                final todayOnly = DateTime(nowDate.year, nowDate.month, nowDate.day);
+                                if (chosen.isBefore(todayOnly)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Vui lòng chọn ngày từ hôm nay trở đi.')),
+                                  );
+                                  return;
+                                }
+
+                                setState(() {
+                                  selectedDateTime = tempSelected;
+                                  selectedDate = DateFormat('EEEE, MMM dd, yyyy').format(selectedDateTime);
+                                  // reset selected slot when change date
+                                  selectedSlot = null;
+                                });
+
+                                final iso = DateFormat('yyyy-MM-dd').format(selectedDateTime);
+                                debugPrint('[DEBUG] Confirm pressed: selectedDateTime=$selectedDateTime iso=$iso');
+
+                                Navigator.of(ctx2).pop();
+                                _loadCoachDetail(dateIso: iso);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00D09E),
+                              ),
+                              child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } catch (e, st) {
+      debugPrint('[ERROR] Exception in _openDatePickerBottomSheet: $e\n$st');
+      // fallback robust: use native date picker
+      final today = DateTime.now();
+      final firstDate = DateTime(today.year, today.month, today.day);
+      final lastDate = firstDate.add(const Duration(days: 60));
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDateTime.isBefore(firstDate) ? firstDate : selectedDateTime,
+        firstDate: firstDate,
+        lastDate: lastDate,
+      );
+      if (picked != null) {
+        setState(() {
+          selectedDateTime = picked;
+          selectedDate = DateFormat('EEEE, MMM dd, yyyy').format(selectedDateTime);
+          selectedSlot = null;
+        });
+        final iso = DateFormat('yyyy-MM-dd').format(selectedDateTime);
+        debugPrint('[DEBUG] fallback (catch) picked date iso=$iso');
+        _loadCoachDetail(dateIso: iso);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // make heroTag unique per coach to avoid "multiple heroes" error
+    final fabHeroTag = 'coach_date_fab_${widget.coach.id}';
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF00D09E),
+        title: Text(widget.coach.name),
+        centerTitle: true,
+      ),
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
@@ -49,21 +222,31 @@ class _CoachDetailScreenState extends State<CoachDetailScreen> {
                   const SizedBox(height: 16),
                   _buildInfoCard(),
                   const SizedBox(height: 24),
-                  _buildTimeSlotsSection(),
+                  _buildTimeSlotsSection(context),
                   const SizedBox(height: 32),
                   CustomButton(
                     text: 'Confirm Booking',
                     onPressed: selectedSlot == null ? null : _handleBooking,
                   ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: fabHeroTag, // unique hero tag per coach
+        onPressed: () {
+          debugPrint('[DEBUG] FAB pressed to open date picker');
+          _openDatePickerBottomSheet(context);
+        },
+        backgroundColor: const Color(0xFF00D09E),
+        child: const Icon(Icons.date_range),
+      ),
     );
   }
+
+  // ==== helpers ====
 
   Widget _buildAppBar() {
     return SliverAppBar(
@@ -82,166 +265,68 @@ class _CoachDetailScreenState extends State<CoachDetailScreen> {
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          widget.coach.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text(widget.coach.name,
+            style: const TextStyle(color: Colors.white, fontSize: 16)),
         centerTitle: true,
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Gradient background
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF00D09E), Color(0xFF00B88D)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF00D09E), Color(0xFF00B88D)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            // Avatar + Verified Coach
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 40),
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                      image: DecorationImage(
-                        image: NetworkImage(widget.coach.imageUrl),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.verified, color: Color(0xFF00D09E), size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          'Verified Coach',
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16), 
-                ],
-              ),
+          ),
+          child: Center(
+            child: CircleAvatar(
+              radius: 60,
+              backgroundImage: NetworkImage(widget.coach.imageUrl),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-
 
   Widget _buildStatsCards() {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard(
-            icon: Icons.people_outline,
-            value: '${widget.coach.reviews}+',
-            label: 'Patients',
-            color: const Color(0xFF00D09E),
-          ),
+          child: _buildStatCard(Icons.people_outline,
+              '${widget.coach.reviews}+', 'Patients', const Color(0xFF00D09E)),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
-            icon: Icons.star_rounded,
-            value: '${widget.coach.rating}',
-            label: 'Rating',
-            color: Colors.amber,
-          ),
+          child: _buildStatCard(Icons.star_rounded, '${widget.coach.rating}',
+              'Rating', Colors.amber),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
-            icon: Icons.workspace_premium_rounded,
-            value: widget.coach.experience.split(' ')[0],
-            label: 'Years Exp.',
-            color: Colors.purple,
-          ),
+          child: _buildStatCard(Icons.workspace_premium_rounded,
+              widget.coach.experience.split(' ')[0], 'Years Exp.', Colors.purple),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
+  Widget _buildStatCard(
+      IconData icon, String value, String label, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
+          Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87)),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
         ],
       ),
     );
@@ -253,39 +338,12 @@ class _CoachDetailScreenState extends State<CoachDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00D09E).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.work_outline,
-                  color: Color(0xFF00D09E),
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  widget.coach.specialty,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF00D09E),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
           InfoRow(
-            icon: Icons.psychology_outlined,
-            text: 'Specialized in behavioral therapy',
+            icon: Icons.work_outline,
+            text: widget.coach.specialty,
             iconColor: const Color(0xFF00D09E),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           InfoRow(
             icon: Icons.school_outlined,
             text: widget.coach.experience,
@@ -298,277 +356,191 @@ class _CoachDetailScreenState extends State<CoachDetailScreen> {
             iconColor: const Color(0xFF00D09E),
           ),
           const Divider(height: 32),
-          Row(
-            children: [
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 20,
-                color: Color(0xFF00D09E),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Biography',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.coach.bio,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[700],
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildAchievementChips(),
+          Text(widget.coach.bio,
+              style: const TextStyle(fontSize: 14, color: Colors.black87)),
         ],
       ),
     );
   }
 
-  Widget _buildAchievementChips() {
-    final achievements = [
-      '🏆 Top Rated',
-      '✨ 100% Success Rate',
-      '❤️ Patient Favorite',
-    ];
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: achievements.map((achievement) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: Text(
-            achievement,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildTimeSlotsSection() {
+  Widget _buildTimeSlotsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(
-              Icons.calendar_today_rounded,
-              color: Color(0xFF00D09E),
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Select Time Slot',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
+            Icon(Icons.calendar_today_rounded,
+                color: Color(0xFF00D09E), size: 24),
+            SizedBox(width: 8),
+            Text('Select Time Slot',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87)),
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF00D09E), width: 1.5),
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            debugPrint('[DEBUG] InkWell tapped to open date picker');
+            _openDatePickerBottomSheet(context);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF00D09E),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.event_available_rounded,
+                    color: Color(0xFF00D09E), size: 20),
+                const SizedBox(width: 8),
+                Text(selectedDate,
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87)),
+                const Spacer(),
+                const Icon(Icons.keyboard_arrow_down_rounded,
+                    color: Colors.grey),
+              ],
+            ),
           ),
-          child: Row(
+        ),
+        const SizedBox(height: 16),
+        if (isLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (errorMessage != null)
+          Center(
+              child: Text(errorMessage!,
+                  style: const TextStyle(color: Colors.red)))
+        else if (availableSlots.isEmpty)
+            const Center(child: Text('No available slots for this day'))
+          else
+            TimeSlotGrid(
+              timeSlots: availableSlots
+                  .map((slot) => TimeSlot(
+                time: slot.startTime ?? '',
+                available: true,
+              ))
+                  .toList(),
+              selectedSlot: selectedSlot,
+              onSlotSelected: (slot) => setState(() => selectedSlot = slot),
+            ),
+      ],
+    );
+  }
+
+  void _handleBooking() async {
+    if (selectedSlot == null) return;
+
+    // find the slot object by startTime in availableSlots
+    final matches = availableSlots.where((s) => s.startTime == selectedSlot).toList();
+    final SlotAvailable? chosenSlot = matches.isNotEmpty ? matches.first : null;
+
+    if (chosenSlot == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không tìm thấy slot đã chọn. Vui lòng thử lại.')),
+      );
+      return;
+    }
+
+    final slotId = chosenSlot.slotId;
+    final coachId = int.tryParse(widget.coach.id);
+    if (coachId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Coach ID không hợp lệ')),
+      );
+      return;
+    }
+
+    final isoDate = DateFormat('yyyy-MM-dd').format(selectedDateTime);
+
+    final req = AppointmentRequest(coachId: coachId, slotId: slotId, date: isoDate);
+
+    final tokenService = TokenStorageService();
+    final token = await tokenService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn chưa đăng nhập. Vui lòng đăng nhập để đặt lịch.')),
+      );
+      return;
+    }
+
+    // show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final service = AppointmentService();
+      // NOTE: AppointmentService expects an encodable body; pass a Map via toJson()
+      final resp = await service.bookAppointment(req.toJson(), token);
+
+      Navigator.of(context).pop(); // remove loading
+
+      final data = resp['data'] as Map<String, dynamic>?;
+
+      setState(() {
+        availableSlots.removeWhere((s) => s.slotId == slotId);
+        selectedSlot = null;
+      });
+
+      // show success dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.event_available_rounded,
-                color: Color(0xFF00D09E),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF00D09E), size: 48),
+              const SizedBox(height: 16),
+              const Text('Booking Confirmed!',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+              const SizedBox(height: 12),
               Text(
-                selectedDate,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+                data != null
+                    ? 'Your consultation with ${data['coachName'] ?? widget.coach.name} has been scheduled for ${data['startTime'] ?? selectedSlot} on ${data['date'] ?? isoDate}.'
+                    : 'Booking success for $isoDate.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
               ),
-              const Spacer(),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: Colors.grey[600],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CoachRatingScreen(coach: widget.coach)),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00D09E)),
+                child: const Text('Done', style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            _buildLegendItem(Colors.white, 'Available', Colors.grey[300]!),
-            const SizedBox(width: 16),
-            _buildLegendItem(const Color(0xFF00D09E), 'Selected', const Color(0xFF00D09E)),
-            const SizedBox(width: 16),
-            _buildLegendItem(Colors.grey[200]!, 'Booked', Colors.grey[300]!),
-          ],
-        ),
-        const SizedBox(height: 16),
-        TimeSlotGrid(
-          timeSlots: timeSlots,
-          selectedSlot: selectedSlot,
-          onSlotSelected: (slot) {
-            setState(() {
-              selectedSlot = slot;
-            });
-          },
-        ),
-      ],
-    );
-  }
+      );
+    } catch (e, st) {
+      // remove loading safely (if still shown)
+      try {
+        Navigator.of(context).pop();
+      } catch (_) {}
+      debugPrint('[ERROR] booking failed: $e\n$st');
 
-  Widget _buildLegendItem(Color bgColor, String label, Color borderColor) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: borderColor),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
+      final errMsg = e is Exception ? e.toString().replaceAll('Exception: ', '') : 'Đặt lịch thất bại';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errMsg)),
+      );
+    }
   }
-
-  void _handleBooking() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        contentPadding: const EdgeInsets.all(24),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00D09E).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_rounded,
-                color: Color(0xFF00D09E),
-                size: 48,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Booking Confirmed!',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Your consultation with ${widget.coach.name} has been scheduled for $selectedSlot on $selectedDate.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[700],
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.notifications_active_rounded,
-                    color: Colors.blue[700],
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'We\'ll send you a reminder 15 minutes before',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue[900],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context); // đóng dialog
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CoachRatingScreen(coach: widget.coach,),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D09E),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Done',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
 }
