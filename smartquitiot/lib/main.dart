@@ -1,33 +1,21 @@
 import 'dart:async';
-import 'package:SmartQuitIoT/providers/membership_provider.dart';
-import 'package:SmartQuitIoT/views/screens/authentication/auth_wrapper.dart';
-import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:app_links/app_links.dart';
-import 'services/app_token_manager.dart';
-
-// Screens
-import 'package:SmartQuitIoT/views/screens/common/home_screen.dart';
-import 'package:SmartQuitIoT/views/screens/common/splash_screen.dart';
-import 'package:SmartQuitIoT/views/screens/payment/payment_success_screen.dart';
-import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
-import 'package:SmartQuitIoT/views/screens/authentication/login_screen.dart';
-import 'package:SmartQuitIoT/views/screens/authentication/signup_screen.dart';
-import 'package:SmartQuitIoT/views/screens/authentication/forgot_password_screen.dart';
-import 'package:SmartQuitIoT/views/screens/onboarding/onboarding_screen.dart';
-import 'package:SmartQuitIoT/views/screens/onboarding/welcome_screen.dart';
-import 'package:SmartQuitIoT/views/screens/common/_relaunch_screen.dart';
-import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
-import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
-import 'package:SmartQuitIoT/views/screens/common/api_demo_screen.dart';
-import 'package:SmartQuitIoT/utils/app_theme.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+// Services & Providers
+import 'package:SmartQuitIoT/providers/membership_provider.dart';
+import 'package:SmartQuitIoT/services/token_storage_service.dart';
+import 'package:SmartQuitIoT/services/app_token_manager.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+// Theme & Router
+import 'package:SmartQuitIoT/utils/app_theme.dart';
+import 'package:SmartQuitIoT/routes/app_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,29 +59,29 @@ class _MyAppState extends ConsumerState<MyApp> {
     _appLinks = AppLinks();
 
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) async {
-      debugPrint('Deep link nhận được (stream): $uri');
-      await Future.delayed(const Duration(milliseconds: 300));
-      _onDeepLink(uri);
-        });
+      if (uri != null) {
+        debugPrint('Deep link nhận được (stream): $uri');
+        await Future.delayed(const Duration(milliseconds: 300));
+        _handleDeepLink(uri);
+      }
+    });
 
     final initialUri = await _appLinks.getInitialLink();
     if (initialUri != null) {
       debugPrint('🔥 Deep link nhận được (initial): $initialUri');
       await Future.delayed(const Duration(milliseconds: 300));
-      _onDeepLink(initialUri);
+      _handleDeepLink(initialUri);
     }
   }
 
-  void _onDeepLink(Uri uri) async {
-    final navigator = navigatorKey.currentState;
-    if (navigator == null) return;
-
+  Future<void> _handleDeepLink(Uri uri) async {
+    final router = appRouter;
     final path = uri.pathSegments.join('/');
     final params = uri.queryParameters;
+
     final code = params['code'] ?? '';
     final id = params['id'] ?? '';
-    final cancelStr = params['cancel'] ?? 'false';
-    final cancel = cancelStr.toLowerCase() == 'true';
+    final cancel = params['cancel']?.toLowerCase() == 'true';
     final statusStr = params['status'] ?? '';
     final orderCodeNum = int.tryParse(params['orderCode'] ?? '') ?? 0;
 
@@ -107,7 +95,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       membershipStatus = 'AVAILABLE';
     }
 
-    final Map<String, dynamic> body = {
+    final body = {
       'code': code,
       'id': id,
       'cancel': cancel,
@@ -119,7 +107,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     debugPrint('➡︎ Sending process body: $body');
 
     showDialog(
-      context: navigator.context,
+      context: rootNavigatorKey.currentContext!,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
@@ -134,22 +122,16 @@ class _MyAppState extends ConsumerState<MyApp> {
       debugPrint('Error processing payment result: $e');
     }
 
-    navigator.pop();
+    if (rootNavigatorKey.currentContext!.mounted) {
+      Navigator.of(rootNavigatorKey.currentContext!).pop();
+    }
 
     if (cancel) {
-      navigator.pushNamedAndRemoveUntil(
-        '/payment-cancel',
-        (_) => false,
-        arguments: body,
-      );
+      router.go('/payment-cancel', extra: body);
     } else if (membershipStatus == 'AVAILABLE') {
-      navigator.pushNamedAndRemoveUntil(
-        '/payment-success',
-        (_) => false,
-        arguments: body,
-      );
+      router.go('/payment-success', extra: body);
     } else {
-      ScaffoldMessenger.of(navigator.context).showSnackBar(
+      ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
         SnackBar(content: Text('Payment failed for order: $orderCodeNum')),
       );
     }
@@ -163,36 +145,20 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Smoke Quit',
+    return MaterialApp.router(
+      title: 'SmartQuit IoT',
       theme: AppTheme.light(),
-      home: const SplashScreen(),
-
-      // Easy Localization
+      routerConfig: appRouter,
+      debugShowCheckedModeBanner: false,
       localizationsDelegates: [
         ...context.localizationDelegates,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
         FlutterQuillLocalizations.delegate,
       ],
       supportedLocales: context.supportedLocales,
       locale: context.locale,
-
-      routes: {
-        '/auth': (_) => const AuthWrapper(),
-        '/welcome': (_) => const WelcomeScreen(),
-        '/login': (_) => const LoginScreen(),
-        '/signup': (_) => const SignUpScreen(),
-        '/onboarding': (_) => OnboardingScreen(),
-        '/home': (_) => const HomeScreen(),
-        '/main': (_) => const MainNavigationScreen(),
-        '/relaunch': (_) => const RelaunchScreen(),
-        '/forgot': (_) => const ForgotPasswordScreen(),
-        '/debug-home': (_) => const DebugHomeScreen(),
-        '/api-demo': (_) => const ApiDemoScreen(),
-        '/payment-success': (_) => const PaymentSuccessScreen(),
-        '/payment-cancel': (_) => const PaymentCancelScreen(),
-        '/premium': (_) => const PremiumMembershipScreen(),
-      },
     );
   }
 }

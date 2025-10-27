@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
-
 import '../../../models/post_comment.dart';
 import '../../../models/post_media.dart';
+import '../../../utils/date_formatter.dart';
 
 class CommentCard extends StatelessWidget {
   final PostComment comment;
+  final Function(int)? onReply;
+  final Function(int)? onEdit;
+  final Function(int)? onDelete;
 
-  const CommentCard({super.key, required this.comment});
+  const CommentCard({
+    super.key,
+    required this.comment,
+    this.onReply,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,13 +36,13 @@ class CommentCard extends StatelessWidget {
               CircleAvatar(
                 radius: 16,
                 backgroundImage:
-                    comment.account.avatarUrl != null &&
-                        comment.account.avatarUrl!.isNotEmpty
+                comment.account.avatarUrl != null &&
+                    comment.account.avatarUrl!.isNotEmpty
                     ? NetworkImage(comment.account.avatarUrl!)
                     : null,
                 child:
-                    comment.account.avatarUrl == null ||
-                        comment.account.avatarUrl!.isEmpty
+                comment.account.avatarUrl == null ||
+                    comment.account.avatarUrl!.isEmpty
                     ? const Icon(Icons.person, size: 16, color: Colors.white)
                     : null,
               ),
@@ -50,11 +59,59 @@ class CommentCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatTimeAgo(comment.createdAt),
+                      DateFormatter.formatPostDate(comment.createdAt),
                       style: TextStyle(color: Colors.grey[600], fontSize: 11),
                     ),
                   ],
                 ),
+              ),
+              // Action buttons
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'reply':
+                      onReply?.call(comment.id);
+                      break;
+                    case 'edit':
+                      onEdit?.call(comment.id);
+                      break;
+                    case 'delete':
+                      onDelete?.call(comment.id);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'reply',
+                    child: Row(
+                      children: [
+                        Icon(Icons.reply, size: 16),
+                        SizedBox(width: 8),
+                        Text('Reply'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 16),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, size: 16, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -83,7 +140,7 @@ class CommentCard extends StatelessWidget {
   }
 
   Widget _buildCommentMedia(List<PostMedia> media) {
-    return SizedBox(
+    return Container(
       height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -126,93 +183,79 @@ class CommentCard extends StatelessWidget {
       children: replies
           .map(
             (reply) => Container(
-              margin: const EdgeInsets.only(left: 20, top: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          margin: const EdgeInsets.only(left: 20, top: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Reply Header
+              Row(
                 children: [
-                  // Reply Header
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundImage:
-                            reply.account.avatarUrl != null &&
-                                reply.account.avatarUrl!.isNotEmpty
-                            ? NetworkImage(reply.account.avatarUrl!)
-                            : null,
-                        child:
-                            reply.account.avatarUrl == null ||
-                                reply.account.avatarUrl!.isEmpty
-                            ? const Icon(
-                                Icons.person,
-                                size: 12,
-                                color: Colors.white,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              reply.account.displayName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              _formatTimeAgo(reply.createdAt),
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundImage:
+                    reply.account.avatarUrl != null &&
+                        reply.account.avatarUrl!.isNotEmpty
+                        ? NetworkImage(reply.account.avatarUrl!)
+                        : null,
+                    child:
+                    reply.account.avatarUrl == null ||
+                        reply.account.avatarUrl!.isEmpty
+                        ? const Icon(
+                      Icons.person,
+                      size: 12,
+                      color: Colors.white,
+                    )
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          reply.account.displayName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                    ],
+                        Text(
+                          DateFormatter.formatPostDate(reply.createdAt),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 6),
-
-                  // Reply Content
-                  Text(
-                    reply.content,
-                    style: const TextStyle(fontSize: 13, height: 1.3),
-                  ),
-
-                  // Reply Media
-                  if (reply.media != null && reply.media!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    _buildCommentMedia(reply.media!),
-                  ],
                 ],
               ),
-            ),
-          )
+              const SizedBox(height: 6),
+
+              // Reply Content
+              Text(
+                reply.content,
+                style: const TextStyle(fontSize: 13, height: 1.3),
+              ),
+
+              // Reply Media
+              if (reply.media != null && reply.media!.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _buildCommentMedia(reply.media!),
+              ],
+            ],
+          ),
+        ),
+      )
           .toList(),
     );
   }
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
 }

@@ -1,5 +1,6 @@
 import '../core/errors/exception.dart';
 import '../models/post.dart';
+import '../models/post_detail.dart';
 import '../models/response/post_list_response.dart';
 import '../services/post_service.dart';
 import '../repositories/auth_repository.dart';
@@ -9,8 +10,8 @@ class PostRepository {
   final AuthRepository _authRepository;
 
   PostRepository({PostService? postService, AuthRepository? authRepository})
-    : _postService = postService ?? PostService(),
-      _authRepository = authRepository ?? AuthRepository();
+      : _postService = postService ?? PostService(),
+        _authRepository = authRepository ?? AuthRepository();
 
   Future<List<Post>> getLatestPosts({int limit = 5}) async {
     try {

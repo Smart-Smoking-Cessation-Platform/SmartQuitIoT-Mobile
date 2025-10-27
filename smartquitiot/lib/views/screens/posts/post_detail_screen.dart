@@ -79,17 +79,17 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
       body: postState.isLoadingDetail
           ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
-              ),
-            )
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+        ),
+      )
           : postState.error != null
           ? _buildErrorState(postState.error!)
           : post == null
           ? _buildEmptyState()
           : Stack(
-              children: [_buildPostContent(post), _buildCommentInputBar(post)],
-            ),
+        children: [_buildPostContent(post), _buildCommentInputBar(post)],
+      ),
     );
   }
 
@@ -118,13 +118,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           CircleAvatar(
             radius: 20,
             backgroundImage:
-                post.account.avatarUrl != null &&
-                    post.account.avatarUrl!.isNotEmpty
+            post.account.avatarUrl != null &&
+                post.account.avatarUrl!.isNotEmpty
                 ? NetworkImage(post.account.avatarUrl!)
                 : null,
             child:
-                post.account.avatarUrl == null ||
-                    post.account.avatarUrl!.isEmpty
+            post.account.avatarUrl == null ||
+                post.account.avatarUrl!.isEmpty
                 ? const Icon(Icons.person, color: Colors.white)
                 : null,
           ),
@@ -524,15 +524,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   IconButton(
                     icon: commentState.isSubmitting
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF00D09E),
-                              ),
-                            ),
-                          )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF00D09E),
+                        ),
+                      ),
+                    )
                         : const Icon(Icons.send, color: Color(0xFF00D09E)),
                     onPressed: commentState.isSubmitting
                         ? null
@@ -691,10 +691,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       await ref
           .read(commentViewModelProvider.notifier)
           .createComment(
-            postId: widget.postId,
-            content: text,
-            media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
-          );
+        postId: widget.postId,
+        content: text,
+        media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
+      );
 
       // Clear input and media
       _commentController.clear();
@@ -835,12 +835,12 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         await ref
             .read(commentViewModelProvider.notifier)
             .deleteComment(commentId);
-        
+
         // Reload post to show updated comments
         if (mounted) {
           await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
         }
-        
+
         if (mounted) {
           Flushbar(
             message: 'Comment deleted successfully!',
@@ -878,7 +878,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     // If edit was successful, reload the post detail
     if (result == true && mounted) {
       ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
-      
+
       if (mounted) {
         Flushbar(
           message: 'Post updated! Refreshing...',
