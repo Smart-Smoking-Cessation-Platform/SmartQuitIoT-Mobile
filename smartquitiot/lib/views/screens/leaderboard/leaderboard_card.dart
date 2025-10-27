@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class LeaderboardCard extends StatelessWidget {
   final LeaderboardUser user;
 
-  const LeaderboardCard({Key? key, required this.user}) : super(key: key);
+  const LeaderboardCard({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {

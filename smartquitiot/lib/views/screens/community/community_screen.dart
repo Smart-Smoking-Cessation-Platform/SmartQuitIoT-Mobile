@@ -9,6 +9,8 @@ void main() {
 }
 
 class CommunityPage extends StatefulWidget {
+  const CommunityPage({super.key});
+
   @override
   _CommunityPageState createState() => _CommunityPageState();
 }

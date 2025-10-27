@@ -10,8 +10,8 @@ class PostRepository {
   final AuthRepository _authRepository;
 
   PostRepository({PostService? postService, AuthRepository? authRepository})
-    : _postService = postService ?? PostService(),
-      _authRepository = authRepository ?? AuthRepository();
+      : _postService = postService ?? PostService(),
+        _authRepository = authRepository ?? AuthRepository();
 
   Future<List<Post>> getLatestPosts({int limit = 5}) async {
     try {

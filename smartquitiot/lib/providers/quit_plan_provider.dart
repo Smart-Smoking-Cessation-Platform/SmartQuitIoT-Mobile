@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/phase.dart';
 import '../models/quit_phase.dart';
-import '../models/state/quit_plan_state.dart';
 import '../repositories/quit_plan_repository.dart';
 import '../services/quit_plan_service.dart';
 import '../viewmodels/quit_plan_view_model.dart';

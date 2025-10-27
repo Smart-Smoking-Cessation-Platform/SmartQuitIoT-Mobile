@@ -1,5 +1,3 @@
-import 'package:SmartQuitIoT/views/screens/health_metrics/health_improvement_screen.dart';
-import 'package:SmartQuitIoT/views/screens/health_metrics/health_metrics_screen.dart';
 import 'package:SmartQuitIoT/views/screens/health_recovery/health_recovery_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,9 +5,6 @@ import 'package:lottie/lottie.dart';
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:SmartQuitIoT/providers/metrics_provider.dart';
 import 'package:SmartQuitIoT/models/home_metrics.dart';
-import 'package:intl/intl.dart' as intl;
-import 'animated_streak.dart';
-import 'stat_item.dart';
 
 
 class StatsTableCard extends ConsumerStatefulWidget {

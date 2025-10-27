@@ -1,4 +1,4 @@
-﻿// components/connect_button.dart
+// components/connect_button.dart
 import 'package:flutter/material.dart';
 
 class ConnectButton extends StatelessWidget {
@@ -8,16 +8,16 @@ class ConnectButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const ConnectButton({
-    Key? key,
+    super.key,
     required this.isConnected,
     required this.isConnecting,
     required this.animationController,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: isConnected || isConnecting ? null : onPressed,

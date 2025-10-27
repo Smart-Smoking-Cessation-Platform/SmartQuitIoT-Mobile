@@ -1,6 +1,5 @@
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_progress_card.dart';
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/widgets/cards/progress_card.dart';
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_section.dart';
 import 'package:lottie/lottie.dart';
 

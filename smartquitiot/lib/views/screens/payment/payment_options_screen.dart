@@ -4,8 +4,7 @@ import 'qr_payment_screen.dart';
 class PaymentOptionsScreen extends StatelessWidget {
   final String selectedPlan;
 
-  const PaymentOptionsScreen({Key? key, required this.selectedPlan})
-    : super(key: key);
+  const PaymentOptionsScreen({super.key, required this.selectedPlan});
 
   @override
   Widget build(BuildContext context) {

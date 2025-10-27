@@ -1,6 +1,5 @@
-﻿// components/health_chart.dart
+// components/health_chart.dart
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 
 import 'line_chart_painter.dart';
 
@@ -9,10 +8,10 @@ class HealthChart extends StatelessWidget {
   final VoidCallback? onTap;
 
   const HealthChart({
-    Key? key,
+    super.key,
     required this.title,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +52,7 @@ class HealthChart extends StatelessWidget {
               ],
             ),
             SizedBox(height: 16),
-            Container(
+            SizedBox(
               height: 120,
               child: CustomPaint(
                 painter: LineChartPainter(),

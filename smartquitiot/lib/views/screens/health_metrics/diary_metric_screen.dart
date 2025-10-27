@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'detalied_chart_painter.dart';
 import 'health_chart.dart';
 
 class DiaryMetricsScreen extends StatelessWidget {
-  const DiaryMetricsScreen({Key? key}) : super(key: key);
+  const DiaryMetricsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

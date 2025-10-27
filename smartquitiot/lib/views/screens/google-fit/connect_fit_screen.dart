@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 
 class HealthConnectDemoScreen extends StatefulWidget {
-  const HealthConnectDemoScreen({Key? key}) : super(key: key);
+  const HealthConnectDemoScreen({super.key});
 
   @override
   State<HealthConnectDemoScreen> createState() => _HealthConnectDemoScreenState();

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/utils/notification_helper.dart';
-import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
 import 'package:SmartQuitIoT/views/screens/authentication/otp_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 

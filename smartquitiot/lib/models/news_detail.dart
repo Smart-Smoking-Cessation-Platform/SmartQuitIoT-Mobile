@@ -25,21 +25,18 @@ class NewsMedia {
 }
 
 class NewsDetail extends News {
+  @override
   final String content;
   final List<NewsMedia> media;
 
   NewsDetail({
-    required int id,
-    required String title,
-    String? thumbnail,
-    required DateTime createdAt,
+    required super.id,
+    required super.title,
+    super.thumbnail,
+    required super.createdAt,
     required this.content,
     required this.media,
   }) : super(
-         id: id,
-         title: title,
-         thumbnail: thumbnail,
-         createdAt: createdAt,
          content: content,
        );
 

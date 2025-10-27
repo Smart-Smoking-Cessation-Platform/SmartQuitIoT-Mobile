@@ -1,4 +1,4 @@
-﻿import 'package:SmartQuitIoT/views/screens/appointments/rating_display.dart';
+import 'package:SmartQuitIoT/views/screens/appointments/rating_display.dart';
 import 'package:flutter/material.dart';
 
 class Coach {
@@ -39,10 +39,10 @@ class CoachListItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const CoachListItem({
-    Key? key,
+    super.key,
     required this.coach,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

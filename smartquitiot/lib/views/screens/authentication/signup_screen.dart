@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../utils/notification_helper.dart';
-import '../../../utils/snackbar_helper.dart';
-import '../../../viewmodels/auth_view_model.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/headers/auth_header.dart';
 import '../../widgets/inputs/custom_text_field.dart';
@@ -258,7 +256,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
-                                value: _selectedGender,
+                                initialValue: _selectedGender,
                                 decoration: InputDecoration(
                                   hintText: 'Select your gender',
                                   filled: true,
