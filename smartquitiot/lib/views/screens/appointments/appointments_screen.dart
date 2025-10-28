@@ -48,8 +48,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       final service = AppointmentService();
       final raw = await service.getMyAppointments(token);
 
-      final parsed =
-      raw.map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+      final parsed = raw
+          .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
           .toList();
 
       setState(() {
@@ -61,7 +61,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       debugPrint('[Appointments] fetched ${_appointments.length} items');
       for (var a in _appointments) {
         debugPrint(
-            '[Appointments] id=${a.appointmentId} status=${a.runtimeStatus} date=${a.date} channel=${a.channelName}');
+          '[Appointments] id=${a.appointmentId} status=${a.runtimeStatus} date=${a.date} channel=${a.channelName}',
+        );
       }
     } catch (e, st) {
       debugPrint('[ERROR] fetch appointments: $e\n$st');
@@ -97,7 +98,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
   Widget _buildList(List<Appointment> list) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text(_error!, style: const TextStyle(color: Colors.red)));
+    if (_error != null)
+      return Center(
+        child: Text(_error!, style: const TextStyle(color: Colors.red)),
+      );
 
     if (list.isEmpty) {
       return RefreshIndicator(
@@ -130,9 +134,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 try {
                   dateParsed = DateFormat('yyyy-MM-dd').parse(a.date);
                 } catch (_) {}
-                final dateLabel = dateParsed != null ? DateFormat('EEE, dd MMM yyyy').format(dateParsed) : a.date;
-                final start = a.startTime.length >= 5 ? a.startTime.substring(0,5) : a.startTime;
-                final end = a.endTime.length >= 5 ? a.endTime.substring(0,5) : a.endTime;
+                final dateLabel = dateParsed != null
+                    ? DateFormat('EEE, dd MMM yyyy').format(dateParsed)
+                    : a.date;
+                final start = a.startTime.length >= 5
+                    ? a.startTime.substring(0, 5)
+                    : a.startTime;
+                final end = a.endTime.length >= 5
+                    ? a.endTime.substring(0, 5)
+                    : a.endTime;
                 final timeLabel = '$start • $end';
 
                 final initials = _initialsFromName(a.coachName);
@@ -153,49 +163,95 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(14),
-                      onTap: () => _showAppointmentDetail(context, a, dateLabel, timeLabel),
+                      onTap: () => _showAppointmentDetail(
+                        context,
+                        a,
+                        dateLabel,
+                        timeLabel,
+                      ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 14,
+                        ),
                         child: Row(
                           children: [
                             CircleAvatar(
                               radius: 26,
                               backgroundColor: mintBg,
-                              child: Text(initials,
-                                  style: const TextStyle(
-                                      color: primaryGreen,
-                                      fontWeight: FontWeight.bold)),
+                              child: Text(
+                                initials,
+                                style: const TextStyle(
+                                  color: primaryGreen,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(a.coachName,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Colors.black87)),
+                                  Text(
+                                    a.coachName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
                                   const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                                      const Icon(
+                                        Icons.calendar_today,
+                                        size: 14,
+                                        color: Colors.grey,
+                                      ),
                                       const SizedBox(width: 6),
-                                      Flexible(child: Text(dateLabel, style: const TextStyle(color: Colors.black54))),
+                                      Flexible(
+                                        child: Text(
+                                          dateLabel,
+                                          style: const TextStyle(
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                                      const Icon(
+                                        Icons.access_time,
+                                        size: 14,
+                                        color: Colors.grey,
+                                      ),
                                       const SizedBox(width: 6),
-                                      Text(timeLabel, style: const TextStyle(color: Colors.black54)),
+                                      Text(
+                                        timeLabel,
+                                        style: const TextStyle(
+                                          color: Colors.black54,
+                                        ),
+                                      ),
                                       const SizedBox(width: 12),
-                                      Text('Slot ${a.slotId}', style: const TextStyle(color: Colors.black45, fontSize: 12)),
+                                      Text(
+                                        'Slot ${a.slotId}',
+                                        style: const TextStyle(
+                                          color: Colors.black45,
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  Text('Appointment ID: ${a.appointmentId}', style: const TextStyle(color: Colors.black26, fontSize: 12)),
+                                  Text(
+                                    'Appointment ID: ${a.appointmentId}',
+                                    style: const TextStyle(
+                                      color: Colors.black26,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -206,11 +262,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                 _statusChip(a.runtimeStatus),
                                 const SizedBox(height: 6),
                                 IconButton(
-                                  onPressed: () => _showAppointmentDetail(context, a, dateLabel, timeLabel),
-                                  icon: const Icon(Icons.chevron_right, color: Colors.grey),
-                                )
+                                  onPressed: () => _showAppointmentDetail(
+                                    context,
+                                    a,
+                                    dateLabel,
+                                    timeLabel,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.grey,
+                                  ),
+                                ),
                               ],
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -260,20 +324,38 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(999),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.15), blurRadius: 6, offset: const Offset(0,2))],
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.circle, size: 8, color: Colors.white),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12)),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  void _showAppointmentDetail(BuildContext context, Appointment a, String dateLabel, String timeLabel) {
+  void _showAppointmentDetail(
+    BuildContext context,
+    Appointment a,
+    String dateLabel,
+    String timeLabel,
+  ) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -294,7 +376,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -309,7 +394,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   @override
   Widget build(BuildContext context) {
     final pending = _filterByStatus('PENDING');
-    final inprogress = _filterByStatus('IN_PROGRESS') + _filterByStatus('INPROGRESS');
+    final inprogress =
+        _filterByStatus('IN_PROGRESS') + _filterByStatus('INPROGRESS');
     final completed = _filterByStatus('COMPLETED');
 
     return Scaffold(
@@ -331,7 +417,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
               ),
             ),
           ),
-          title: const Text('My Appointments', style: TextStyle(fontWeight: FontWeight.w700)),
+          title: const Text(
+            'My Appointments',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(48),
             child: Padding(
@@ -346,7 +435,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                   controller: _tabController,
                   indicatorSize: TabBarIndicatorSize.tab,
                   labelPadding: EdgeInsets.zero,
-                  indicatorPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  indicatorPadding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 6,
+                  ),
                   indicator: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(999),
@@ -362,9 +454,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                   unselectedLabelColor: Colors.white.withOpacity(0.9),
                   labelStyle: const TextStyle(fontWeight: FontWeight.w700),
                   tabs: [
-                    Tab(child: Center(child: Text('Pending (${pending.length})'))),
-                    Tab(child: Center(child: Text('In Progress (${inprogress.length})'))),
-                    Tab(child: Center(child: Text('Completed (${completed.length})'))),
+                    Tab(
+                      child: Center(child: Text('Pending (${pending.length})')),
+                    ),
+                    Tab(
+                      child: Center(
+                        child: Text('In Progress (${inprogress.length})'),
+                      ),
+                    ),
+                    Tab(
+                      child: Center(
+                        child: Text('Completed (${completed.length})'),
+                      ),
+                    ),
                   ],
                 ),
               ),

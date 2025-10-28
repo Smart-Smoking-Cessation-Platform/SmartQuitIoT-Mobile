@@ -1,4 +1,4 @@
-// lib/views/screens/appointments/time_slot_grid.dart
+// lib/features/coaching/widgets/time_slot_grid.dart
 import 'package:SmartQuitIoT/views/screens/appointments/time_slot_item.dart';
 import 'package:flutter/material.dart';
 
@@ -10,18 +10,14 @@ class TimeSlotGrid extends StatelessWidget {
   final Function(String) onSlotSelected;
 
   const TimeSlotGrid({
-    super.key,
+    Key? key,
     required this.timeSlots,
     required this.selectedSlot,
     required this.onSlotSelected,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-      '[DEBUG] TimeSlotGrid.build: count=${timeSlots.length}, selected=$selectedSlot',
-    );
-
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -34,16 +30,10 @@ class TimeSlotGrid extends StatelessWidget {
       itemCount: timeSlots.length,
       itemBuilder: (context, index) {
         final slot = timeSlots[index];
-        final slotTime = slot.time ?? '';
         return TimeSlotItem(
-          slot: TimeSlot(time: slotTime, available: slot.available),
-          isSelected: selectedSlot == slotTime && slotTime.isNotEmpty,
-          onTap: slot.available
-              ? () {
-            debugPrint('[DEBUG] TimeSlotGrid tapped: $slotTime');
-            onSlotSelected(slotTime);
-          }
-              : null,
+          slot: slot,
+          isSelected: selectedSlot == slot.time,
+          onTap: slot.available ? () => onSlotSelected(slot.time) : null,
         );
       },
     );
