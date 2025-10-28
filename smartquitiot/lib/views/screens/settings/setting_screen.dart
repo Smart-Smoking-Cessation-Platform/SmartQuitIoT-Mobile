@@ -1,3 +1,5 @@
+// lib/views/screens/settings/settings_screen.dart
+import 'package:SmartQuitIoT/views/screens/appointments/appointments_screen.dart';
 import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -90,6 +92,18 @@ class SettingsScreen extends ConsumerWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => const ProfileScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSettingItem(
+                        icon: Icons.calendar_month_outlined,
+                        title: 'Appointments',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AppointmentsScreen(),
                             ),
                           );
                         },

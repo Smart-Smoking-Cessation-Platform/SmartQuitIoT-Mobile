@@ -213,7 +213,7 @@ class PostService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        
+
         // Check if response is wrapped or direct Post object
         if (data.containsKey('data') && data.containsKey('success')) {
           // Wrapped response: { "success": true, "data": {...} }

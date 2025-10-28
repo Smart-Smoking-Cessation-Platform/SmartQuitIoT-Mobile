@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
-import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../providers/auth_provider.dart';
 
@@ -24,19 +21,16 @@ class WelcomeScreen extends ConsumerWidget {
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
-      if (next.isAuthenticated &&
-          (previous == null || !previous.isAuthenticated)) {
+      if (next.isAuthenticated && (previous == null || !previous.isAuthenticated)) {
         if (next.isFirstLogin == true) {
-          context.go('/onboarding');
+          Navigator.of(context).pushReplacementNamed('/onboarding');
         } else {
-          context.go('/main');
+          Navigator.of(context).pushReplacementNamed('/home');
         }
       }
     });
 
-    final isLoading = ref.watch(
-      authViewModelProvider.select((state) => state.isLoading),
-    );
+    final isLoading = ref.watch(authViewModelProvider.select((state) => state.isLoading));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
@@ -85,9 +79,8 @@ class WelcomeScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(25),
                         ),
                         child: ElevatedButton(
-                          onPressed: isLoading
-                              ? null
-                              : () => context.go('/login'),
+                          onPressed: isLoading ? null : () =>
+                              Navigator.pushNamed(context, '/login'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -120,9 +113,8 @@ class WelcomeScreen extends ConsumerWidget {
                           ),
                         ),
                         child: OutlinedButton(
-                          onPressed: isLoading
-                              ? null
-                              : () => context.go('/signup'),
+                          onPressed: isLoading ? null : () =>
+                              Navigator.pushNamed(context, '/signup'),
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             side: BorderSide.none,
@@ -148,23 +140,14 @@ class WelcomeScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          height: 1.2,
-                          color: Colors.grey.withOpacity(0.5),
-                        ),
+                        child: Container(height: 1.2, color: Colors.grey.withOpacity(0.5)),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text(
-                          'or'.tr(),
-                          style: TextStyle(color: Colors.grey.withOpacity(0.8)),
-                        ),
+                        child: Text('or'.tr(), style: TextStyle(color: Colors.grey.withOpacity(0.8))),
                       ),
                       Expanded(
-                        child: Container(
-                          height: 1.2,
-                          color: Colors.grey.withOpacity(0.5),
-                        ),
+                        child: Container(height: 1.2, color: Colors.grey.withOpacity(0.5)),
                       ),
                     ],
                   ),
@@ -189,9 +172,7 @@ class WelcomeScreen extends ConsumerWidget {
                       SocialButton(
                         onTap: isLoading
                             ? () {}
-                            : () => ref
-                                  .read(authViewModelProvider.notifier)
-                                  .loginWithGoogle(),
+                            : () => ref.read(authViewModelProvider.notifier).loginWithGoogle(),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -247,7 +228,7 @@ class WelcomeScreen extends ConsumerWidget {
                   /// Forgot Password
                   Center(
                     child: GestureDetector(
-                      onTap: isLoading ? null : () => context.go('/forgot'),
+                      onTap: isLoading ? null : () => Navigator.pushNamed(context, '/forgot'),
                       child: RichText(
                         text: TextSpan(
                           text: '${'forgot_password'.tr()} ',
@@ -283,7 +264,7 @@ class WelcomeScreen extends ConsumerWidget {
                 onTap: () {
                   showDialog(
                     context: context,
-                    builder: (_) => AlertDialog(
+                    builder: (dialogContext) => AlertDialog(
                       title: Text('select_language'.tr()),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -293,7 +274,7 @@ class WelcomeScreen extends ConsumerWidget {
                             title: const Text("English"),
                             onTap: () async {
                               await context.setLocale(const Locale('en'));
-                              context.pop();
+                              Navigator.pop(dialogContext);
                             },
                           ),
                           ListTile(
@@ -301,7 +282,7 @@ class WelcomeScreen extends ConsumerWidget {
                             title: const Text("Tiếng Việt"),
                             onTap: () async {
                               await context.setLocale(const Locale('vi'));
-                              context.pop();
+                              Navigator.pop(dialogContext);
                             },
                           ),
                         ],

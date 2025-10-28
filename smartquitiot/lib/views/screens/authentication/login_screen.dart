@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:go_router/go_router.dart';
-
 import '../../../providers/auth_provider.dart';
 import '../../../services/token_storage_service.dart';
-import '../../../utils/notification_helper.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/auth_header.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
 import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import '../../../models/state/auth_state.dart';
+import '../../../utils/notification_helper.dart';
+import '../common/main_navigation_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -80,22 +80,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           title: 'Success',
           message: 'Login successful!',
         );
-
         final tokenStorage = TokenStorageService();
         await tokenStorage.saveTokens(
           next.accessToken ?? '',
           next.refreshToken ?? '',
         );
-
         await Future.delayed(const Duration(seconds: 1));
         if (!mounted) return;
-
         final isFirstLogin = next.isFirstLogin ?? false;
-
         if (isFirstLogin) {
-          context.go('/onboarding');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                (route) => false,
+          );
         } else {
-          context.go('/main');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                (route) => false,
+          );
         }
       }
     });
@@ -130,7 +132,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         hint: 'username_hint'.tr(),
                         keyboardType: TextInputType.text,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
+                          if(value == null || value.isEmpty) {
                             return 'Please enter your username or email';
                           }
                           return null;
@@ -144,7 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         obscure: _obscure,
                         onToggle: () => setState(() => _obscure = !_obscure),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
+                          if(value == null || value.isEmpty) {
                             return 'Please enter your password';
                           }
                           return null;
@@ -153,20 +155,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 32),
 
                       authState.isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: greenColor,
-                              ),
-                            )
+                          ? const Center(child: CircularProgressIndicator(color: greenColor))
                           : PrimaryButton(
-                              text: 'sign_in'.tr(),
-                              onPressed: _isFormValid ? _handleLogin : null,
-                            ),
+                        text: 'sign_in'.tr(),
+                        onPressed: _isFormValid ? _handleLogin : null,
+                      ),
 
                       const SizedBox(height: 16),
                       Center(
                         child: TextButton(
-                          onPressed: () => context.push('/forgot'),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/forgot'),
                           child: Text(
                             'forgot_password'.tr(),
                             style: const TextStyle(
@@ -180,20 +179,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 8),
                       const AuthDivider(),
                       const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: SocialLoginButtons(
+                       Padding(
+                         padding: const EdgeInsets.only(right: 10),
+                         child: SocialLoginButtons(
                           onGoogleTap: () async {
-                            await ref
-                                .read(authViewModelProvider.notifier)
-                                .loginWithGoogle();
+                            await ref.read(authViewModelProvider.notifier).loginWithGoogle();
                           },
-                        ),
-                      ),
+                                               ),
+                       ),
                       const SizedBox(height: 24),
                       Center(
                         child: TextButton(
-                          onPressed: () => context.push('/signup'),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/signup'),
                           child: RichText(
                             text: TextSpan(
                               text: "no_account".tr(),

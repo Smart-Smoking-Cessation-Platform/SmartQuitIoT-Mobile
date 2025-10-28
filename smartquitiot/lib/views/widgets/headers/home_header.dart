@@ -1,25 +1,21 @@
-import 'package:SmartQuitIoT/providers/auth_provider.dart';
+import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import '../../../providers/auth_provider.dart';
+import '../../screens/notifications/notification_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../../utils/snackbar_helper.dart';
-import '../../../../viewmodels/auth_view_model.dart';
-import '../../screens/notifications/notification_screen.dart';
-import '../../screens/settings/setting_screen.dart';
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+
+    // final username = ref.watch(authViewModelProvider.select((state) => state.username));
     final authState = ref.watch(authViewModelProvider);
     final username = authState.username;
-
-    print(
-      '--- >>> HOME_HEADER BUILD: Username is [$username], '
-      'IsAuthenticated is [${authState.isAuthenticated}]',
-    );
+    print('--- >>> HOME_HEADER BUILD: Username is [$username], IsAuthenticated is [${authState.isAuthenticated}]');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -46,7 +42,6 @@ class HomeHeader extends ConsumerWidget {
           ),
           Row(
             children: [
-              // 🔔 Notification button
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -70,8 +65,6 @@ class HomeHeader extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // ⚙️ Settings button
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -95,8 +88,6 @@ class HomeHeader extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // 🌐 Language switch
               GestureDetector(
                 onTap: () {
                   showDialog(
@@ -140,19 +131,16 @@ class HomeHeader extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // 🚪 Logout button
               GestureDetector(
                 onTap: () async {
                   await ref.read(authViewModelProvider.notifier).logout();
-
                   if (context.mounted) {
                     SnackBarHelper.showSuccess(context, 'Logout successfully!');
                   }
-
                   if (context.mounted) {
-                    // ✅ Dùng GoRouter để điều hướng về /login
-                    context.go('/login');
+                    Navigator.pushNamedAndRemoveUntil(
+                        context, '/login', (route) => false
+                    );
                   }
                 },
                 child: Container(

@@ -6,7 +6,8 @@ import 'package:http/http.dart' as http;
 import '../models/request/appointment_request.dart';
 
 class AppointmentService {
-  final String _baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8080/api';
+  final String _baseUrl =
+      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8080/api';
 
   /// Throws Exception when booking fails.
   /// Accepts either:
@@ -14,7 +15,9 @@ class AppointmentService {
   ///  - Map<String, dynamic>
   ///  - JSON string
   Future<Map<String, dynamic>> bookAppointment(
-      dynamic reqBody, String accessToken) async {
+    dynamic reqBody,
+    String accessToken,
+  ) async {
     final url = '$_baseUrl/member/appointments';
     final headers = {
       'Content-Type': 'application/json',
@@ -67,7 +70,9 @@ class AppointmentService {
       body = null;
     }
 
-    debugPrint('[AppointmentService] POST $url -> status=${resp.statusCode} body=$body');
+    debugPrint(
+      '[AppointmentService] POST $url -> status=${resp.statusCode} body=$body',
+    );
 
     // Success HTTP
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
@@ -76,7 +81,10 @@ class AppointmentService {
         if (success == true) {
           return Map<String, dynamic>.from(body);
         } else {
-          final msg = (body['message'] ?? 'Booking failed (server returned success=false)').toString();
+          final msg =
+              (body['message'] ??
+                      'Booking failed (server returned success=false)')
+                  .toString();
           throw Exception(msg);
         }
       } else {

@@ -219,7 +219,6 @@ class CommentCard extends StatelessWidget {
           .toList(),
     );
   }
-
 }
 
 /// Separate widget for comment media list to ensure proper context for navigation
@@ -238,21 +237,19 @@ class CommentMediaList extends StatelessWidget {
         itemBuilder: (context, index) {
           final mediaItem = media[index];
           final isVideo = mediaItem.mediaType == 'VIDEO';
-          
+
           return GestureDetector(
             onTap: () {
               print('🖼️ [CommentMediaList] Tapped on media item $index');
               print('🔗 [CommentMediaList] Media URL: ${mediaItem.mediaUrl}');
               print('📹 [CommentMediaList] Is Video: $isVideo');
-              
+
               // Open full screen viewer
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => MediaViewerDialog(
-                    mediaList: media,
-                    initialIndex: index,
-                  ),
+                  builder: (context) =>
+                      MediaViewerDialog(mediaList: media, initialIndex: index),
                 ),
               );
             },
