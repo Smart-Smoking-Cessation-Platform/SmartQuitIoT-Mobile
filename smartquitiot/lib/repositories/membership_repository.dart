@@ -1,7 +1,8 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import '../models/membership_subscription.dart';
 import '../models/response/payment_link_response.dart';
+import '../models/response/current_subscription_response.dart';
 import 'package:flutter/foundation.dart';
 import '../models/membership_package.dart';
 import '../models/plan_option.dart';
@@ -78,6 +79,28 @@ class MembershipRepository {
     } catch (e) {
       print('Error in repository creating payment link: $e');
       throw Exception('Failed to create payment link: $e');
+    }
+  }
+
+  Future<MembershipSubscription?> getCurrentSubscription() async {
+    try {
+      print('📞 [MembershipRepository] Calling getCurrentSubscription API...');
+      final response = await _apiService.getCurrentSubscription();
+      
+      if (response.statusCode == 200) {
+        final subscriptionResponse = CurrentSubscriptionResponse.fromJson(
+          jsonDecode(response.body),
+        );
+        
+        print('✅ [MembershipRepository] Current subscription: ${subscriptionResponse.data != null ? "Active" : "None"}');
+        return subscriptionResponse.data;
+      } else {
+        print('❌ [MembershipRepository] Failed to get current subscription. Status: ${response.statusCode}');
+        throw Exception('Failed to get current subscription. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ [MembershipRepository] Error fetching current subscription: $e');
+      rethrow;
     }
   }
 }

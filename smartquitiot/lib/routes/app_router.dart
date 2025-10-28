@@ -19,6 +19,7 @@ import 'package:SmartQuitIoT/views/screens/common/main_navigation_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
+import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -63,6 +64,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/membership',
       builder: (context, state) => const PremiumMembershipScreen(),
+    ),
+    GoRoute(
+      path: '/my-subscription',
+      builder: (context, state) => const CurrentSubscriptionScreen(),
     ),
     GoRoute(
       path: '/diary/create',
