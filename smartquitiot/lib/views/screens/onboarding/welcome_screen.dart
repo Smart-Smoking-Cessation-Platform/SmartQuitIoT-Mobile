@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
-
 import '../../../providers/auth_provider.dart';
 
 class WelcomeScreen extends ConsumerWidget {
@@ -21,16 +21,19 @@ class WelcomeScreen extends ConsumerWidget {
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
-      if (next.isAuthenticated && (previous == null || !previous.isAuthenticated)) {
+      if (next.isAuthenticated &&
+          (previous == null || !previous.isAuthenticated)) {
         if (next.isFirstLogin == true) {
-          Navigator.of(context).pushReplacementNamed('/onboarding');
+          context.go('/onboarding');
         } else {
-          Navigator.of(context).pushReplacementNamed('/home');
+          context.go('/home');
         }
       }
     });
 
-    final isLoading = ref.watch(authViewModelProvider.select((state) => state.isLoading));
+    final isLoading = ref.watch(
+      authViewModelProvider.select((state) => state.isLoading),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
@@ -79,8 +82,9 @@ class WelcomeScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(25),
                         ),
                         child: ElevatedButton(
-                          onPressed: isLoading ? null : () =>
-                              Navigator.pushNamed(context, '/login'),
+                          onPressed: isLoading
+                              ? null
+                              : () => context.push('/login'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -113,8 +117,9 @@ class WelcomeScreen extends ConsumerWidget {
                           ),
                         ),
                         child: OutlinedButton(
-                          onPressed: isLoading ? null : () =>
-                              Navigator.pushNamed(context, '/signup'),
+                          onPressed: isLoading
+                              ? null
+                              : () => context.push('/signup'),
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             side: BorderSide.none,
@@ -140,14 +145,23 @@ class WelcomeScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Container(height: 1.2, color: Colors.grey.withOpacity(0.5)),
+                        child: Container(
+                          height: 1.2,
+                          color: Colors.grey.withOpacity(0.5),
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('or'.tr(), style: TextStyle(color: Colors.grey.withOpacity(0.8))),
+                        child: Text(
+                          'or'.tr(),
+                          style: TextStyle(color: Colors.grey.withOpacity(0.8)),
+                        ),
                       ),
                       Expanded(
-                        child: Container(height: 1.2, color: Colors.grey.withOpacity(0.5)),
+                        child: Container(
+                          height: 1.2,
+                          color: Colors.grey.withOpacity(0.5),
+                        ),
                       ),
                     ],
                   ),
@@ -157,22 +171,12 @@ class WelcomeScreen extends ConsumerWidget {
                   /// Social login
                   Column(
                     children: [
-                      // SocialButton(
-                      //   onTap: () async {
-                      //     // Dòng code này sẽ xóa sạch cache đăng nhập Google
-                      //     await GoogleSignIn.instance.signOut();
-                      //     await GoogleSignIn.instance.disconnect();
-                      //     print('--- ĐÃ ĐĂNG XUẤT HOÀN TOÀN KHỎI GOOGLE ---');
-                      //     ScaffoldMessenger.of(context).showSnackBar(
-                      //       SnackBar(content: Text('Đã reset Google Sign-In!')),
-                      //     );
-                      //   },
-                      //   child: Text('Reset Google Sign-In'),
-                      // ),
                       SocialButton(
                         onTap: isLoading
                             ? () {}
-                            : () => ref.read(authViewModelProvider.notifier).loginWithGoogle(),
+                            : () => ref
+                                  .read(authViewModelProvider.notifier)
+                                  .loginWithGoogle(),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -195,31 +199,6 @@ class WelcomeScreen extends ConsumerWidget {
                       ),
 
                       const SizedBox(height: 12),
-
-                      // NÚT FACEBOOK BỊ VÔ HIỆU HÓA
-                      // Maybe in the future....
-                      // SocialButton(
-                      //   onTap: () {},
-                      //   child: Row(
-                      //     mainAxisAlignment: MainAxisAlignment.center,
-                      //     children: [
-                      //       Image.asset(
-                      //         'lib/assets/images/facebook.png',
-                      //         width: 20,
-                      //         height: 20,
-                      //       ),
-                      //       const SizedBox(width: 12),
-                      //       Text(
-                      //         'sign_in_facebook'.tr(),
-                      //         style: TextStyle(
-                      //           color: Colors.black87,
-                      //           fontSize: 16,
-                      //           fontWeight: FontWeight.w500,
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
                     ],
                   ),
 
@@ -228,7 +207,7 @@ class WelcomeScreen extends ConsumerWidget {
                   /// Forgot Password
                   Center(
                     child: GestureDetector(
-                      onTap: isLoading ? null : () => Navigator.pushNamed(context, '/forgot'),
+                      onTap: isLoading ? null : () => context.push('/forgot'),
                       child: RichText(
                         text: TextSpan(
                           text: '${'forgot_password'.tr()} ',
@@ -256,7 +235,7 @@ class WelcomeScreen extends ConsumerWidget {
               ),
             ),
 
-            /// Language Switcher (vẫn giữ nguyên)
+            /// Language Switcher
             Positioned(
               top: 16,
               right: 16,

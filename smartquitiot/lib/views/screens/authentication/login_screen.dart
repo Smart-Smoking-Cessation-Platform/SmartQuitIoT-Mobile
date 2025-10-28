@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../providers/auth_provider.dart';
 import '../../../services/token_storage_service.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
@@ -10,8 +12,6 @@ import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import '../../../models/state/auth_state.dart';
 import '../../../utils/notification_helper.dart';
-import '../common/main_navigation_screen.dart';
-import '../onboarding/onboarding_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -37,9 +37,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     FocusScope.of(context).unfocus();
 
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final usernameOrEmail = _username.text.trim();
     final password = _password.text.trim();
@@ -64,6 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authViewModelProvider, (previous, next) async {
+      // Báo lỗi đăng nhập
       if (next.error != null && previous?.error != next.error) {
         NotificationHelper.showTopNotification(
           context,
@@ -74,30 +73,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
+      // Đăng nhập thành công
       if (next.isAuthenticated && previous?.isAuthenticated == false) {
         NotificationHelper.showTopNotification(
           context,
           title: 'Success',
           message: 'Login successful!',
         );
+
         final tokenStorage = TokenStorageService();
         await tokenStorage.saveTokens(
           next.accessToken ?? '',
           next.refreshToken ?? '',
         );
+
         await Future.delayed(const Duration(seconds: 1));
         if (!mounted) return;
+
         final isFirstLogin = next.isFirstLogin ?? false;
         if (isFirstLogin) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-                (route) => false,
-          );
+          context.go('/onboarding');
         } else {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-                (route) => false,
-          );
+          context.go('/main');
         }
       }
     });
@@ -132,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         hint: 'username_hint'.tr(),
                         keyboardType: TextInputType.text,
                         validator: (value) {
-                          if(value == null || value.isEmpty) {
+                          if (value == null || value.isEmpty) {
                             return 'Please enter your username or email';
                           }
                           return null;
@@ -146,7 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         obscure: _obscure,
                         onToggle: () => setState(() => _obscure = !_obscure),
                         validator: (value) {
-                          if(value == null || value.isEmpty) {
+                          if (value == null || value.isEmpty) {
                             return 'Please enter your password';
                           }
                           return null;
@@ -154,18 +151,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
 
+                      /// Nút login
                       authState.isLoading
-                          ? const Center(child: CircularProgressIndicator(color: greenColor))
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: greenColor,
+                              ),
+                            )
                           : PrimaryButton(
-                        text: 'sign_in'.tr(),
-                        onPressed: _isFormValid ? _handleLogin : null,
-                      ),
+                              text: 'sign_in'.tr(),
+                              onPressed: _isFormValid ? _handleLogin : null,
+                            ),
 
                       const SizedBox(height: 16),
+
+                      /// Forgot password
                       Center(
                         child: TextButton(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, '/forgot'),
+                          onPressed: () => context.push('/forgot'),
                           child: Text(
                             'forgot_password'.tr(),
                             style: const TextStyle(
@@ -175,23 +178,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+
                       const SizedBox(height: 8),
                       const AuthDivider(),
                       const SizedBox(height: 24),
-                       Padding(
-                         padding: const EdgeInsets.only(right: 10),
-                         child: SocialLoginButtons(
+
+                      /// Social login
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: SocialLoginButtons(
                           onGoogleTap: () async {
-                            await ref.read(authViewModelProvider.notifier).loginWithGoogle();
+                            await ref
+                                .read(authViewModelProvider.notifier)
+                                .loginWithGoogle();
                           },
-                                               ),
-                       ),
+                        ),
+                      ),
+
                       const SizedBox(height: 24),
+
+                      /// Đăng ký tài khoản
                       Center(
                         child: TextButton(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, '/signup'),
+                          onPressed: () => context.push('/signup'),
                           child: RichText(
                             text: TextSpan(
                               text: "no_account".tr(),
@@ -212,6 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 32),
                     ],
                   ),
