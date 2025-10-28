@@ -23,7 +23,7 @@ class MissionCompleteService {
     required MissionCompleteRequest request,
   }) async {
     try {
-      final url = '$_baseUrl/phase-detail-mission/complete';
+      final url = '$_baseUrl/phase-detail-mission/complete/home-page';
       print('📡 [MissionCompleteService] POST: $url');
       print('📦 [MissionCompleteService] Request: ${request.toJson()}');
 

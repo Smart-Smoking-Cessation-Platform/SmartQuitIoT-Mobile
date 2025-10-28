@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:another_flushbar/flushbar.dart';
 import '../../../models/request/create_quit_plan_request.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
@@ -42,6 +43,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Validation flag
   bool _submitted = false;
+  bool _isCreatingPlan = false;
 
   // First cigarette options
   final Map<String, int> firstCigaretteOptions = {
@@ -411,8 +413,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       const SizedBox(height: 40),
 
                       // Submit
-                      quitPlanState is AsyncLoading
-                          ? const Center(child: CircularProgressIndicator())
+                      _isCreatingPlan
+                          ? Column(
+                              children: [
+                                const CircularProgressIndicator(
+                                  color: Color(0xFF00D09E),
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Creating your quit plan...',
+                                  style: TextStyle(
+                                    color: Color(0xFF00D09E),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
                           : PrimaryButton(
                               text: 'Finish',
                               onPressed: () async {
@@ -464,6 +480,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   ),
                                 );
 
+                                // Show flushbar immediately when button is clicked
+                                Flushbar(
+                                  message: "Creating your quit plan, it may take time. Please wait...",
+                                  duration: const Duration(seconds: 3),
+                                  backgroundColor: const Color(0xFF00D09E),
+                                  margin: const EdgeInsets.all(8),
+                                  borderRadius: BorderRadius.circular(8),
+                                  icon: const Icon(
+                                    Icons.info_outline,
+                                    color: Colors.white,
+                                  ),
+                                  flushbarPosition: FlushbarPosition.TOP,
+                                ).show(context);
+
+                                setState(() {
+                                  _isCreatingPlan = true;
+                                });
+
                                 try {
                                   await ref
                                       .read(quitPlanViewModelProvider.notifier)
@@ -473,20 +507,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     '✅ [OnboardingScreen] Quit plan created successfully',
                                   );
 
-                                  NotificationHelper.showTopNotification(
-                                    context,
-                                    title: "Success",
-                                    message:
-                                        "Quit plan \"${_quitPlanNameController.text.trim()}\" created successfully",
-                                  );
-
-                                  // Give backend time to initialize phase and missions
+                                  // Give backend time to initialize phase and missions (75 seconds)
                                   print(
-                                    '⏳ [OnboardingScreen] Waiting for backend to initialize phase...',
+                                    '⏳ [OnboardingScreen] Waiting 75 seconds for backend to initialize phase and missions...',
                                   );
                                   await Future.delayed(
-                                    const Duration(seconds: 3),
+                                    const Duration(seconds: 75),
                                   );
+
+                                  // Show success notification
+                                  if (mounted) {
+                                    Flushbar(
+                                      message:
+                                          "Quit plan \"${_quitPlanNameController.text.trim()}\" created successfully!",
+                                      duration: const Duration(seconds: 3),
+                                      backgroundColor: const Color(0xFF00D09E),
+                                      margin: const EdgeInsets.all(8),
+                                      borderRadius: BorderRadius.circular(8),
+                                      icon: const Icon(
+                                        Icons.check_circle_outline,
+                                        color: Colors.white,
+                                      ),
+                                      flushbarPosition: FlushbarPosition.TOP,
+                                    ).show(context);
+                                  }
 
                                   // Trigger refresh for quit plan and missions cards
                                   print(
@@ -499,18 +543,38 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   print(
                                     '🚀 [OnboardingScreen] Navigating to main screen...',
                                   );
+
+                                  setState(() {
+                                    _isCreatingPlan = false;
+                                  });
+
                                   // Navigate immediately, cards sẽ tự retry nếu chưa sẵn sàng
-                                  context.go('/main');
+                                  if (mounted) {
+                                    context.go('/main');
+                                  }
                                 } catch (e) {
                                   print(
                                     '❌ [OnboardingScreen] Error creating quit plan: $e',
                                   );
-                                  NotificationHelper.showTopNotification(
-                                    context,
-                                    title: 'Error',
-                                    message: e.toString(),
-                                    isError: true,
-                                  );
+
+                                  setState(() {
+                                    _isCreatingPlan = false;
+                                  });
+
+                                  if (mounted) {
+                                    Flushbar(
+                                      message: 'Error: ${e.toString()}',
+                                      duration: const Duration(seconds: 3),
+                                      backgroundColor: Colors.red[600]!,
+                                      margin: const EdgeInsets.all(8),
+                                      borderRadius: BorderRadius.circular(8),
+                                      icon: const Icon(
+                                        Icons.error_outline,
+                                        color: Colors.white,
+                                      ),
+                                      flushbarPosition: FlushbarPosition.TOP,
+                                    ).show(context);
+                                  }
                                 }
                               },
                               width: 200,

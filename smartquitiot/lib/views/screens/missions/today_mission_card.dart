@@ -108,35 +108,14 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.red.withOpacity(0.3)),
         ),
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Error: ${state.error}',
-                    style: TextStyle(color: Colors.red[700], fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  ref
-                      .read(todayMissionViewModelProvider.notifier)
-                      .refreshMissions();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[700],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-                child: const Text('Retry', style: TextStyle(fontSize: 12)),
+            Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Error: ${state.error}',
+                style: TextStyle(color: Colors.red[700], fontSize: 14),
               ),
             ),
           ],
