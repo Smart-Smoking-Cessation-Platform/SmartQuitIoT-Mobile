@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/home_metrics.dart';
 import 'package:SmartQuitIoT/models/health_recovery.dart';
+import 'package:SmartQuitIoT/models/home_health_recovery.dart';
 import 'package:SmartQuitIoT/repositories/metrics_repository.dart';
 import 'package:SmartQuitIoT/services/metrics_service.dart';
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
@@ -28,6 +29,15 @@ final homeMetricsProvider = FutureProvider<HomeMetrics>((ref) async {
 final healthRecoveriesProvider = FutureProvider<HealthRecoveryResponse>((ref) async {
   final repository = ref.read(metricsRepositoryProvider);
   return await repository.getHealthRecoveries();
+});
+
+// Home Health Recovery Provider
+final homeHealthRecoveryProvider = FutureProvider<HomeHealthRecovery>((ref) async {
+  // Listen for refresh trigger
+  ref.watch(metricsRefreshProvider);
+  
+  final repository = ref.read(metricsRepositoryProvider);
+  return await repository.getHomeHealthRecovery();
 });
 
 // Refresh Provider for metrics (similar to diary refresh)

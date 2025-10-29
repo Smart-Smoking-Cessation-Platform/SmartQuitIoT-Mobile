@@ -87,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           next.refreshToken ?? '',
         );
 
-        await Future.delayed(const Duration(seconds: 1));
+        await Future.delayed(const Duration(seconds: 2));
         if (!mounted) return;
 
         final isFirstLogin = next.isFirstLogin ?? false;

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:SmartQuitIoT/models/achievement.dart';
 
 class CompletedAchievementCard extends StatelessWidget {
-  final Map<String, dynamic> achievement;
+  final Achievement achievement;
 
   const CompletedAchievementCard({super.key, required this.achievement});
 
@@ -56,7 +57,22 @@ class CompletedAchievementCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(achievement['icon'], color: highlightColor, size: 34),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.network(
+                achievement.icon,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.emoji_events,
+                    color: highlightColor,
+                    size: 34,
+                  );
+                },
+              ),
+            ),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -67,7 +83,7 @@ class CompletedAchievementCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        achievement['title'],
+                        achievement.name,
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -98,7 +114,7 @@ class CompletedAchievementCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  achievement['description'],
+                  achievement.description,
                   style: TextStyle(
                     color: Colors.grey[800],
                     fontSize: 14,
@@ -115,7 +131,7 @@ class CompletedAchievementCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Completed on ${achievement['completedDate']}',
+                      'Unlocked', // API doesn't provide completed date
                       style: TextStyle(
                         color: highlightColor.withOpacity(0.95),
                         fontSize: 13,

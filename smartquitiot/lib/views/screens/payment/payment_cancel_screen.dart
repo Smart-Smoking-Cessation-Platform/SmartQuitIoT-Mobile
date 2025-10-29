@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class PaymentCancelScreen extends StatelessWidget {
   const PaymentCancelScreen({super.key});
@@ -39,7 +40,7 @@ class PaymentCancelScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+                    context.go('/main');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,

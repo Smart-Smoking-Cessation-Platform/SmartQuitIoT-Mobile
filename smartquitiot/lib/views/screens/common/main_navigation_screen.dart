@@ -77,7 +77,10 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   /// Helper method to check if user has specific feature
   bool _hasFeature(MembershipSubscription? subscription, String featureName) {
+    // If no subscription or no package, user has no premium features
     if (subscription?.membershipPackage?.features == null) return false;
+
+    // Check if features list contains the required feature (case-insensitive)
     return subscription!.membershipPackage!.features.any(
       (feature) => feature.toLowerCase().contains(featureName.toLowerCase()),
     );
@@ -95,6 +98,53 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
     // Show premium upgrade screen if no access
     return _buildUpgradePrompt(requiredFeature);
+  }
+
+  /// Wrap card with premium protection - show card but intercept taps if no feature
+  Widget _buildPremiumProtectedCard(
+    MembershipSubscription? subscription,
+    Widget card,
+    String requiredFeature,
+  ) {
+    final hasFeature = _hasFeature(subscription, requiredFeature);
+
+    if (hasFeature) {
+      // User has feature - let card work normally
+      return card;
+    }
+
+    // User doesn't have feature - wrap with tap interceptor
+    return Stack(
+      children: [
+        // Original card (slightly dimmed)
+        Opacity(opacity: 0.7, child: card),
+        // Invisible overlay to intercept all taps
+        Positioned.fill(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                // Navigate to premium screen
+                context.push('/membership');
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.lock_outline,
+                    color: Color(0xFF00D09E),
+                    size: 32,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   /// Build upgrade prompt screen
@@ -170,26 +220,45 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               const SmokeFreeTimerCard(),
               const MembershipShortcutCard(),
 
-              // Metrics Tracking features
-              if (_hasFeature(subscription, 'Metrics Tracking')) ...[
-                const DiaryRecordCard(),
-                const StatsTableCard(),
-                const HealthImprovementCard(),
-              ],
-
-              // Guides by Coach feature
-              if (_hasFeature(subscription, 'Guides by Coach'))
+              // Guides by Coach feature - Always show, but protected
+              _buildPremiumProtectedCard(
+                subscription,
                 const CoachAppointmentCard(),
+                'Guides by Coach',
+              ),
+
+              // Metrics Tracking features - Always show, but protected
+              _buildPremiumProtectedCard(
+                subscription,
+                const DiaryRecordCard(),
+                'Metrics Tracking',
+              ),
+              _buildPremiumProtectedCard(
+                subscription,
+                const StatsTableCard(),
+                'Metrics Tracking',
+              ),
+              _buildPremiumProtectedCard(
+                subscription,
+                const HealthImprovementCard(),
+                'Metrics Tracking',
+              ),
 
               const AchievementsCard(),
 
-              // Smart Quit Plan feature
-              if (_hasFeature(subscription, 'Smart Quit Plan'))
+              // Smart Quit Plan feature - Always show, but protected
+              _buildPremiumProtectedCard(
+                subscription,
                 const QuitPlanCard(),
+                'Smart Quit Plan',
+              ),
 
-              // Missions feature
-              if (_hasFeature(subscription, 'Missions'))
+              // Missions feature - Always show, but protected
+              _buildPremiumProtectedCard(
+                subscription,
                 const TodayMissionCard(),
+                'Missions',
+              ),
 
               // Always show these
               const CommunityTrendingCard(),
@@ -229,24 +298,94 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           child: CircularProgressIndicator(color: Color(0xFF00D09E)),
         ),
       ),
-      error: (error, stack) => Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Error loading membership: $error'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.refresh(currentSubscriptionProvider),
-                child: const Text('Retry'),
-              ),
-            ],
+      error: (error, stack) {
+        // Log error for debugging
+        debugPrint('❌ [MainNavigation] Membership error: $error');
+        debugPrint('📚 [MainNavigation] Stack trace: $stack');
+
+        // Show app with basic functionality (no premium features)
+        // This prevents the app from being completely unusable
+        final screens = _buildScreens(
+          null,
+        ); // null subscription = no premium features
+
+        return Scaffold(
+          body: IndexedStack(index: _currentIndex, children: screens),
+          bottomNavigationBar: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: const Color(0xFF00D09E),
+            unselectedItemColor: Colors.grey,
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              // All tabs redirect to premium for safety when membership API fails
+              if (index == 2 || index == 3) {
+                context.push('/membership');
+                return;
+              }
+              setState(() => _currentIndex = index);
+            },
+            items: List.generate(lottiePaths.length, (index) {
+              return BottomNavigationBarItem(
+                icon: SizedBox(
+                  height: 30,
+                  width: 30,
+                  child: Lottie.asset(
+                    lottiePaths[index],
+                    animate: _currentIndex == index,
+                  ),
+                ),
+                label: lottieLabels[index].tr(),
+              );
+            }),
           ),
-        ),
-      ),
+          // Show error banner at top
+          persistentFooterButtons: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.orange.withOpacity(0.1),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Unable to load membership status. Some features may be limited.',
+                      style: TextStyle(color: Colors.orange, fontSize: 12),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => ref.refresh(currentSubscriptionProvider),
+                    child: const Text(
+                      'Retry',
+                      style: TextStyle(color: Colors.orange),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
       data: (subscription) {
+        // Debug logging for membership status
+        if (subscription == null) {
+          debugPrint(
+            '🆓 [MainNavigation] No active subscription - showing free features only',
+          );
+        } else {
+          debugPrint(
+            '💎 [MainNavigation] Active subscription: ${subscription.membershipPackage?.name ?? "Unknown"}',
+          );
+          debugPrint(
+            '🎯 [MainNavigation] Features: ${subscription.membershipPackage?.features ?? []}',
+          );
+        }
+
         final screens = _buildScreens(subscription);
         return Scaffold(
           body: IndexedStack(index: _currentIndex, children: screens),

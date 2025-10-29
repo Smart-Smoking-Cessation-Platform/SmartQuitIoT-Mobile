@@ -253,4 +253,42 @@ class AuthRepository {
       return true; // Nếu decode lỗi → xem như token hết hạn
     }
   }
+
+  /// Get user ID from JWT token for WebSocket initialization
+  Future<int?> getUserId() async {
+    try {
+      final token = await getAccessToken();
+      if (token == null || token.isEmpty) {
+        print('[AuthRepository] No access token available');
+        return null;
+      }
+
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        print('[AuthRepository] Invalid JWT format');
+        return null;
+      }
+
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final payloadMap = json.decode(decoded);
+
+      // JWT token có thể chứa 'sub', 'userId', 'id', hoặc 'memberId'
+      final userId = payloadMap['sub'] ?? 
+                     payloadMap['userId'] ?? 
+                     payloadMap['id'] ??
+                     payloadMap['memberId'];
+      
+      if (userId != null) {
+        return int.tryParse(userId.toString());
+      }
+
+      print('[AuthRepository] No user ID found in token');
+      return null;
+    } catch (e) {
+      print('[AuthRepository] Error getting user ID: $e');
+      return null;
+    }
+  }
 }

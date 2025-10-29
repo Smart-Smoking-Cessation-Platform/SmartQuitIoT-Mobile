@@ -76,9 +76,32 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   Future<void> _handleDeepLink(Uri uri) async {
     final router = appRouter;
+    final host = uri.host;
     final path = uri.pathSegments.join('/');
     final params = uri.queryParameters;
 
+    // Handle achievement deep link
+    if (host == 'achievement') {
+      debugPrint('🏆 Achievement notification received');
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Navigate to main screen (achievement tab)
+      router.go('/main');
+      
+      // Show snackbar to inform user
+      if (rootNavigatorKey.currentContext != null && rootNavigatorKey.currentContext!.mounted) {
+        ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 New achievement unlocked! Check your achievements.'),
+            backgroundColor: Color(0xFF00D09E),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Payment deep link handling
     final code = params['code'] ?? '';
     final id = params['id'] ?? '';
     final cancel = params['cancel']?.toLowerCase() == 'true';

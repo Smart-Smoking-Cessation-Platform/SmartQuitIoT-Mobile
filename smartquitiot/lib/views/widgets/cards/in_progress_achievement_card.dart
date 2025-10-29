@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:SmartQuitIoT/models/achievement.dart';
 
 class InProgressAchievementCard extends StatelessWidget {
-  final Map<String, dynamic> achievement;
+  final Achievement achievement;
 
   const InProgressAchievementCard({super.key, required this.achievement});
 
-  Color _getProgressColor(double progress) {
-    if (progress >= 0.7) return const Color(0xFF4CAF50); // Green
-    if (progress >= 0.4) return const Color(0xFFFF9800); // Orange
-    return const Color(0xFFE91E63); // Pink/Red
-  }
-
   @override
   Widget build(BuildContext context) {
-    final progressColor = _getProgressColor(achievement['progress'] ?? 0.0);
+    const lockedColor = Color(0xFF9E9E9E);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -37,17 +32,34 @@ class InProgressAchievementCard extends StatelessWidget {
                 width: 68,
                 height: 68,
                 decoration: BoxDecoration(
-                  color: progressColor.withOpacity(0.15),
+                  color: lockedColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: progressColor.withOpacity(0.3),
+                    color: lockedColor.withOpacity(0.3),
                     width: 2,
                   ),
                 ),
-                child: Icon(
-                  achievement['icon'],
-                  color: progressColor,
-                  size: 34,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Colors.grey,
+                      BlendMode.saturation,
+                    ),
+                    child: Image.network(
+                      achievement.icon,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.lock_outline,
+                          color: lockedColor,
+                          size: 34,
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 20),
@@ -59,7 +71,7 @@ class InProgressAchievementCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            achievement['title'],
+                            achievement.name,
                             style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
@@ -73,16 +85,16 @@ class InProgressAchievementCard extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: progressColor.withOpacity(0.1),
+                            color: lockedColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: progressColor.withOpacity(0.3),
+                              color: lockedColor.withOpacity(0.3),
                             ),
                           ),
                           child: Text(
-                            'IN PROGRESS',
+                            'LOCKED',
                             style: TextStyle(
-                              color: progressColor,
+                              color: lockedColor,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
@@ -93,7 +105,7 @@ class InProgressAchievementCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      achievement['description'],
+                      achievement.description,
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 14,
@@ -105,52 +117,25 @@ class InProgressAchievementCard extends StatelessWidget {
               ),
             ],
           ),
-          if (achievement['progress'] != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: progressColor.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: progressColor.withOpacity(0.1)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 16,
+                color: Colors.grey[500],
               ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Progress',
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        '${(achievement['progress'] * 100).toInt()}%',
-                        style: TextStyle(
-                          color: progressColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: achievement['progress'],
-                      backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                      minHeight: 8,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 6),
+              Text(
+                'Complete challenges to unlock this achievement',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ],
       ),
     );

@@ -26,7 +26,7 @@ class WelcomeScreen extends ConsumerWidget {
         if (next.isFirstLogin == true) {
           context.go('/onboarding');
         } else {
-          context.go('/home');
+          context.go('/main');
         }
       }
     });
