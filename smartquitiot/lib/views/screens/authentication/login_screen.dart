@@ -76,8 +76,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
-      // Đăng nhập thành công
-      if (next.isAuthenticated && previous?.isAuthenticated == false) {
+      // Đăng nhập thành công (handle cả previous = null và previous.isAuthenticated = false)
+      if (next.isAuthenticated && (previous?.isAuthenticated != true)) {
         setState(() {
           _isNavigating = true;
         });

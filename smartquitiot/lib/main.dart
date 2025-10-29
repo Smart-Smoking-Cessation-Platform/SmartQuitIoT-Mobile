@@ -149,11 +149,13 @@ class _MyAppState extends ConsumerState<MyApp> {
       Navigator.of(rootNavigatorKey.currentContext!).pop();
     }
 
-    if (cancel) {
+    // Route based on payment status
+    if (cancel || path.contains('failed')) {
       router.go('/payment/cancel', extra: body);
     } else if (membershipStatus == 'AVAILABLE') {
       router.go('/payment/success', extra: body);
     } else {
+      router.go('/payment/cancel', extra: body);
       ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
         SnackBar(content: Text('Payment failed for order: $orderCodeNum')),
       );

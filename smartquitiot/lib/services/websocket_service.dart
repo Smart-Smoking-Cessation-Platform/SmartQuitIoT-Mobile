@@ -15,11 +15,12 @@ class WebSocketService {
   int? _currentUserId;
 
   WebSocketService(this._authRepository) {
-    _notificationController = StreamController<AchievementNotification>.broadcast();
+    _notificationController =
+        StreamController<AchievementNotification>.broadcast();
   }
 
   bool get isConnected => _isConnected;
-  Stream<AchievementNotification> get notificationStream => 
+  Stream<AchievementNotification> get notificationStream =>
       _notificationController!.stream;
 
   Future<void> connect(int userId) async {
@@ -30,7 +31,9 @@ class WebSocketService {
 
     _currentUserId = userId;
     final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://192.168.110.64:8080';
-    final wsUrl = baseUrl.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://');
+    final wsUrl = baseUrl
+        .replaceFirst('http://', 'ws://')
+        .replaceFirst('https://', 'wss://');
     final fullWsUrl = '$wsUrl/ws';
 
     debugPrint('🔌 Connecting to WebSocket: $fullWsUrl');

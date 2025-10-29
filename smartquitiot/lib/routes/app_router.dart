@@ -93,7 +93,32 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/payment/cancel',
       builder: (context, state) {
-        return const PaymentCancelScreen();
+        // Handle data from both extra (main.dart handler) and query params (direct deep link)
+        final extra = state.extra is Map ? state.extra as Map : null;
+        final queryParams = state.uri.queryParameters;
+
+        return PaymentCancelScreen(
+          code: extra?['code']?.toString() ?? queryParams['code'],
+          id: extra?['id']?.toString() ?? queryParams['id'],
+          status: extra?['status']?.toString() ?? queryParams['status'],
+          cancel: extra?['cancel']?.toString() ?? queryParams['cancel'],
+          orderCode:
+              extra?['orderCode']?.toString() ?? queryParams['orderCode'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/payment/failed',
+      builder: (context, state) {
+        // Handle query parameters from PayOS deep link directly
+        final queryParams = state.uri.queryParameters;
+        return PaymentCancelScreen(
+          code: queryParams['code'],
+          id: queryParams['id'],
+          status: queryParams['status'],
+          cancel: queryParams['cancel'],
+          orderCode: queryParams['orderCode'],
+        );
       },
     ),
     GoRoute(
