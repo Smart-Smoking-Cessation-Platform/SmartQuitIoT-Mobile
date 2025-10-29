@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
-import 'package:SmartQuitIoT/viewmodels/auth_view_model.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:SmartQuitIoT/views/widgets/buttons/social_button.dart';
 import '../../../providers/auth_provider.dart';
 
 class WelcomeScreen extends ConsumerWidget {
@@ -29,7 +26,7 @@ class WelcomeScreen extends ConsumerWidget {
         if (next.isFirstLogin == true) {
           context.go('/onboarding');
         } else {
-          context.go('/main');
+          context.go('/home');
         }
       }
     });
@@ -87,7 +84,7 @@ class WelcomeScreen extends ConsumerWidget {
                         child: ElevatedButton(
                           onPressed: isLoading
                               ? null
-                              : () => context.go('/login'),
+                              : () => context.push('/login'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -122,7 +119,7 @@ class WelcomeScreen extends ConsumerWidget {
                         child: OutlinedButton(
                           onPressed: isLoading
                               ? null
-                              : () => context.go('/signup'),
+                              : () => context.push('/signup'),
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             side: BorderSide.none,
@@ -174,18 +171,6 @@ class WelcomeScreen extends ConsumerWidget {
                   /// Social login
                   Column(
                     children: [
-                      // SocialButton(
-                      //   onTap: () async {
-                      //     // Dòng code này sẽ xóa sạch cache đăng nhập Google
-                      //     await GoogleSignIn.instance.signOut();
-                      //     await GoogleSignIn.instance.disconnect();
-                      //     print('--- ĐÃ ĐĂNG XUẤT HOÀN TOÀN KHỎI GOOGLE ---');
-                      //     ScaffoldMessenger.of(context).showSnackBar(
-                      //       SnackBar(content: Text('Đã reset Google Sign-In!')),
-                      //     );
-                      //   },
-                      //   child: Text('Reset Google Sign-In'),
-                      // ),
                       SocialButton(
                         onTap: isLoading
                             ? () {}
@@ -214,31 +199,6 @@ class WelcomeScreen extends ConsumerWidget {
                       ),
 
                       const SizedBox(height: 12),
-
-                      // NÚT FACEBOOK BỊ VÔ HIỆU HÓA
-                      // Maybe in the future....
-                      // SocialButton(
-                      //   onTap: () {},
-                      //   child: Row(
-                      //     mainAxisAlignment: MainAxisAlignment.center,
-                      //     children: [
-                      //       Image.asset(
-                      //         'lib/assets/images/facebook.png',
-                      //         width: 20,
-                      //         height: 20,
-                      //       ),
-                      //       const SizedBox(width: 12),
-                      //       Text(
-                      //         'sign_in_facebook'.tr(),
-                      //         style: TextStyle(
-                      //           color: Colors.black87,
-                      //           fontSize: 16,
-                      //           fontWeight: FontWeight.w500,
-                      //         ),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
                     ],
                   ),
 
@@ -247,7 +207,7 @@ class WelcomeScreen extends ConsumerWidget {
                   /// Forgot Password
                   Center(
                     child: GestureDetector(
-                      onTap: isLoading ? null : () => context.go('/forgot'),
+                      onTap: isLoading ? null : () => context.push('/forgot'),
                       child: RichText(
                         text: TextSpan(
                           text: '${'forgot_password'.tr()} ',
@@ -275,7 +235,7 @@ class WelcomeScreen extends ConsumerWidget {
               ),
             ),
 
-            /// Language Switcher (vẫn giữ nguyên)
+            /// Language Switcher
             Positioned(
               top: 16,
               right: 16,
@@ -283,7 +243,7 @@ class WelcomeScreen extends ConsumerWidget {
                 onTap: () {
                   showDialog(
                     context: context,
-                    builder: (_) => AlertDialog(
+                    builder: (dialogContext) => AlertDialog(
                       title: Text('select_language'.tr()),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -293,7 +253,7 @@ class WelcomeScreen extends ConsumerWidget {
                             title: const Text("English"),
                             onTap: () async {
                               await context.setLocale(const Locale('en'));
-                              context.pop();
+                              Navigator.pop(dialogContext);
                             },
                           ),
                           ListTile(
@@ -301,7 +261,7 @@ class WelcomeScreen extends ConsumerWidget {
                             title: const Text("Tiếng Việt"),
                             onTap: () async {
                               await context.setLocale(const Locale('vi'));
-                              context.pop();
+                              Navigator.pop(dialogContext);
                             },
                           ),
                         ],

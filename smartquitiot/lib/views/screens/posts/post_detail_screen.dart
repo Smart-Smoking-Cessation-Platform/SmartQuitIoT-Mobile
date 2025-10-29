@@ -6,6 +6,7 @@ import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/comment_card.dart';
 import 'package:SmartQuitIoT/views/screens/posts/create_post_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/dialogs/edit_reply_comment_dialog.dart';
+import 'package:SmartQuitIoT/views/widgets/dialogs/media_viewer_dialog.dart';
 import 'package:SmartQuitIoT/utils/date_formatter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:image_picker/image_picker.dart';
@@ -79,17 +80,17 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
       body: postState.isLoadingDetail
           ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
-              ),
-            )
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+        ),
+      )
           : postState.error != null
           ? _buildErrorState(postState.error!)
           : post == null
           ? _buildEmptyState()
           : Stack(
-              children: [_buildPostContent(post), _buildCommentInputBar(post)],
-            ),
+        children: [_buildPostContent(post), _buildCommentInputBar(post)],
+      ),
     );
   }
 
@@ -118,13 +119,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           CircleAvatar(
             radius: 20,
             backgroundImage:
-                post.account.avatarUrl != null &&
-                    post.account.avatarUrl!.isNotEmpty
+            post.account.avatarUrl != null &&
+                post.account.avatarUrl!.isNotEmpty
                 ? NetworkImage(post.account.avatarUrl!)
                 : null,
             child:
-                post.account.avatarUrl == null ||
-                    post.account.avatarUrl!.isEmpty
+            post.account.avatarUrl == null ||
+                post.account.avatarUrl!.isEmpty
                 ? const Icon(Icons.person, color: Colors.white)
                 : null,
           ),
@@ -241,20 +242,37 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   Widget _buildInlineMedia(List<PostMedia> media) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: media.map((item) {
+      children: media.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        
         if (item.mediaType == 'IMAGE') {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                item.mediaUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 200,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.broken_image, color: Colors.grey),
+            child: GestureDetector(
+              onTap: () {
+                // Open full screen image viewer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MediaViewerDialog(
+                      mediaList: media,
+                      initialIndex: index,
+                    ),
+                  ),
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  item.mediaUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  ),
                 ),
               ),
             ),
@@ -262,7 +280,42 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         } else if (item.mediaType == 'VIDEO') {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: _VideoPlayerWidget(videoUrl: item.mediaUrl),
+            child: GestureDetector(
+              onTap: () {
+                // Open full screen video viewer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MediaViewerDialog(
+                      mediaList: media,
+                      initialIndex: index,
+                    ),
+                  ),
+                );
+              },
+              child: Stack(
+                children: [
+                  _VideoPlayerWidget(videoUrl: item.mediaUrl),
+                  // Fullscreen icon overlay
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.fullscreen,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         } else {
           return const SizedBox.shrink();
@@ -524,15 +577,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   IconButton(
                     icon: commentState.isSubmitting
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF00D09E),
-                              ),
-                            ),
-                          )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF00D09E),
+                        ),
+                      ),
+                    )
                         : const Icon(Icons.send, color: Color(0xFF00D09E)),
                     onPressed: commentState.isSubmitting
                         ? null
@@ -691,10 +744,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       await ref
           .read(commentViewModelProvider.notifier)
           .createComment(
-            postId: widget.postId,
-            content: text,
-            media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
-          );
+        postId: widget.postId,
+        content: text,
+        media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
+      );
 
       // Clear input and media
       _commentController.clear();
@@ -835,12 +888,12 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         await ref
             .read(commentViewModelProvider.notifier)
             .deleteComment(commentId);
-        
+
         // Reload post to show updated comments
         if (mounted) {
           await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
         }
-        
+
         if (mounted) {
           Flushbar(
             message: 'Comment deleted successfully!',
@@ -878,7 +931,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     // If edit was successful, reload the post detail
     if (result == true && mounted) {
       ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
-      
+
       if (mounted) {
         Flushbar(
           message: 'Post updated! Refreshing...',

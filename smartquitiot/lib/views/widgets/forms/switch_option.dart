@@ -65,7 +65,7 @@ class SwitchOption extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFF00D09E),
+            activeThumbColor: const Color(0xFF00D09E),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],

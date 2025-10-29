@@ -1,4 +1,4 @@
-﻿// lib/features/coaching/widgets/tag_selector.dart
+// lib/features/coaching/widgets/tag_selector.dart
 import 'package:SmartQuitIoT/views/screens/appointments/tag_chip.dart';
 import 'package:flutter/material.dart';
 
@@ -8,11 +8,11 @@ class TagSelector extends StatelessWidget {
   final Function(String) onTagToggle;
 
   const TagSelector({
-    Key? key,
+    super.key,
     required this.tags,
     required this.selectedTags,
     required this.onTagToggle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

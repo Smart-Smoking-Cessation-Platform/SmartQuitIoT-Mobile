@@ -25,11 +25,12 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    // Load quit plan khi widget khởi tạo
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(quitPlanHomepageViewModelProvider.notifier)
-          .loadQuitPlanHomePage();
+    // Delay để tránh race condition khi navigate từ onboarding
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      print('⏳ [QuitPlanCard] Waiting 500ms before initial load...');
+      await Future.delayed(const Duration(milliseconds: 500));
+      print('🚀 [QuitPlanCard] Auto-loading quit plan...');
+      ref.read(quitPlanHomepageViewModelProvider.notifier).loadQuitPlanHomePage();
     });
   }
 
@@ -46,8 +47,8 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
     // Listen for mission refresh trigger
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != next) {
-        // Refresh quit plan data when missions are completed
-        ref.read(quitPlanHomepageViewModelProvider.notifier).refreshQuitPlan();
+        print('🔄 [QuitPlanCard] Refresh triggered - reloading quit plan...');
+        ref.read(quitPlanHomepageViewModelProvider.notifier).loadQuitPlanHomePage();
       }
     });
 
@@ -89,38 +90,17 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.red.withOpacity(0.3)),
         ),
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Error: ${state.error}',
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontSize: 14,
-                    ),
-                  ),
+            Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Error: ${state.error}',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontSize: 14,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  ref
-                      .read(quitPlanHomepageViewModelProvider.notifier)
-                      .refreshQuitPlan();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[700],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-                child: const Text('Retry', style: TextStyle(fontSize: 12)),
               ),
             ),
           ],

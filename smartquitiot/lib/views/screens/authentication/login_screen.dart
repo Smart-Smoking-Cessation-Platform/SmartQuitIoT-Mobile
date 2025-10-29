@@ -5,13 +5,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../providers/auth_provider.dart';
 import '../../../services/token_storage_service.dart';
-import '../../../utils/notification_helper.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
 import 'package:SmartQuitIoT/views/widgets/headers/auth_header.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/primary_button.dart';
 import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import '../../../models/state/auth_state.dart';
+import '../../../utils/notification_helper.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -37,9 +37,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     FocusScope.of(context).unfocus();
 
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final usernameOrEmail = _username.text.trim();
     final password = _password.text.trim();
@@ -64,6 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authViewModelProvider, (previous, next) async {
+      // Báo lỗi đăng nhập
       if (next.error != null && previous?.error != next.error) {
         NotificationHelper.showTopNotification(
           context,
@@ -74,6 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
+      // Đăng nhập thành công
       if (next.isAuthenticated && previous?.isAuthenticated == false) {
         NotificationHelper.showTopNotification(
           context,
@@ -91,7 +91,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (!mounted) return;
 
         final isFirstLogin = next.isFirstLogin ?? false;
-
         if (isFirstLogin) {
           context.go('/onboarding');
         } else {
@@ -152,6 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
 
+                      /// Nút login
                       authState.isLoading
                           ? const Center(
                               child: CircularProgressIndicator(
@@ -164,6 +164,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
 
                       const SizedBox(height: 16),
+
+                      /// Forgot password
                       Center(
                         child: TextButton(
                           onPressed: () => context.push('/forgot'),
@@ -176,10 +178,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+
                       const SizedBox(height: 8),
                       const AuthDivider(),
                       const SizedBox(height: 24),
+
+                      /// Social login
                       Padding(
                         padding: const EdgeInsets.only(right: 10),
                         child: SocialLoginButtons(
@@ -190,7 +194,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           },
                         ),
                       ),
+
                       const SizedBox(height: 24),
+
+                      /// Đăng ký tài khoản
                       Center(
                         child: TextButton(
                           onPressed: () => context.push('/signup'),
@@ -214,6 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 32),
                     ],
                   ),

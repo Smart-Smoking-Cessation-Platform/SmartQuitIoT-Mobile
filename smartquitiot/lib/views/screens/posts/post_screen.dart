@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class PostContentPage extends StatefulWidget {
   final String category;
 
-  const PostContentPage({Key? key, required this.category}) : super(key: key);
+  const PostContentPage({super.key, required this.category});
 
   @override
   _PostContentPageState createState() => _PostContentPageState();
@@ -297,7 +297,7 @@ class _PostContentPageState extends State<PostContentPage> {
                                 hideFromCommunity = value;
                               });
                             },
-                            activeColor: Color(0xFF4A90E2),
+                            activeThumbColor: Color(0xFF4A90E2),
                           ),
                         ],
                       ),

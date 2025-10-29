@@ -1,4 +1,6 @@
-﻿import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
+// lib/views/screens/settings/settings_screen.dart
+import 'package:SmartQuitIoT/views/screens/appointments/appointments_screen.dart';
+import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -95,6 +97,18 @@ class SettingsScreen extends ConsumerWidget {
                         },
                       ),
                       _buildSettingItem(
+                        icon: Icons.calendar_month_outlined,
+                        title: 'Appointments',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AppointmentsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSettingItem(
                         icon: Icons.analytics_outlined,
                         title: 'Change smoking data',
                         onTap: () {},
@@ -115,7 +129,9 @@ class SettingsScreen extends ConsumerWidget {
                         icon: Icons.card_membership_outlined,
                         title: 'Membership',
                         titleColor: const Color(0xFF00D09E),
-                        onTap: () {},
+                        onTap: () {
+                          context.go('/my-subscription');
+                        },
                       ),
                     ]),
                     const SizedBox(height: 15),

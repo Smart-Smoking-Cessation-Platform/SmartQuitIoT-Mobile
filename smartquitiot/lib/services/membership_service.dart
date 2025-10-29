@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'token_storage_service.dart';
@@ -81,7 +81,41 @@ class MembershipApiService {
     }
   }
 
+  Future<http.Response> getCurrentSubscription() async {
+    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8080';
+    final uri = Uri.parse('$baseUrl/api/membership-subscriptions/current');
+    
+    try {
+      final accessToken = await _tokenStorageService.getAccessToken();
 
+      if (accessToken == null) {
+        throw Exception('No access token found — user not logged in');
+      }
+
+      print('📡 [MembershipService] Fetching current subscription...');
+      print('🌐 [MembershipService] URL: $uri');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+
+      print('📊 [MembershipService] Response Status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        print('✅ [MembershipService] Successfully fetched current subscription');
+      } else {
+        print('❌ [MembershipService] Failed: ${response.body}');
+      }
+
+      return response;
+    } catch (e) {
+      print('❌ [MembershipService] Network error fetching current subscription: $e');
+      rethrow;
+    }
+  }
 }
 
 

@@ -53,10 +53,10 @@ class _PlanSelectionScreenState extends ConsumerState<PlanSelectionScreen> {
           ),
         );
       } else {
-        // Xử lý lỗi
+        // Handle error
       }
     } catch (e) {
-      // Xử lý lỗi
+      // Handle error
     } finally {
       if (mounted) {
         setState(() {
@@ -72,12 +72,21 @@ class _PlanSelectionScreenState extends ConsumerState<PlanSelectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chọn kỳ hạn cho gói ${widget.packageName}'),
+        title: Text(
+          'Select Plan for ${widget.packageName}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: const Color(0xFF00D09E),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 1,
       ),
       body: plansAsyncValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Lỗi: $err')),
+        error: (err, stack) => Center(child: Text('Error: $err')),
         data: (plans) {
           return Padding(
             padding: const EdgeInsets.all(16.0),
@@ -147,8 +156,15 @@ class _PlanSelectionScreenState extends ConsumerState<PlanSelectionScreen> {
                     ),
                     onPressed: _isProcessingPayment ? null : () => _proceedToPayment(plans),
                     child: _isProcessingPayment
-                        ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white))
-                        : const Text('Tiếp tục thanh toán', style: TextStyle(fontSize: 18, color: Colors.white)),
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(color: Colors.white),
+                          )
+                        : const Text(
+                            'Proceed to Payment',
+                            style: TextStyle(fontSize: 18, color: Colors.white),
+                          ),
                   ),
                 ),
               ],

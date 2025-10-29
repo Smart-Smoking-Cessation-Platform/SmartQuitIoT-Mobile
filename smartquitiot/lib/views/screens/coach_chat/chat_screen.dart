@@ -1,6 +1,5 @@
 import 'package:SmartQuitIoT/views/screens/coach_chat/chat_screen_detail.dart';
 import 'package:flutter/material.dart';
-import 'chat_message_bubble.dart';
 
            // ========================================
 // Fake data model

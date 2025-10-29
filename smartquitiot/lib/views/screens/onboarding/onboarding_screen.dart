@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:another_flushbar/flushbar.dart';
 import '../../../models/request/create_quit_plan_request.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
@@ -29,6 +30,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _cigarettesPerPackController =
       TextEditingController();
   final TextEditingController _quitPlanNameController = TextEditingController();
+  final TextEditingController _nicotineAmountController = TextEditingController();
 
   // Options
   int? _selectedFirstCigaretteOptionMinutes;
@@ -37,10 +39,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool? _smokeMoreMorning;
   bool? _smokeEvenSick;
   bool _useNRT = false;
-  List<String> _selectedInterests = [];
+  final List<String> _selectedInterests = [];
 
   // Validation flag
   bool _submitted = false;
+  bool _isCreatingPlan = false;
 
   // First cigarette options
   final Map<String, int> firstCigaretteOptions = {
@@ -80,6 +83,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         }
       }
     });
+
+    // Format nicotine amount with thousand separator
+    _nicotineAmountController.addListener(() {
+      final text = _nicotineAmountController.text.replaceAll(',', '');
+      if (text.isEmpty) return;
+      final number = double.tryParse(text);
+      if (number != null) {
+        final formatted = NumberFormat('#,###.##', 'en_US').format(number);
+        if (formatted != _nicotineAmountController.text) {
+          _nicotineAmountController.value = TextEditingValue(
+            text: formatted,
+            selection: TextSelection.collapsed(offset: formatted.length),
+          );
+        }
+      }
+    });
   }
 
   /// Validate and return first error page index, -1 if no error
@@ -87,9 +106,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() => _submitted = true);
 
     // Page 3 errors
-    if (_yearsController.text.isEmpty ||
+    if (_smokeAvgController.text.isEmpty ||
+        _yearsController.text.isEmpty ||
         _moneyController.text.isEmpty ||
         _cigarettesPerPackController.text.isEmpty ||
+        _nicotineAmountController.text.isEmpty ||
         _selectedFirstCigaretteOptionMinutes == null) {
       return 2;
     }
@@ -203,6 +224,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             : null,
                       ),
                       QuestionInputCard(
+                        question: 'Average cigarettes smoked per day',
+                        controller: _smokeAvgController,
+                        hintText: 'Enter number of cigarettes',
+                        keyboardType: TextInputType.number,
+                        errorText: _submitted && _smokeAvgController.text.isEmpty
+                            ? 'You must enter a value'
+                            : null,
+                      ),
+                      QuestionInputCard(
                         question: 'How many years have you smoked?',
                         controller: _yearsController,
                         hintText: 'Enter number of years',
@@ -228,6 +258,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         errorText:
                             _submitted &&
                                 _cigarettesPerPackController.text.isEmpty
+                            ? 'You must enter a value'
+                            : null,
+                      ),
+                      QuestionInputCard(
+                        question: 'Amount of nicotine per cigarette (mg)',
+                        controller: _nicotineAmountController,
+                        hintText: 'Enter nicotine amount (e.g., 1.2)',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        errorText:
+                            _submitted &&
+                                _nicotineAmountController.text.isEmpty
                             ? 'You must enter a value'
                             : null,
                       ),
@@ -372,8 +413,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       const SizedBox(height: 40),
 
                       // Submit
-                      quitPlanState is AsyncLoading
-                          ? const Center(child: CircularProgressIndicator())
+                      _isCreatingPlan
+                          ? Column(
+                              children: [
+                                const CircularProgressIndicator(
+                                  color: Color(0xFF00D09E),
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Creating your quit plan...',
+                                  style: TextStyle(
+                                    color: Color(0xFF00D09E),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
                           : PrimaryButton(
                               text: 'Finish',
                               onPressed: () async {
@@ -420,8 +475,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   morningSmokingFrequency: _smokeMoreMorning!,
                                   smokeWhenSick: _smokeEvenSick!,
                                   interests: _selectedInterests,
-                                  amountOfNicotinePerCigarettes: 0,
+                                  amountOfNicotinePerCigarettes: double.parse(
+                                    _nicotineAmountController.text.replaceAll(',', ''),
+                                  ),
                                 );
+
+                                // Show flushbar immediately when button is clicked
+                                Flushbar(
+                                  message: "Creating your quit plan, it may take time. Please wait...",
+                                  duration: const Duration(seconds: 3),
+                                  backgroundColor: const Color(0xFF00D09E),
+                                  margin: const EdgeInsets.all(8),
+                                  borderRadius: BorderRadius.circular(8),
+                                  icon: const Icon(
+                                    Icons.info_outline,
+                                    color: Colors.white,
+                                  ),
+                                  flushbarPosition: FlushbarPosition.TOP,
+                                ).show(context);
+
+                                setState(() {
+                                  _isCreatingPlan = true;
+                                });
 
                                 try {
                                   await ref
@@ -432,20 +507,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     '✅ [OnboardingScreen] Quit plan created successfully',
                                   );
 
-                                  NotificationHelper.showTopNotification(
-                                    context,
-                                    title: "Success",
-                                    message:
-                                        "Quit plan \"${_quitPlanNameController.text.trim()}\" created successfully",
-                                  );
-
-                                  // Give backend time to initialize phase and missions
+                                  // Give backend time to initialize phase and missions (75 seconds)
                                   print(
-                                    '⏳ [OnboardingScreen] Waiting for backend to initialize phase...',
+                                    '⏳ [OnboardingScreen] Waiting 75 seconds for backend to initialize phase and missions...',
                                   );
                                   await Future.delayed(
-                                    const Duration(seconds: 2),
+                                    const Duration(seconds: 75),
                                   );
+
+                                  // Show success notification
+                                  if (mounted) {
+                                    Flushbar(
+                                      message:
+                                          "Quit plan \"${_quitPlanNameController.text.trim()}\" created successfully!",
+                                      duration: const Duration(seconds: 3),
+                                      backgroundColor: const Color(0xFF00D09E),
+                                      margin: const EdgeInsets.all(8),
+                                      borderRadius: BorderRadius.circular(8),
+                                      icon: const Icon(
+                                        Icons.check_circle_outline,
+                                        color: Colors.white,
+                                      ),
+                                      flushbarPosition: FlushbarPosition.TOP,
+                                    ).show(context);
+                                  }
 
                                   // Trigger refresh for quit plan and missions cards
                                   print(
@@ -455,25 +540,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       .read(missionRefreshProvider.notifier)
                                       .refreshAll();
 
-                                  // Give time for cards to refresh
-                                  await Future.delayed(
-                                    const Duration(milliseconds: 500),
-                                  );
-
                                   print(
                                     '🚀 [OnboardingScreen] Navigating to main screen...',
                                   );
-                                  context.go('/main');
+
+                                  setState(() {
+                                    _isCreatingPlan = false;
+                                  });
+
+                                  // Navigate immediately, cards sẽ tự retry nếu chưa sẵn sàng
+                                  if (mounted) {
+                                    context.go('/main');
+                                  }
                                 } catch (e) {
                                   print(
                                     '❌ [OnboardingScreen] Error creating quit plan: $e',
                                   );
-                                  NotificationHelper.showTopNotification(
-                                    context,
-                                    title: 'Error',
-                                    message: e.toString(),
-                                    isError: true,
-                                  );
+
+                                  setState(() {
+                                    _isCreatingPlan = false;
+                                  });
+
+                                  if (mounted) {
+                                    Flushbar(
+                                      message: 'Error: ${e.toString()}',
+                                      duration: const Duration(seconds: 3),
+                                      backgroundColor: Colors.red[600]!,
+                                      margin: const EdgeInsets.all(8),
+                                      borderRadius: BorderRadius.circular(8),
+                                      icon: const Icon(
+                                        Icons.error_outline,
+                                        color: Colors.white,
+                                      ),
+                                      flushbarPosition: FlushbarPosition.TOP,
+                                    ).show(context);
+                                  }
                                 }
                               },
                               width: 200,

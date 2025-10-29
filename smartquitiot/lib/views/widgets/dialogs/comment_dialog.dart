@@ -15,13 +15,13 @@ class CommentDialog extends ConsumerStatefulWidget {
   final List<PostMedia>? initialMedia;
 
   const CommentDialog({
-    Key? key,
+    super.key,
     required this.postId,
     this.parentId,
     this.editCommentId,
     this.initialContent,
     this.initialMedia,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<CommentDialog> createState() => _CommentDialogState();

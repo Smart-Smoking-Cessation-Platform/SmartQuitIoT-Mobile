@@ -1,4 +1,4 @@
-﻿// lib/features/coaching/widgets/time_slot_grid.dart
+// lib/features/coaching/widgets/time_slot_grid.dart
 import 'package:SmartQuitIoT/views/screens/appointments/time_slot_item.dart';
 import 'package:flutter/material.dart';
 

@@ -1,4 +1,4 @@
-﻿// lib/features/coaching/screens/coach_rating_screen.dart
+// lib/features/coaching/screens/coach_rating_screen.dart
 import 'package:SmartQuitIoT/views/screens/appointments/coach_list_items.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/info_card.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/rating_star.dart';
@@ -11,7 +11,7 @@ import 'custom_button.dart';
 class CoachRatingScreen extends StatefulWidget {
   final Coach coach;
 
-  const CoachRatingScreen({Key? key, required this.coach}) : super(key: key);
+  const CoachRatingScreen({super.key, required this.coach});
 
   @override
   State<CoachRatingScreen> createState() => _CoachRatingScreenState();

@@ -120,7 +120,7 @@ class IoTDataCard extends StatelessWidget {
               Expanded(
                 child: _buildDataItem(
                   'Respiratory',
-                  '${respiratoryRate}/min',
+                  '$respiratoryRate/min',
                   Icons.airline_seat_recline_normal,
                 ),
               ),
@@ -139,7 +139,7 @@ class IoTDataCard extends StatelessWidget {
               Expanded(
                 child: _buildDataItem(
                   'Sleep Quality',
-                  '${sleepQuality}/10',
+                  '$sleepQuality/10',
                   Icons.star,
                 ),
               ),

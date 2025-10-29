@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'package:SmartQuitIoT/models/post_detail.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../core/errors/exception.dart';
-import '../models/post_detail.dart';
 import '../models/response/error_response.dart';
 import '../models/response/post_detail_response.dart';
 import '../models/response/post_like_response.dart';
@@ -213,7 +213,7 @@ class PostService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        
+
         // Check if response is wrapped or direct Post object
         if (data.containsKey('data') && data.containsKey('success')) {
           // Wrapped response: { "success": true, "data": {...} }

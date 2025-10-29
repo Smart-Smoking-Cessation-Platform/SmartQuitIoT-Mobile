@@ -1,4 +1,4 @@
-﻿// components/metric_card.dart
+// components/metric_card.dart
 import 'package:flutter/material.dart';
 
 class MetricCard extends StatelessWidget {
@@ -10,14 +10,14 @@ class MetricCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const MetricCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.unit,
     required this.icon,
     required this.color,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

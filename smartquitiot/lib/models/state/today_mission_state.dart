@@ -17,12 +17,13 @@ class TodayMissionState {
     List<TodayMissionDetail>? missions,
     bool? isLoading,
     String? error,
+    bool clearError = false,
     bool? allMissionsCompleted,
   }) {
     return TodayMissionState(
       missions: missions ?? this.missions,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       allMissionsCompleted: allMissionsCompleted ?? this.allMissionsCompleted,
     );
   }

@@ -1,4 +1,4 @@
-﻿// lib/features/coaching/widgets/custom_button.dart
+// lib/features/coaching/widgets/custom_button.dart
 import 'package:flutter/material.dart';
 
 class CustomButton extends StatelessWidget {
@@ -11,7 +11,7 @@ class CustomButton extends StatelessWidget {
   final double borderRadius;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     this.onPressed,
     this.isLoading = false,
@@ -19,7 +19,7 @@ class CustomButton extends StatelessWidget {
     this.textColor = Colors.white,                  // ✅ chữ trắng
     this.height = 56,
     this.borderRadius = 16,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
