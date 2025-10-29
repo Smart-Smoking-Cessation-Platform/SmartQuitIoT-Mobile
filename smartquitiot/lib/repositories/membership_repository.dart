@@ -33,15 +33,32 @@ class MembershipRepository {
 
   Future<MembershipSubscription?> processPaymentResult(Map<String, dynamic> body) async {
     try {
+      print('📞 [MembershipRepository] Processing payment result...');
+      print('📦 [MembershipRepository] Request body: $body');
+      
       final response = await _apiService.processPayment(body);
+      
+      print('📊 [MembershipRepository] Response Status: ${response.statusCode}');
+      print('📦 [MembershipRepository] Response Body: ${response.body}');
+      
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return MembershipSubscription.fromJson(data);
+        final jsonResponse = jsonDecode(response.body);
+        
+        // Backend returns GlobalResponse with data field
+        if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
+          final subscription = MembershipSubscription.fromJson(jsonResponse['data']);
+          print('✅ [MembershipRepository] Payment processed successfully');
+          print('📊 [MembershipRepository] Subscription ID: ${subscription.id}');
+          return subscription;
+        } else {
+          throw Exception('API returned unsuccessful response: ${jsonResponse['message']}');
+        }
       } else {
         throw Exception('Failed to process payment. Status code: ${response.statusCode}');
       }
-    } catch (e) {
-      print('❌ Error in repository processing payment: $e');
+    } catch (e, stackTrace) {
+      print('❌ [MembershipRepository] Error processing payment: $e');
+      print('🧩 [MembershipRepository] Stack trace: $stackTrace');
       rethrow;
     }
   }
