@@ -34,6 +34,7 @@ class _EditReplyCommentDialogState
   
   List<PostMedia> _selectedMedia = [];
   bool _isUploading = false;
+  bool _isSubmitting = false; // Guard to prevent double submission
 
   @override
   void initState() {
@@ -178,12 +179,21 @@ class _EditReplyCommentDialogState
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _isUploading ? null : _submitComment,
+          onPressed: (_isUploading || _isSubmitting) ? null : _submitComment,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF00D09E),
             foregroundColor: Colors.white,
           ),
-          child: Text(_isEditing ? 'Update' : 'Post'),
+          child: _isSubmitting 
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(_isEditing ? 'Update' : 'Post'),
         ),
       ],
     );
@@ -318,6 +328,12 @@ class _EditReplyCommentDialogState
   }
 
   Future<void> _submitComment() async {
+    // Prevent double submission
+    if (_isSubmitting) {
+      print('⚠️ [EditReplyCommentDialog] Already submitting, ignoring duplicate call');
+      return;
+    }
+
     final content = _contentController.text.trim();
     if (content.isEmpty) {
       Flushbar(
@@ -331,16 +347,28 @@ class _EditReplyCommentDialogState
       return;
     }
 
+    setState(() => _isSubmitting = true);
+    
+    print('📝 [EditReplyCommentDialog] Submitting ${_isEditing ? "edit" : _isReplying ? "reply" : "comment"}...');
+    print('📦 [EditReplyCommentDialog] PostId: ${widget.postId}');
+    print('📦 [EditReplyCommentDialog] ParentId: ${widget.parentId}');
+    print('📦 [EditReplyCommentDialog] Content length: ${content.length}');
+    print('📦 [EditReplyCommentDialog] Media count: ${_selectedMedia.length}');
+
     try {
       if (_isEditing) {
         // Update existing comment
+        print('✏️ [EditReplyCommentDialog] Calling updateComment API...');
         await ref.read(commentViewModelProvider.notifier).updateComment(
               commentId: widget.comment!.id,
               content: content,
               media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
             );
 
+        print('✅ [EditReplyCommentDialog] Comment updated successfully');
+        
         if (mounted) {
+          setState(() => _isSubmitting = false);
           Navigator.pop(context, true);
           Flushbar(
             message: 'Comment updated successfully!',
@@ -353,6 +381,7 @@ class _EditReplyCommentDialogState
         }
       } else {
         // Create new comment or reply
+        print('📝 [EditReplyCommentDialog] Calling createComment API...');
         await ref.read(commentViewModelProvider.notifier).createComment(
               postId: widget.postId,
               content: content,
@@ -360,7 +389,10 @@ class _EditReplyCommentDialogState
               media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
             );
 
+        print('✅ [EditReplyCommentDialog] Comment ${widget.parentId != null ? "reply" : "root"} created successfully');
+        
         if (mounted) {
+          setState(() => _isSubmitting = false);
           Navigator.pop(context, true);
           Flushbar(
             message: widget.parentId != null
@@ -375,7 +407,10 @@ class _EditReplyCommentDialogState
         }
       }
     } catch (e) {
+      print('❌ [EditReplyCommentDialog] Error submitting comment: $e');
+      
       if (mounted) {
+        setState(() => _isSubmitting = false);
         Flushbar(
           message: 'Error: $e',
           icon: const Icon(Icons.error_outline, color: Colors.white),

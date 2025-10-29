@@ -48,4 +48,10 @@ class AchievementService {
   Future<Response> getAllMyAchievements() async {
     return await _dio.get('/achievement/all-my-achievements');
   }
+
+  /// Get top leaderboards with achievements
+  Future<Response> getTopLeaderBoards() async {
+    print('🏆 [AchievementService] Fetching top leaderboards...');
+    return await _dio.get('/achievement/top-leader-boards');
+  }
 }

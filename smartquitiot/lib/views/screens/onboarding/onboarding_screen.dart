@@ -30,7 +30,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _cigarettesPerPackController =
       TextEditingController();
   final TextEditingController _quitPlanNameController = TextEditingController();
-  final TextEditingController _nicotineAmountController = TextEditingController();
+  final TextEditingController _nicotineAmountController =
+      TextEditingController();
 
   // Options
   int? _selectedFirstCigaretteOptionMinutes;
@@ -228,7 +229,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         controller: _smokeAvgController,
                         hintText: 'Enter number of cigarettes',
                         keyboardType: TextInputType.number,
-                        errorText: _submitted && _smokeAvgController.text.isEmpty
+                        errorText:
+                            _submitted && _smokeAvgController.text.isEmpty
                             ? 'You must enter a value'
                             : null,
                       ),
@@ -265,10 +267,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         question: 'Amount of nicotine per cigarette (mg)',
                         controller: _nicotineAmountController,
                         hintText: 'Enter nicotine amount (e.g., 1.2)',
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         errorText:
-                            _submitted &&
-                                _nicotineAmountController.text.isEmpty
+                            _submitted && _nicotineAmountController.text.isEmpty
                             ? 'You must enter a value'
                             : null,
                       ),
@@ -476,13 +479,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   smokeWhenSick: _smokeEvenSick!,
                                   interests: _selectedInterests,
                                   amountOfNicotinePerCigarettes: double.parse(
-                                    _nicotineAmountController.text.replaceAll(',', ''),
+                                    _nicotineAmountController.text.replaceAll(
+                                      ',',
+                                      '',
+                                    ),
                                   ),
                                 );
 
                                 // Show flushbar immediately when button is clicked
                                 Flushbar(
-                                  message: "Creating your quit plan, it may take time. Please wait...",
+                                  message:
+                                      "Creating your quit plan, it may take time. Please wait...",
                                   duration: const Duration(seconds: 3),
                                   backgroundColor: const Color(0xFF00D09E),
                                   margin: const EdgeInsets.all(8),
@@ -512,7 +519,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     '⏳ [OnboardingScreen] Waiting 75 seconds for backend to initialize phase and missions...',
                                   );
                                   await Future.delayed(
-                                    const Duration(seconds: 75),
+                                    const Duration(seconds: 80),
                                   );
 
                                   // Show success notification

@@ -32,6 +32,11 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
   @override
   void initState() {
     super.initState();
+    // Set initial message based on cancel status
+    final isCancelled = widget.cancel?.toLowerCase() == 'true';
+    if (isCancelled) {
+      _statusMessage = 'Processing cancellation...';
+    }
     _processPayment();
   }
 
@@ -45,7 +50,48 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
       print('   - cancel: ${widget.cancel}');
       print('   - orderCode: ${widget.orderCode}');
 
-      // Parse query parameters
+      // Check if payment was cancelled BEFORE calling API
+      final isCancelled = widget.cancel?.toLowerCase() == 'true';
+      final isPaid = widget.status?.toUpperCase() == 'PAID';
+
+      if (isCancelled || !isPaid) {
+        // Payment cancelled or failed - skip API call and go directly to cancel screen
+        print('❌ [PaymentProcessing] Payment cancelled or failed, skipping API call');
+        
+        // Still call API to update backend status (for cancelled payments)
+        final request = PaymentProcessRequest.fromQueryParams({
+          'id': widget.id,
+          'orderCode': widget.orderCode,
+          'cancel': widget.cancel,
+          'status': widget.status,
+        });
+
+        try {
+          print('🌐 [PaymentProcessing] Calling API to update cancel status...');
+          await _repository.processPaymentResult(request.toJson());
+          print('✅ [PaymentProcessing] Cancel status updated in backend');
+        } catch (e) {
+          print('⚠️ [PaymentProcessing] Failed to update cancel status (expected): $e');
+          // Expected to fail for cancelled payments - backend doesn't create subscription
+        }
+
+        if (!mounted) return;
+
+        // Navigate to cancel screen
+        await Future.delayed(const Duration(milliseconds: 500)); // Small delay for UX
+        if (!mounted) return;
+        
+        context.go('/payment/cancel', extra: {
+          'code': widget.code,
+          'id': widget.id,
+          'status': widget.status,
+          'cancel': widget.cancel,
+          'orderCode': widget.orderCode,
+        });
+        return;
+      }
+
+      // Payment successful - process normally
       final request = PaymentProcessRequest.fromQueryParams({
         'id': widget.id,
         'orderCode': widget.orderCode,
@@ -66,35 +112,19 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
 
       if (!mounted) return;
 
-      // Check if payment was successful or cancelled
-      final isCancelled = widget.cancel?.toLowerCase() == 'true';
-      final isPaid = widget.status?.toUpperCase() == 'PAID';
-
-      if (isCancelled || !isPaid) {
-        // Navigate to cancel screen
-        print('❌ [PaymentProcessing] Payment cancelled or failed');
-        context.go('/payment/cancel', extra: {
-          'code': widget.code,
-          'id': widget.id,
-          'status': widget.status,
-          'cancel': widget.cancel,
-          'orderCode': widget.orderCode,
-        });
-      } else {
-        // Navigate to success screen
-        print('🎉 [PaymentProcessing] Payment successful, navigating to success screen');
-        context.go('/payment/success', extra: {
-          'code': widget.code,
-          'id': widget.id,
-          'status': widget.status,
-          'cancel': widget.cancel,
-          'orderCode': widget.orderCode,
-          'packageName': subscription?.membershipPackage?.name ?? 'Premium',
-          'amount': subscription?.totalAmount?.toString() ?? '0',
-          'startDate': subscription?.startDate?.toString() ?? '',
-          'endDate': subscription?.endDate?.toString() ?? '',
-        });
-      }
+      // Navigate to success screen
+      print('🎉 [PaymentProcessing] Payment successful, navigating to success screen');
+      context.go('/payment/success', extra: {
+        'code': widget.code,
+        'id': widget.id,
+        'status': widget.status,
+        'cancel': widget.cancel,
+        'orderCode': widget.orderCode,
+        'packageName': subscription?.membershipPackage?.name ?? 'Premium',
+        'amount': subscription?.totalAmount?.toString() ?? '0',
+        'startDate': subscription?.startDate?.toString() ?? '',
+        'endDate': subscription?.endDate?.toString() ?? '',
+      });
     } catch (e, stackTrace) {
       print('❌ [PaymentProcessing] Error processing payment: $e');
       print('🧩 [PaymentProcessing] Stack trace: $stackTrace');

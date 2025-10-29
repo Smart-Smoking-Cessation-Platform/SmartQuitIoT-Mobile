@@ -154,9 +154,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/payment/failed',
       builder: (context, state) {
-        // Handle query parameters from PayOS deep link directly
+        // Handle PayOS cancel redirect - go through processing screen first
+        // Then automatically process payment and navigate to cancel screen
         final queryParams = state.uri.queryParameters;
-        return PaymentCancelScreen(
+        return PaymentProcessingScreen(
           code: queryParams['code'],
           id: queryParams['id'],
           status: queryParams['status'],

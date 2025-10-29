@@ -58,8 +58,14 @@ class CommentViewModel extends StateNotifier<CommentState> {
     List<PostMedia>? media,
   }) async {
     try {
+      print('📝 [CommentViewModel] Creating ${parentId != null ? "reply" : "root"} comment...');
+      print('📦 [CommentViewModel] PostId: $postId, ParentId: $parentId');
+      print('📦 [CommentViewModel] Content: ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
+      print('📦 [CommentViewModel] Current comments count: ${state.comments.length}');
+      
       state = state.copyWith(isSubmitting: true, error: null);
 
+      print('🌐 [CommentViewModel] Calling repository createComment...');
       final newComment = await _commentRepository.createComment(
         postId: postId,
         content: content,
@@ -67,18 +73,24 @@ class CommentViewModel extends StateNotifier<CommentState> {
         media: media,
       );
 
+      print('✅ [CommentViewModel] Repository returned comment with ID: ${newComment.id}');
+
       // Add the new comment to the list
       final updatedComments = List<PostComment>.from(state.comments);
 
       if (parentId != null) {
         // This is a reply - find the parent comment and add to its replies
+        print('🔍 [CommentViewModel] Finding parent comment with ID: $parentId');
         final parentIndex = updatedComments.indexWhere((c) => c.id == parentId);
         if (parentIndex != -1) {
+          print('✅ [CommentViewModel] Found parent at index $parentIndex');
           final parentComment = updatedComments[parentIndex];
           final updatedReplies = List<PostComment>.from(
             parentComment.replies ?? [],
           );
+          print('📦 [CommentViewModel] Parent has ${updatedReplies.length} existing replies');
           updatedReplies.add(newComment);
+          print('✅ [CommentViewModel] Added reply, now ${updatedReplies.length} replies');
 
           updatedComments[parentIndex] = PostComment(
             id: parentComment.id,
@@ -88,13 +100,18 @@ class CommentViewModel extends StateNotifier<CommentState> {
             media: parentComment.media,
             replies: updatedReplies,
           );
+        } else {
+          print('⚠️ [CommentViewModel] Parent comment not found! This reply will NOT be added to UI');
         }
       } else {
         // This is a root comment - add to the main list
+        print('✅ [CommentViewModel] Adding root comment to main list');
         updatedComments.insert(0, newComment);
       }
 
+      print('✅ [CommentViewModel] Final comment count: ${updatedComments.length}');
       state = state.copyWith(comments: updatedComments, isSubmitting: false);
+      print('✅ [CommentViewModel] State updated successfully');
     } catch (e) {
       state = state.copyWith(
         error: e is PostException ? e.message : 'Failed to create comment: $e',
