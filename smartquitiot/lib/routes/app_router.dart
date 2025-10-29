@@ -20,6 +20,8 @@ import 'package:SmartQuitIoT/views/screens/common/debug_home_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
+import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
+import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -93,6 +95,14 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         return const PaymentCancelScreen();
       },
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
     ),
   ],
 );
