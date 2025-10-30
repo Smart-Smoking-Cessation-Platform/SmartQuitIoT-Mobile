@@ -25,6 +25,9 @@ import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
 import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
+// import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
+import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
+import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -143,20 +146,28 @@ final GoRouter appRouter = GoRouter(
         }
       },
     ),
+    GoRoute(path: '/payment/cancel', builder: (_, __) => const PaymentCancelScreen()),
     GoRoute(
-      path: '/payment/cancel',
+      path: '/meeting',
+      name: 'meeting',
       builder: (context, state) {
-        // Handle data from both extra (main.dart handler) and query params (direct deep link)
-        final extra = state.extra is Map ? state.extra as Map : null;
-        final queryParams = state.uri.queryParameters;
+        final extra = state.extra is Map<String, dynamic> ? state.extra as Map<String, dynamic> : <String,dynamic>{};
+        final appointmentId = extra['appointmentId'] is int
+            ? extra['appointmentId'] as int
+            : int.tryParse((extra['appointmentId'] ?? '').toString()) ?? 0;
+        // pass prefilled token data if provided (may be null)
+        final preChannel = extra['channel'] as String?;
+        final preToken = extra['token'] as String?;
+        final preUid = extra['uid'] is int ? extra['uid'] as int : int.tryParse((extra['uid'] ?? '').toString());
+        final preExpiresAt = extra['expiresAt'] is int ? extra['expiresAt'] as int : int.tryParse((extra['expiresAt'] ?? '').toString());
 
-        return PaymentCancelScreen(
-          code: extra?['code']?.toString() ?? queryParams['code'],
-          id: extra?['id']?.toString() ?? queryParams['id'],
-          status: extra?['status']?.toString() ?? queryParams['status'],
-          cancel: extra?['cancel']?.toString() ?? queryParams['cancel'],
-          orderCode:
-              extra?['orderCode']?.toString() ?? queryParams['orderCode'],
+        return MeetingScreen(
+          appointmentId: appointmentId,
+          title: 'Meeting #$appointmentId',
+          prefilledChannel: preChannel,
+          prefilledToken: preToken,
+          prefilledUid: preUid,
+          prefilledExpiresAt: preExpiresAt,
         );
       },
     ),
