@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../providers/auth_provider.dart';
+import '../../../providers/websocket_provider.dart';
 import '../../../../utils/snackbar_helper.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -195,6 +196,16 @@ class SettingsScreen extends ConsumerWidget {
                                 TextButton(
                                   onPressed: () async {
                                     Navigator.pop(dialogContext);
+                                    
+                                    // Disconnect WebSocket before logout
+                                    try {
+                                      final websocketManager = ref.read(websocketManagerProvider);
+                                      await websocketManager.disconnect();
+                                      debugPrint('✅ [SettingsScreen] WebSocket disconnected');
+                                    } catch (e) {
+                                      debugPrint('❌ [SettingsScreen] WebSocket disconnect error: $e');
+                                    }
+                                    
                                     await ref
                                         .read(authViewModelProvider.notifier)
                                         .logout();

@@ -1,9 +1,8 @@
-import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../providers/auth_provider.dart';
-import '../../screens/notifications/notification_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../../utils/snackbar_helper.dart';
 
 class HomeHeader extends ConsumerWidget {
@@ -44,12 +43,7 @@ class HomeHeader extends ConsumerWidget {
             children: [
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationsScreen(),
-                    ),
-                  );
+                  context.push('/notifications');
                 },
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -67,12 +61,7 @@ class HomeHeader extends ConsumerWidget {
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsScreen(),
-                    ),
-                  );
+                  context.push('/settings');
                 },
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -138,9 +127,7 @@ class HomeHeader extends ConsumerWidget {
                     SnackBarHelper.showSuccess(context, 'Logout successfully!');
                   }
                   if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                        context, '/login', (route) => false
-                    );
+                    context.go('/login');
                   }
                 },
                 child: Container(

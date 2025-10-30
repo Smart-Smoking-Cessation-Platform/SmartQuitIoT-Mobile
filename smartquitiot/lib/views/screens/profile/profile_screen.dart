@@ -1,4 +1,5 @@
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
+import 'package:SmartQuitIoT/providers/websocket_provider.dart';
 import 'package:SmartQuitIoT/utils/snackbar_helper.dart';
 import 'package:SmartQuitIoT/views/screens/profile/edit_profile_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_top_header.dart';
@@ -185,6 +186,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         title: 'Logout',
                         iconColor: const Color(0xFF0984E3),
                         onTap: () async {
+                          // Disconnect WebSocket before logout
+                          try {
+                            final websocketManager = ref.read(websocketManagerProvider);
+                            await websocketManager.disconnect();
+                            debugPrint('✅ [ProfileScreen] WebSocket disconnected');
+                          } catch (e) {
+                            debugPrint('❌ [ProfileScreen] WebSocket disconnect error: $e');
+                          }
+                          
                           // Gọi logout trong ViewModel
                           await ref
                               .read(authViewModelProvider.notifier)

@@ -3,12 +3,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../repositories/auth_repository.dart';
 import 'dart:convert';
 
-class MetricsService {
+class AchievementService {
   final Dio _dio = Dio();
   final AuthRepository _authRepository;
   late final String baseUrl;
 
-  MetricsService(this._authRepository) {
+  AchievementService(this._authRepository) {
     baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://192.168.110.64:8080';
 
     // Setup Dio interceptors
@@ -16,8 +16,8 @@ class MetricsService {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           final token = await _authRepository.getAccessToken();
-          print('🔑 Metrics API Token: $token');
-          print('📡 Metrics Request to: ${options.uri}');
+          print('🔑 Achievement API Token: ${token?.substring(0, 20)}...');
+          print('📡 Achievement Request to: ${options.uri}');
 
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -26,13 +26,13 @@ class MetricsService {
           handler.next(options);
         },
         onResponse: (response, handler) {
-          print('✅ Metrics Response: ${response.statusCode}');
-          print('📦 Metrics Response Data: ${jsonEncode(response.data)}');
+          print('✅ Achievement Response: ${response.statusCode}');
+          print('📦 Achievement Response Data: ${jsonEncode(response.data)}');
           handler.next(response);
         },
         onError: (error, handler) {
-          print('❌ Metrics Error: ${error.message}');
-          print('❌ Metrics Error Response: ${error.response?.data}');
+          print('❌ Achievement Error: ${error.message}');
+          print('❌ Achievement Error Response: ${error.response?.data}');
           handler.next(error);
         },
       ),
@@ -44,18 +44,14 @@ class MetricsService {
     _dio.options.sendTimeout = const Duration(seconds: 30);
   }
 
-  /// Get home screen metrics
-  Future<Response> getHomeMetrics() async {
-    return await _dio.get('/metrics/home-screen');
+  /// Get all user achievements
+  Future<Response> getAllMyAchievements() async {
+    return await _dio.get('/achievement/all-my-achievements');
   }
 
-  /// Get detailed health recovery metrics
-  Future<Response> getHealthRecoveries() async {
-    return await _dio.get('/metrics/health-data');
-  }
-
-  /// Get home screen health recovery data
-  Future<Response> getHomeHealthRecovery() async {
-    return await _dio.get('/metrics/home-screen-health-recovery');
+  /// Get top leaderboards with achievements
+  Future<Response> getTopLeaderBoards() async {
+    print('🏆 [AchievementService] Fetching top leaderboards...');
+    return await _dio.get('/achievement/top-leader-boards');
   }
 }

@@ -276,6 +276,71 @@ class PostService {
     }
   }
 
+  /// Get current user's posts
+  /// GET /api/posts/my-posts
+  Future<PostListResponse> getMyPosts({
+    required String accessToken,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/my-posts');
+      print('📡 [PostService] Getting my posts...');
+      print('🌐 [PostService] URL: $url');
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+
+      print('📊 [PostService] Response Status: ${response.statusCode}');
+      print('📦 [PostService] Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        print('✅ [PostService] My posts fetched successfully');
+        
+        // Check if response is wrapped or direct array
+        if (decoded is Map<String, dynamic>) {
+          // Wrapped response: { "success": true, "data": [...] }
+          return PostListResponse.fromJson(decoded);
+        } else if (decoded is List) {
+          // Direct array response: [{...}, {...}]
+          print('⚠️ [PostService] Direct array response detected, wrapping...');
+          return PostListResponse.fromJson({
+            'success': true,
+            'message': 'My posts fetched successfully',
+            'data': decoded,
+            'code': 200,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          });
+        } else {
+          throw PostException('Unexpected response format');
+        }
+      } else {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        final errorResponse = ErrorResponse.fromJson(errorData);
+        print('❌ [PostService] Server Error: ${errorResponse.message}');
+        throw PostException(errorResponse.message);
+      }
+    } on SocketException catch (e) {
+      print('🚫 [PostService] SocketException: ${e.message}');
+      throw PostException('Network error: ${e.message}');
+    } on http.ClientException catch (e) {
+      print('🚨 [PostService] ClientException: ${e.message}');
+      throw PostException('Client error: ${e.message}');
+    } on FormatException catch (e) {
+      print('⚠️ [PostService] FormatException: ${e.message}');
+      throw PostException('Invalid response format: ${e.message}');
+    } catch (e, stack) {
+      print('🔥 [PostService] Unexpected Error: $e');
+      print('🧩 [PostService] Stack Trace: $stack');
+      if (e is PostException) rethrow;
+      throw PostException('Failed to get my posts: $e');
+    }
+  }
+
   /// Update an existing post
   /// PUT /api/posts/{postId}
   Future<PostDetail> updatePost({

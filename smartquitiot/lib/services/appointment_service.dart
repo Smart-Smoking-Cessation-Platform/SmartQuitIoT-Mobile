@@ -13,7 +13,7 @@ class AppointmentService {
     Map<String, dynamic> reqBody,
     String accessToken,
   ) async {
-    final url = '$_baseUrl/member/appointments';
+    final url = '$_baseUrl/appointments';
     final headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $accessToken',
@@ -64,7 +64,7 @@ class AppointmentService {
 
   /// GET my appointments
   Future<List<dynamic>> getMyAppointments(String accessToken) async {
-    final url = '$_baseUrl/member/appointments';
+    final url = '$_baseUrl/appointments';
     final headers = {
       'Accept': 'application/json',
       'Authorization': 'Bearer $accessToken',
@@ -115,7 +115,7 @@ class AppointmentService {
     int appointmentId,
     String accessToken,
   ) async {
-    final url = '$_baseUrl/member/appointments/$appointmentId/join-token';
+    final url = '$_baseUrl/appointments/$appointmentId/join-token';
     final headers = {
       'Accept': 'application/json',
       'Authorization': 'Bearer $accessToken',

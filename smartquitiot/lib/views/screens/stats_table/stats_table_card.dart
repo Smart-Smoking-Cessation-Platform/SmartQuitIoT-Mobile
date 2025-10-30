@@ -6,7 +6,6 @@ import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:SmartQuitIoT/providers/metrics_provider.dart';
 import 'package:SmartQuitIoT/models/home_metrics.dart';
 
-
 class StatsTableCard extends ConsumerStatefulWidget {
   const StatsTableCard({super.key});
 
@@ -36,7 +35,7 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
   @override
   Widget build(BuildContext context) {
     final homeMetricsAsync = ref.watch(homeMetricsProvider);
-    
+
     // Listen for diary changes to refresh metrics
     ref.listen(metricsRefreshProvider, (previous, next) {
       if (previous != next) {
@@ -84,16 +83,16 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.analytics_outlined, 
-              size: 48, 
-              color: Color(0xFF00D09E)
+              Icons.analytics_outlined,
+              size: 48,
+              color: Color(0xFF00D09E),
             ),
           ),
           const SizedBox(height: 16),
           const Text(
             'Start Your Journey!',
             style: TextStyle(
-              fontSize: 18, 
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Color(0xFF2D3748),
             ),
@@ -102,11 +101,7 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
           const SizedBox(height: 8),
           const Text(
             'Log your first diary entry to unlock your progress dashboard and track your amazing journey!',
-            style: TextStyle(
-              fontSize: 14, 
-              color: Colors.grey,
-              height: 1.4,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.4),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -145,10 +140,7 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
           children: [
             Text(
               'Dashboard',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             TextButton(
               onPressed: () {
@@ -265,10 +257,7 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
               children: [
                 const Text(
                   'Craving Level Trend',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 _buildSimpleCravingChart(homeMetrics.cravingLevelChart),
@@ -295,7 +284,12 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
     }
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 800),
@@ -309,16 +303,10 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  color.withOpacity(0.15),
-                  color.withOpacity(0.05),
-                ],
+                colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: color.withOpacity(0.3),
-                width: 2,
-              ),
+              border: Border.all(color: color.withOpacity(0.3), width: 2),
               boxShadow: [
                 BoxShadow(
                   color: color.withOpacity(0.1),
@@ -370,10 +358,10 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
 
   Widget _buildSimpleCravingChart(List<CravingLevelChart> data) {
     if (data.isEmpty) return const SizedBox.shrink();
-    
+
     // Take last 7 days
     final chartData = data.take(7).toList();
-    
+
     return Column(
       children: [
         // Bar Chart
@@ -404,10 +392,7 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFFE91E63),
-                    Color(0xFFFF6B9D),
-                  ],
+                  colors: [Color(0xFFE91E63), Color(0xFFFF6B9D)],
                 ),
                 borderRadius: BorderRadius.circular(2),
               ),
@@ -415,10 +400,7 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
             const SizedBox(width: 6),
             Text(
               'Craving Level (0-10)',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -429,7 +411,7 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
   Widget _buildCravingBar(CravingLevelChart item) {
     final maxLevel = 10.0;
     final heightPercent = (item.cravingLevel / maxLevel).clamp(0.0, 1.0);
-    
+
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: heightPercent),
       duration: const Duration(milliseconds: 800),
@@ -502,4 +484,3 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
     return formatter.format(amount.abs());
   }
 }
-

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AchievementCard extends StatelessWidget {
   final String title;
   final String description;
-  final IconData icon;
+  final String iconUrl;
   final bool isCompleted;
   final double? progress;
   final String? completedDate;
@@ -14,7 +14,7 @@ class AchievementCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.description,
-    required this.icon,
+    required this.iconUrl,
     required this.isCompleted,
     this.progress,
     this.completedDate,
@@ -62,10 +62,33 @@ class AchievementCard extends StatelessWidget {
                       ]
                     : null,
               ),
-              child: Icon(
-                icon,
-                color: isCompleted ? Colors.white : categoryColor,
-                size: 32,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  iconUrl,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.emoji_events,
+                      color: isCompleted ? Colors.white : categoryColor,
+                      size: 32,
+                    );
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                        strokeWidth: 2,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
             const SizedBox(width: 18),

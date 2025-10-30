@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_card.dart';
+import 'package:SmartQuitIoT/models/achievement.dart';
 
 class AchievementSection extends StatelessWidget {
   final String title;
-  final List<Map<String, dynamic>> achievements;
+  final List<Achievement> achievements;
   final Color sectionColor;
 
   const AchievementSection({
@@ -45,12 +46,12 @@ class AchievementSection extends StatelessWidget {
           (achievement) => Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: AchievementCard(
-              title: achievement['title'],
-              description: achievement['description'],
-              icon: achievement['icon'],
-              isCompleted: achievement['isCompleted'],
-              progress: achievement['progress'],
-              completedDate: achievement['completedDate'],
+              title: achievement.name,
+              description: achievement.description,
+              iconUrl: achievement.icon,
+              isCompleted: achievement.unlocked,
+              progress: null, // API doesn't provide progress yet
+              completedDate: null, // API doesn't provide completed date yet
               categoryColor: sectionColor,
             ),
           ),

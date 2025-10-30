@@ -5,6 +5,7 @@ import '../../../models/appointment.dart';
 import '../../../services/appointment_service.dart';
 import '../../../services/token_storage_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -28,6 +29,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   @override
   void initState() {
     super.initState();
+    // Now 3 tabs: Pending (includes cancelled), In Progress, Completed
     _tabController = TabController(length: 3, vsync: this);
     _fetchAppointments();
   }
@@ -57,11 +59,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         _loading = false;
       });
 
-      // debug: in ra chi tiết để kiểm tra status/count
+      // debug
       debugPrint('[Appointments] fetched ${_appointments.length} items');
       for (var a in _appointments) {
         debugPrint(
-          '[Appointments] id=${a.appointmentId} status=${a.runtimeStatus} date=${a.date} channel=${a.channelName}',
+          '[Appointments] id=${a.appointmentId} status=${a.runtimeStatus} date=${a.date} channel=${a.channelName} joinWindowStart=${a.joinWindowStart} joinWindowEnd=${a.joinWindowEnd}',
         );
       }
     } catch (e, st) {
@@ -86,6 +88,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       case 'COMPLETED':
         aliases = ['COMPLETED'];
         break;
+      case 'CANCELLED':
+        aliases = ['CANCELLED', 'CANCELED']; // accept both spellings
+        break;
       default:
         aliases = [want];
     }
@@ -94,6 +99,68 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       final s = (a.runtimeStatus ?? '').trim().toUpperCase();
       return aliases.contains(s);
     }).toList();
+  }
+
+  // check if current instant is inside join window
+  bool _isWithinJoinWindow(Appointment a) {
+    try {
+      final start = a.joinWindowStart;
+      final end = a.joinWindowEnd;
+      if (start == null || end == null) return false;
+
+      // ensure comparing in UTC
+      final startUtc = start.toUtc();
+      final endUtc = end.toUtc();
+      final nowUtc = DateTime.now().toUtc();
+
+      final ok = !nowUtc.isBefore(startUtc) && !nowUtc.isAfter(endUtc);
+      debugPrint('[JoinWindow] appointment=${a.appointmentId} start=$startUtc end=$endUtc now=$nowUtc ok=$ok');
+      return ok;
+    } catch (e, st) {
+      debugPrint('[JoinWindow] parse error for appointment ${a.appointmentId}: $e\n$st');
+      return false;
+    }
+  }
+
+  Future<void> _onJoinPressed(Appointment a) async {
+    debugPrint('[Join] pressed for appointment ${a.appointmentId}');
+    final tokenService = TokenStorageService();
+    final token = await tokenService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn chưa đăng nhập hoặc token hết hạn')),
+      );
+      return;
+    }
+
+    // show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final svc = AppointmentService();
+      final resp = await svc.requestJoinToken(a.appointmentId, token);
+      debugPrint('[JoinToken] resp = $resp');
+
+      Navigator.pop(context); // remove loading
+
+      context.pushNamed('meeting', extra: {
+        'channel': resp['channel'],
+        'token': resp['token'],
+        'uid': resp['uid'],
+        'appointmentId': a.appointmentId,
+        'expiresAt': resp['expiresAt'],
+      });
+    } catch (e, st) {
+      debugPrint('[Join] requestJoinToken failed: $e\n$st');
+      Navigator.pop(context); // remove loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể lấy token vào phòng: $e')),
+      );
+    }
   }
 
   Widget _buildList(List<Appointment> list) {
@@ -117,7 +184,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       );
     }
 
-    // Use LayoutBuilder to provide a real height constraint for ListView
     return LayoutBuilder(
       builder: (context, constraints) {
         return RefreshIndicator(
@@ -146,6 +212,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 final timeLabel = '$start • $end';
 
                 final initials = _initialsFromName(a.coachName);
+
+                final canJoin = _isWithinJoinWindow(a);
+
+                final isCancelled = (a.runtimeStatus ?? '').toUpperCase().contains('CANCEL');
 
                 return Container(
                   decoration: BoxDecoration(
@@ -176,13 +246,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                         ),
                         child: Row(
                           children: [
+                            // avatar + ghost on cancelled
                             CircleAvatar(
                               radius: 26,
-                              backgroundColor: mintBg,
+                              backgroundColor: isCancelled ? Colors.grey.shade200 : mintBg,
                               child: Text(
                                 initials,
-                                style: const TextStyle(
-                                  color: primaryGreen,
+                                style: TextStyle(
+                                  color: isCancelled ? Colors.grey.shade600 : primaryGreen,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -194,10 +265,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                 children: [
                                   Text(
                                     a.coachName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: Colors.black87,
+                                      color: isCancelled ? Colors.grey.shade600 : Colors.black87,
+                                      decoration: isCancelled ? TextDecoration.lineThrough : TextDecoration.none,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -212,8 +284,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                       Flexible(
                                         child: Text(
                                           dateLabel,
-                                          style: const TextStyle(
-                                            color: Colors.black54,
+                                          style: TextStyle(
+                                            color: isCancelled ? Colors.grey : Colors.black54,
                                           ),
                                         ),
                                       ),
@@ -230,15 +302,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                       const SizedBox(width: 6),
                                       Text(
                                         timeLabel,
-                                        style: const TextStyle(
-                                          color: Colors.black54,
+                                        style: TextStyle(
+                                          color: isCancelled ? Colors.grey : Colors.black54,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
                                       Text(
                                         'Slot ${a.slotId}',
-                                        style: const TextStyle(
-                                          color: Colors.black45,
+                                        style: TextStyle(
+                                          color: isCancelled ? Colors.grey.shade500 : Colors.black45,
                                           fontSize: 12,
                                         ),
                                       ),
@@ -247,33 +319,71 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                   const SizedBox(height: 8),
                                   Text(
                                     'Appointment ID: ${a.appointmentId}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.black26,
                                       fontSize: 12,
                                     ),
                                   ),
+                                  // show cancelled detail if cancelled (small red text)
+                                  if (isCancelled) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _cancelledLine(a),
+                                      style: TextStyle(
+                                        color: Colors.red.shade700,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _statusChip(a.runtimeStatus),
-                                const SizedBox(height: 6),
-                                IconButton(
-                                  onPressed: () => _showAppointmentDetail(
-                                    context,
-                                    a,
-                                    dateLabel,
-                                    timeLabel,
+                            // right column: fixed width so all items align
+                            SizedBox(
+                              width: 110,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // status chip (always shown) - CANCELLED now red
+                                  SizedBox(
+                                    height: 36,
+                                    child: Center(child: _statusChip(a.runtimeStatus)),
                                   ),
-                                  icon: const Icon(
-                                    Icons.chevron_right,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
+                                  const SizedBox(height: 8),
+                                  // Join button only if not cancelled, status IN_PROGRESS and within window
+                                  if (!isCancelled &&
+                                      a.runtimeStatus != null &&
+                                      a.runtimeStatus!.toUpperCase().contains('IN_PROGRESS') &&
+                                      canJoin)
+                                    ElevatedButton.icon(
+                                      onPressed: () => _onJoinPressed(a),
+                                      icon: const Icon(Icons.video_call, size: 16),
+                                      label: const Text('Join'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: primaryGreen,
+                                        minimumSize: const Size(80, 36),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 6),
+                                      ),
+                                    )
+                                  else
+                                    IconButton(
+                                      onPressed: () => _showAppointmentDetail(
+                                        context,
+                                        a,
+                                        dateLabel,
+                                        timeLabel,
+                                      ),
+                                      icon: Icon(
+                                        Icons.chevron_right,
+                                        color: isCancelled ? Colors.grey.shade400 : Colors.grey,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -296,8 +406,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
-  Widget _statusChip(String status) {
-    final s = status.toUpperCase();
+  Widget _statusChip(String? status) {
+    final s = (status ?? '').toUpperCase();
     Color color;
     String text;
     switch (s) {
@@ -315,9 +425,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         color = Colors.green.shade600;
         text = 'Completed';
         break;
+      case 'CANCELLED':
+      case 'CANCELED':
+      // changed: CANCELLED -> red chip
+        color = Colors.red.shade600;
+        text = 'Cancelled';
+        break;
       default:
         color = Colors.grey;
-        text = s;
+        text = s.isEmpty ? 'Unknown' : s;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -350,12 +466,38 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     );
   }
 
+  String _fmtDt(DateTime? dt) {
+    if (dt == null) return '-';
+    try {
+      return DateFormat('HH:mm • dd MMM yyyy').format(dt.toLocal());
+    } catch (_) {
+      return dt.toString();
+    }
+  }
+
+  String _prettyCancelledBy(String? cancelledBy) {
+    if (cancelledBy == null) return 'Unknown';
+    final s = cancelledBy.toUpperCase();
+    if (s.contains('COACH')) return 'Coach';
+    if (s.contains('MEMBER')) return 'Member';
+    // fallback: return value
+    return cancelledBy;
+  }
+
+  String _cancelledLine(Appointment a) {
+    // show nice line: "Cancelled by Coach • 16:39 • 30 Oct 2025"
+    final who = _prettyCancelledBy(a.cancelledBy);
+    final at = a.cancelledAt;
+    final when = at != null ? DateFormat('HH:mm • dd MMM yyyy').format(at.toLocal()) : '-';
+    return 'Cancelled by $who • $when';
+  }
+
   void _showAppointmentDetail(
-    BuildContext context,
-    Appointment a,
-    String dateLabel,
-    String timeLabel,
-  ) {
+      BuildContext context,
+      Appointment a,
+      String dateLabel,
+      String timeLabel,
+      ) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -373,6 +515,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
             Text('Slot: ${a.slotId}'),
             const SizedBox(height: 8),
             Text('Status: ${a.runtimeStatus}'),
+            const SizedBox(height: 8),
+            Text('Join window: ${_fmtDt(a.joinWindowStart)} → ${_fmtDt(a.joinWindowEnd)}'),
+            if ((a.runtimeStatus ?? '').toUpperCase().contains('CANCEL')) ...[
+              const SizedBox(height: 8),
+              Text('Cancelled by: ${_prettyCancelledBy(a.cancelledBy)}'),
+              const SizedBox(height: 6),
+              Text('Cancelled at: ${_fmtDt(a.cancelledAt)}'),
+            ],
           ],
         ),
         actions: [
@@ -393,7 +543,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final pending = _filterByStatus('PENDING');
+    final pendingOnly = _filterByStatus('PENDING');
+    final cancelled = _filterByStatus('CANCELLED');
+    final pendingTabList = [...pendingOnly, ...cancelled]; // Pending tab = pending + cancelled
     final inprogress =
         _filterByStatus('IN_PROGRESS') + _filterByStatus('INPROGRESS');
     final completed = _filterByStatus('COMPLETED');
@@ -455,7 +607,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                   labelStyle: const TextStyle(fontWeight: FontWeight.w700),
                   tabs: [
                     Tab(
-                      child: Center(child: Text('Pending (${pending.length})')),
+                      child: Center(child: Text('Pending (${pendingTabList.length})')),
                     ),
                     Tab(
                       child: Center(
@@ -477,7 +629,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildList(pending),
+          _buildList(pendingTabList),
           _buildList(inprogress),
           _buildList(completed),
         ],

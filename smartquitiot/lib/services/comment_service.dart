@@ -21,7 +21,22 @@ class CommentService {
       final url = Uri.parse('$_baseUrl/$postId/comments');
       print('📝 [CommentService] Creating comment...');
       print('🌐 [CommentService] URL: $url');
-      print('📦 [CommentService] Request Body: ${jsonEncode(commentData)}');
+      
+      // Detailed parentId check
+      if (commentData.containsKey('parentId')) {
+        print('💬 [CommentService] REPLY DETECTED - parentId in data: ${commentData['parentId']}');
+      } else {
+        print('📌 [CommentService] ROOT COMMENT - no parentId in data');
+      }
+      
+      final requestBodyJson = jsonEncode(commentData);
+      print('📦 [CommentService] Request Body (JSON): $requestBodyJson');
+      print('🔍 [CommentService] Checking if "parentId" exists in JSON string...');
+      if (requestBodyJson.contains('parentId')) {
+        print('✅ [CommentService] "parentId" FOUND in JSON request body');
+      } else {
+        print('❌ [CommentService] "parentId" NOT FOUND in JSON request body!');
+      }
       print('🔑 [CommentService] Token: ${accessToken.substring(0, 20)}...');
 
       final response = await http.post(
@@ -30,7 +45,7 @@ class CommentService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
         },
-        body: jsonEncode(commentData),
+        body: requestBodyJson,
       );
 
       print('📊 [CommentService] Response Status: ${response.statusCode}');

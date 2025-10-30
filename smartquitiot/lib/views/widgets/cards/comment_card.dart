@@ -69,14 +69,26 @@ class CommentCard extends StatelessWidget {
               // Action buttons
               PopupMenuButton<String>(
                 onSelected: (value) {
+                  print(
+                    '🎯 [CommentCard] Menu item selected: $value for comment ID: ${comment.id}',
+                  );
                   switch (value) {
                     case 'reply':
+                      print(
+                        '💬 [CommentCard] Reply action triggered for comment: ${comment.id}',
+                      );
                       onReply?.call(comment.id);
                       break;
                     case 'edit':
+                      print(
+                        '✏️ [CommentCard] Edit action triggered for comment: ${comment.id}',
+                      );
                       onEdit?.call(comment.id);
                       break;
                     case 'delete':
+                      print(
+                        '🗑️ [CommentCard] Delete action triggered for comment: ${comment.id}',
+                      );
                       onDelete?.call(comment.id);
                       break;
                   }

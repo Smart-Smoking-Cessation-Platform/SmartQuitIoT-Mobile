@@ -9,7 +9,14 @@ class Appointment {
   final String endTime;   // "07:30:00"
   String runtimeStatus;
 
-  // new fields
+  // optional server-side status (may be same as runtimeStatus or distinct)
+  final String? appointmentStatus;
+
+  // new fields for cancelled info
+  final String? cancelledBy; // e.g. "MEMBER" or "COACH" or string
+  final DateTime? cancelledAt;
+
+  // new meeting / agora fields
   final String? channelName;
   final String? meetingUrl;
   final DateTime? joinWindowStart;
@@ -24,6 +31,9 @@ class Appointment {
     required this.startTime,
     required this.endTime,
     required this.runtimeStatus,
+    this.appointmentStatus,
+    this.cancelledBy,
+    this.cancelledAt,
     this.channelName,
     this.meetingUrl,
     this.joinWindowStart,
@@ -34,8 +44,32 @@ class Appointment {
     DateTime? parseInstant(dynamic v) {
       if (v == null) return null;
       try {
-        return DateTime.parse(v.toString()).toUtc();
-      } catch (_) { return null; }
+        // if numeric (epoch seconds or milliseconds)
+        if (v is num) {
+          final n = v.toInt();
+          // heuristics: if > 1e12 treat as milliseconds, else seconds
+          if (n > 1000000000000) {
+            return DateTime.fromMillisecondsSinceEpoch(n, isUtc: true);
+          } else {
+            return DateTime.fromMillisecondsSinceEpoch(n * 1000, isUtc: true);
+          }
+        }
+        final s = v.toString();
+        // try ISO first
+        return DateTime.parse(s).toUtc();
+      } catch (_) {
+        // fallback: try parsing int inside string
+        try {
+          final n = int.parse(v.toString());
+          if (n > 1000000000000) {
+            return DateTime.fromMillisecondsSinceEpoch(n, isUtc: true);
+          } else {
+            return DateTime.fromMillisecondsSinceEpoch(n * 1000, isUtc: true);
+          }
+        } catch (_) {
+          return null;
+        }
+      }
     }
 
     String normalizeStatus(dynamic v) {
@@ -44,14 +78,17 @@ class Appointment {
     }
 
     return Appointment(
-      appointmentId: j['appointmentId'] as int,
-      coachId: j['coachId'] as int,
+      appointmentId: (j['appointmentId'] is num) ? (j['appointmentId'] as num).toInt() : int.parse(j['appointmentId'].toString()),
+      coachId: (j['coachId'] is num) ? (j['coachId'] as num).toInt() : int.parse(j['coachId'].toString()),
       coachName: j['coachName'] as String? ?? '',
-      slotId: j['slotId'] as int,
+      slotId: (j['slotId'] is num) ? (j['slotId'] as num).toInt() : int.parse(j['slotId'].toString()),
       date: j['date'] as String? ?? '',
       startTime: j['startTime'] as String? ?? '',
       endTime: j['endTime'] as String? ?? '',
       runtimeStatus: normalizeStatus(j['runtimeStatus']),
+      appointmentStatus: j['appointmentStatus']?.toString(),
+      cancelledBy: j['cancelledBy']?.toString(),
+      cancelledAt: parseInstant(j['cancelledAt']),
       channelName: j['channelName'] as String?,
       meetingUrl: j['meetingUrl'] as String?,
       joinWindowStart: parseInstant(j['joinWindowStart']),
@@ -59,4 +96,9 @@ class Appointment {
     );
   }
 
+  // helper
+  bool get isCancelled {
+    final s = (appointmentStatus ?? runtimeStatus ?? '').toString().toUpperCase();
+    return s.contains('CANCEL');
+  }
 }

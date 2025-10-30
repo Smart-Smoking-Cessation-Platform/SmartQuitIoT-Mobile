@@ -16,7 +16,43 @@ class DiaryScreen extends ConsumerStatefulWidget {
 
 class _DiaryScreenState extends ConsumerState<DiaryScreen> {
   @override
+  void initState() {
+    super.initState();
+    print('📊 [DiaryScreen] Initialized');
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Listen to refresh trigger - auto-refresh when new diary created
+    ref.listen<int>(diaryChartsRefreshProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        print('🔄 [DiaryScreen] Refresh triggered! Previous: $previous, Next: $next');
+        
+        // Show subtle refresh notification
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.refresh, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Refreshing charts...'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF00D09E),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+        
+        // Invalidate charts provider to force refresh
+        ref.invalidate(diaryChartsProvider);
+      }
+    });
+
     final chartsAsync = ref.watch(diaryChartsProvider);
 
     return Scaffold(
@@ -302,13 +338,19 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
+                      interval: 1, // Show labels only at integer positions
                       getTitlesWidget: (value, meta) {
+                        // Only show labels at exact integer positions (data points)
+                        if (value != value.toInt()) {
+                          return const Text('');
+                        }
+                        
                         if (value.toInt() >= 0 && value.toInt() < data.length) {
                           final date = DateTime.parse(data[value.toInt()].date);
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
-                              DateFormat('MM/dd').format(date),
+                              DateFormat('dd/MM').format(date),
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 10,
@@ -334,8 +376,8 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                     left: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
-                minX: 0,
-                maxX: (data.length - 1).toDouble(),
+                minX: -0.3, // Add left padding
+                maxX: (data.length - 1).toDouble() + 0.3, // Add right padding
                 minY: 0,
                 maxY: 10,
                 lineBarsData: [

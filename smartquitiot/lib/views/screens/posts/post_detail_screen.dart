@@ -398,14 +398,17 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     final commentState = ref.watch(commentViewModelProvider);
 
     // Always sync comments from post to comment state when post changes
-    if (post.comments != null) {
+    // Note: This runs on every build, but loadCommentsFromPost will be called
+    // in postFrameCallback to avoid build-time state changes
+    if (post.comments != null && post.comments!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Only load if different from current state
-        if (post.comments!.length != commentState.comments.length ||
-            (post.comments!.isNotEmpty && commentState.comments.isEmpty)) {
-          ref
-              .read(commentViewModelProvider.notifier)
-              .loadCommentsFromPost(widget.postId, post.comments!);
+        if (mounted) {
+          // Always sync to ensure replies are visible
+          // This is critical for reply comments which are nested in parent.replies[]
+          ref.read(commentViewModelProvider.notifier).loadCommentsFromPost(
+            widget.postId,
+            post.comments!,
+          );
         }
       });
     }
@@ -741,6 +744,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     if (text.isEmpty && _selectedMedia.isEmpty) return;
 
     try {
+      print('💬 [PostDetailScreen] Submitting root comment...');
       await ref
           .read(commentViewModelProvider.notifier)
           .createComment(
@@ -749,17 +753,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
       );
 
+      print('✅ [PostDetailScreen] Root comment submitted successfully');
+
       // Clear input and media
       _commentController.clear();
       setState(() {
         _selectedMedia.clear();
       });
 
-      // Force clear and reload to show new comment
-      ref.read(commentViewModelProvider.notifier).clearComments();
-      await Future.delayed(const Duration(milliseconds: 100));
-      await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
-
+      // Show success Flushbar
       if (mounted) {
         Flushbar(
           message: 'Comment posted successfully!',
@@ -770,7 +772,25 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           borderRadius: BorderRadius.circular(8),
         ).show(context);
       }
+
+      // Force reload post detail to get updated comments
+      print('🔄 [PostDetailScreen] Refreshing to show new comment...');
+      await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+      
+      if (mounted) {
+        // Force sync comments to UI after post is reloaded
+        final post = ref.read(postViewModelProvider).selectedPost;
+        if (post?.comments != null) {
+          print('🔄 [PostDetailScreen] Force syncing ${post!.comments!.length} comments to UI...');
+          ref.read(commentViewModelProvider.notifier).loadCommentsFromPost(
+            widget.postId,
+            post.comments!,
+          );
+          print('✅ [PostDetailScreen] Comments synced, new comment should be visible!');
+        }
+      }
     } catch (e) {
+      print('❌ [PostDetailScreen] Error posting comment: $e');
       if (mounted) {
         Flushbar(
           message: 'Error posting comment: $e',
@@ -785,6 +805,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 
   void _replyToComment(int parentId) async {
+    print('💬 [PostDetailScreen] Reply to comment clicked');
+    print('💬 [PostDetailScreen] Parent ID received: $parentId');
+    print('💬 [PostDetailScreen] Post ID: ${widget.postId}');
+    
     // Show reply dialog with parentId
     final result = await showDialog<bool>(
       context: context,
@@ -797,11 +821,33 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
     // Reload post detail if reply was successful
     if (result == true && mounted) {
-      // Force clear and reload to show new reply
-      ref.read(commentViewModelProvider.notifier).clearComments();
-      await Future.delayed(const Duration(milliseconds: 100));
+      print('✅ [PostDetailScreen] Reply successful, refreshing...');
+      
+      // Show success Flushbar
+      Flushbar(
+        message: 'Reply posted successfully!',
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+      ).show(context);
+      
+      // Force reload post detail to get updated comments with new reply
+      print('🔄 [PostDetailScreen] Refreshing to show new reply...');
+      await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+      
       if (mounted) {
-        await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+        // Force sync comments to UI after post is reloaded
+        final post = ref.read(postViewModelProvider).selectedPost;
+        if (post?.comments != null) {
+          print('🔄 [PostDetailScreen] Force syncing ${post!.comments!.length} comments to UI...');
+          ref.read(commentViewModelProvider.notifier).loadCommentsFromPost(
+            widget.postId,
+            post.comments!,
+          );
+          print('✅ [PostDetailScreen] Comments synced, new reply should be visible!');
+        }
       }
     }
   }
@@ -855,11 +901,34 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
     // Reload post detail if edit was successful
     if (result == true && mounted) {
+      print('✅ [PostDetailScreen] Edit successful, refreshing...');
+      
+      // Show success Flushbar
+      Flushbar(
+        message: 'Comment updated successfully!',
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+      ).show(context);
+      
       // Force clear and reload to show edited comment
       ref.read(commentViewModelProvider.notifier).clearComments();
       await Future.delayed(const Duration(milliseconds: 100));
       if (mounted) {
+        print('🔄 [PostDetailScreen] Reloading post to show edited comment...');
         await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+        
+        // Force sync comments after reload
+        final post = ref.read(postViewModelProvider).selectedPost;
+        if (post?.comments != null) {
+          print('🔄 [PostDetailScreen] Syncing ${post!.comments!.length} comments after edit...');
+          ref.read(commentViewModelProvider.notifier).loadCommentsFromPost(
+            widget.postId,
+            post.comments!,
+          );
+        }
       }
     }
   }

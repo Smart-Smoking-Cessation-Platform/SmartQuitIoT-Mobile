@@ -12,6 +12,8 @@ import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import '../../../models/state/auth_state.dart';
 import '../../../utils/notification_helper.dart';
+import 'package:SmartQuitIoT/providers/user_provider.dart';
+import 'package:SmartQuitIoT/providers/websocket_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -26,6 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _password = TextEditingController();
   bool _obscure = true;
   bool _isFormValid = false;
+  bool _isNavigating = false;
 
   @override
   void dispose() {
@@ -73,12 +76,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
-      // Đăng nhập thành công
-      if (next.isAuthenticated && previous?.isAuthenticated == false) {
+      // Đăng nhập thành công (handle cả previous = null và previous.isAuthenticated = false)
+      if (next.isAuthenticated && (previous?.isAuthenticated != true)) {
+        setState(() {
+          _isNavigating = true;
+        });
+
+        // Show success notification
         NotificationHelper.showTopNotification(
           context,
-          title: 'Success',
-          message: 'Login successful!',
+          title: '🎉 Success',
+          message: 'Login successful! Redirecting...',
         );
 
         final tokenStorage = TokenStorageService();
@@ -87,7 +95,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           next.refreshToken ?? '',
         );
 
-        await Future.delayed(const Duration(seconds: 1));
+        // Initialize WebSocket connection
+        try {
+          debugPrint('🔌 [LoginScreen] Initializing WebSocket...');
+          final userService = ref.read(userServiceProvider);
+          final userProfile = await userService.getUserProfile();
+          final memberId = userProfile.id;
+          
+          debugPrint('👤 [LoginScreen] Member ID: $memberId');
+          final websocketManager = ref.read(websocketManagerProvider);
+          await websocketManager.initialize(memberId);
+          debugPrint('✅ [LoginScreen] WebSocket initialized successfully!');
+        } catch (e) {
+          debugPrint('❌ [LoginScreen] WebSocket initialization error: $e');
+          // Continue login flow even if WebSocket fails
+        }
+
+        // Wait 2 seconds with spinner visible
+        await Future.delayed(const Duration(seconds: 2));
         if (!mounted) return;
 
         final isFirstLogin = next.isFirstLogin ?? false;
@@ -96,6 +121,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         } else {
           context.go('/main');
         }
+
+        setState(() {
+          _isNavigating = false;
+        });
       }
     });
 
@@ -152,7 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 32),
 
                       /// Nút login
-                      authState.isLoading
+                      (authState.isLoading || _isNavigating)
                           ? const Center(
                               child: CircularProgressIndicator(
                                 color: greenColor,

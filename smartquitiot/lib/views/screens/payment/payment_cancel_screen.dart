@@ -1,17 +1,33 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class PaymentCancelScreen extends StatelessWidget {
-  const PaymentCancelScreen({super.key});
+  final String? code;
+  final String? id;
+  final String? status;
+  final String? cancel;
+  final String? orderCode;
+
+  const PaymentCancelScreen({
+    super.key,
+    this.code,
+    this.id,
+    this.status,
+    this.cancel,
+    this.orderCode,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    // Fallback to ModalRoute if not passed from constructor
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    final code = args?['code'] ?? '';
-    final id = args?['id'] ?? '';
-    final status = args?['status'] ?? '';
-    final cancel = args?['cancel'] ?? '';
-    final orderCode = args?['orderCode'] ?? 'N/A';
+    final displayCode = code ?? args?['code'] ?? '';
+    final displayId = id ?? args?['id'] ?? '';
+    final displayStatus = status ?? args?['status'] ?? '';
+    final displayCancel = cancel ?? args?['cancel'] ?? '';
+    final displayOrderCode = orderCode ?? args?['orderCode'] ?? 'N/A';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -25,12 +41,16 @@ class PaymentCancelScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const Text(
                 'Payment Cancelled',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
               Text(
-                'Code: $code\nStatus: $status\nOrder ID: $id\nCancel: $cancel\nOrder Code: $orderCode',
+                'Code: $displayCode\nStatus: $displayStatus\nOrder ID: $displayId\nCancel: $displayCancel\nOrder Code: $displayOrderCode',
                 style: const TextStyle(fontSize: 16, color: Colors.black54),
                 textAlign: TextAlign.center,
               ),
@@ -39,16 +59,22 @@ class PaymentCancelScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+                    context.go('/main');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text(
                     'Back to Home',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

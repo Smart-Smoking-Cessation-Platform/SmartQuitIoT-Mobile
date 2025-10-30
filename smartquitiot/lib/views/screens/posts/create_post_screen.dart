@@ -33,7 +33,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize Quill controller with existing content if editing
     if (widget.post != null && widget.post!.content != null) {
       try {
@@ -542,7 +542,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
     // Convert Quill document to JSON Delta format to preserve rich text formatting
     final deltaJson = jsonEncode(_quillController.document.toDelta().toJson());
-    
+
     final postData = {
       'title': _titleController.text.trim(),
       'description': _descriptionController.text.trim(),
@@ -579,7 +579,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         if (!mounted) return;
         // Close loading dialog first
         Navigator.of(context).pop();
-        
+
         NotificationHelper.showTopNotification(
           context,
           title: 'Success',
@@ -591,21 +591,25 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         if (!mounted) return;
         // Close loading dialog first
         Navigator.of(context).pop();
-        
+
         NotificationHelper.showTopNotification(
           context,
           title: 'Success',
           message: 'Post created successfully!',
         );
 
-        // Navigate to post list screen and trigger refresh
+        // Trigger post refresh and navigate to My Posts screen
         Future.delayed(const Duration(milliseconds: 500), () async {
           if (mounted) {
-            // Navigate back to post list screen
-            context.go('/posts');
-            // Trigger refresh of posts list
-            await Future.delayed(const Duration(milliseconds: 100));
+            // Trigger refresh for all post lists
+            ref.read(postRefreshProvider.notifier).refreshPosts();
             ref.read(postViewModelProvider.notifier).loadAllPosts();
+            ref.read(postViewModelProvider.notifier).loadMyPosts();
+
+            await Future.delayed(const Duration(milliseconds: 100));
+
+            // Navigate to My Posts screen using GoRouter
+            context.go('/my-posts');
           }
         });
         return;
@@ -623,7 +627,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       if (mounted) {
         // Close loading dialog
         Navigator.of(context).pop();
-        
+
         NotificationHelper.showTopNotification(
           context,
           title: 'Error',

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:SmartQuitIoT/models/home_metrics.dart';
 import 'package:SmartQuitIoT/models/health_recovery.dart';
+import 'package:SmartQuitIoT/models/home_health_recovery.dart';
 import 'package:SmartQuitIoT/core/errors/failures.dart';
 import '../services/metrics_service.dart';
 import '../repositories/auth_repository.dart';
@@ -52,6 +53,27 @@ class MetricsRepository {
       } else {
         throw ServerFailure(
           'Failed to fetch health recoveries: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      throw ServerFailure(_handleDioError(e));
+    } catch (e) {
+      throw ServerFailure('Unexpected error: ${e.toString()}');
+    }
+  }
+
+  /// Get home screen health recovery data
+  Future<HomeHealthRecovery> getHomeHealthRecovery() async {
+    try {
+      final response = await _metricsService.getHomeHealthRecovery();
+
+      if (response.statusCode == 200) {
+        print('🔍 Parsing HomeHealthRecovery from data...');
+        print('📦 Response data: ${response.data}');
+        return HomeHealthRecovery.fromJson(response.data);
+      } else {
+        throw ServerFailure(
+          'Failed to fetch home health recovery: ${response.statusCode}',
         );
       }
     } on DioException catch (e) {

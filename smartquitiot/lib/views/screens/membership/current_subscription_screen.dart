@@ -28,80 +28,90 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final subscriptionAsync = ref.watch(currentSubscriptionProvider);
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF00D09E),
-        statusBarIconBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: const Color(0xFF00D09E),
-        body: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: const BoxDecoration(
-                color: Color(0xFF00D09E),
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'My Subscription',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          context.go('/main');
+        }
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Color(0xFF00D09E),
+          statusBarIconBrightness: Brightness.light,
+        ),
+        child: Scaffold(
+          backgroundColor: const Color(0xFF00D09E),
+          body: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: const BoxDecoration(color: Color(0xFF00D09E)),
+                child: SafeArea(
+                  bottom: false,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => context.go('/main'),
+                        icon: const Icon(
+                          Icons.arrow_back,
                           color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          size: 24,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 48), // Balance the back button
-                  ],
+                      const Expanded(
+                        child: Text(
+                          'My Subscription',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 48), // Balance the back button
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Content
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1FFF3),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                ),
-                child: subscriptionAsync.when(
-                  data: (subscription) {
-                    if (subscription == null) {
-                      return _buildNoSubscriptionView(context);
-                    }
-                    return _buildSubscriptionView(context, subscription);
-                  },
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF00D09E),
+              // Content
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF1FFF3),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
                   ),
-                  error: (error, stack) => _buildErrorView(context, error.toString()),
+                  child: subscriptionAsync.when(
+                    data: (subscription) {
+                      if (subscription == null) {
+                        return _buildNoSubscriptionView(context);
+                      }
+                      return _buildSubscriptionView(context, subscription);
+                    },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF00D09E),
+                      ),
+                    ),
+                    error: (error, stack) =>
+                        _buildErrorView(context, error.toString()),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ), // Close Scaffold
       ),
-    );
+    ); // Close AnnotatedRegion
   }
 
   Widget _buildNoSubscriptionView(BuildContext context) {
@@ -129,10 +139,7 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
             Text(
               'You don\'t have an active membership subscription yet.\nUpgrade to Premium to unlock all features!',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
@@ -141,7 +148,10 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D09E),
-                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -207,7 +217,9 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
                 Row(
                   children: [
                     Icon(
-                      isPremium ? Icons.workspace_premium : Icons.card_membership,
+                      isPremium
+                          ? Icons.workspace_premium
+                          : Icons.card_membership,
                       color: Colors.white,
                       size: 32,
                     ),
@@ -223,7 +235,10 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: isActive
                             ? Colors.green.shade600
@@ -298,7 +313,9 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
                   icon: Icons.timer,
                   label: 'Days Remaining',
                   value: '$daysLeft days',
-                  valueColor: daysLeft < 7 ? Colors.red : const Color(0xFF00D09E),
+                  valueColor: daysLeft < 7
+                      ? Colors.red
+                      : const Color(0xFF00D09E),
                 ),
                 const SizedBox(height: 16),
                 _buildDetailRow(
@@ -316,7 +333,8 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
                 _buildDetailRow(
                   icon: Icons.access_time,
                   label: 'Duration',
-                  value: '${pkg?.duration ?? 0} ${pkg?.durationUnit?.toLowerCase() ?? 'month'}',
+                  value:
+                      '${pkg?.duration ?? 0} ${pkg?.durationUnit?.toLowerCase() ?? 'month'}',
                 ),
               ],
             ),
@@ -351,29 +369,31 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...pkg.features.map((feature) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(
-                              Icons.check_circle,
-                              color: Color(0xFF00D09E),
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                feature,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFF4B5563),
-                                ),
+                  ...pkg.features.map(
+                    (feature) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF00D09E),
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              feature,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF4B5563),
                               ),
                             ),
-                          ],
-                        ),
-                      )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -418,19 +438,12 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: const Color(0xFF6B7280),
-        ),
+        Icon(icon, size: 20, color: const Color(0xFF6B7280)),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF6B7280),
-            ),
+            style: const TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
           ),
         ),
         Text(
@@ -452,11 +465,7 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.red.shade300,
-            ),
+            Icon(Icons.error_outline, size: 80, color: Colors.red.shade300),
             const SizedBox(height: 16),
             Text(
               'Failed to load subscription',
@@ -470,17 +479,17 @@ class CurrentSubscriptionScreen extends ConsumerWidget {
             Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.go('/main'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D09E),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
