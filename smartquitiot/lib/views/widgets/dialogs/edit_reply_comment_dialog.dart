@@ -35,6 +35,8 @@ class _EditReplyCommentDialogState
   List<PostMedia> _selectedMedia = [];
   bool _isUploading = false;
   bool _isSubmitting = false; // Guard to prevent double submission
+  bool _hasClosedModal = false; // Guard to prevent double modal close
+  int _apiCallCount = 0; // Track number of API calls
 
   @override
   void initState() {
@@ -347,13 +349,22 @@ class _EditReplyCommentDialogState
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _apiCallCount++;
+    });
     
     print('📝 [EditReplyCommentDialog] Submitting ${_isEditing ? "edit" : _isReplying ? "reply" : "comment"}...');
+    print('🔢 [EditReplyCommentDialog] API Call Count: $_apiCallCount');
     print('📦 [EditReplyCommentDialog] PostId: ${widget.postId}');
     print('📦 [EditReplyCommentDialog] ParentId: ${widget.parentId}');
+    print('📦 [EditReplyCommentDialog] Is Reply: $_isReplying');
     print('📦 [EditReplyCommentDialog] Content length: ${content.length}');
     print('📦 [EditReplyCommentDialog] Media count: ${_selectedMedia.length}');
+    
+    if (_apiCallCount > 1) {
+      print('⚠️⚠️⚠️ [EditReplyCommentDialog] DUPLICATE API CALL DETECTED! Count: $_apiCallCount');
+    }
 
     try {
       if (_isEditing) {
@@ -391,19 +402,32 @@ class _EditReplyCommentDialogState
 
         print('✅ [EditReplyCommentDialog] Comment ${widget.parentId != null ? "reply" : "root"} created successfully');
         
-        if (mounted) {
-          setState(() => _isSubmitting = false);
+        if (mounted && !_hasClosedModal) {
+          setState(() {
+            _isSubmitting = false;
+            _hasClosedModal = true;
+          });
+          
+          print('🚪 [EditReplyCommentDialog] Closing modal with success=true');
           Navigator.pop(context, true);
-          Flushbar(
-            message: widget.parentId != null
-                ? 'Reply posted successfully!'
-                : 'Comment posted successfully!',
-            icon: const Icon(Icons.check_circle, color: Colors.white),
-            backgroundColor: const Color(0xFF00D09E),
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(8),
-            borderRadius: BorderRadius.circular(8),
-          ).show(context);
+          
+          // Show success message after modal closes
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              Flushbar(
+                message: widget.parentId != null
+                    ? 'Reply posted successfully!'
+                    : 'Comment posted successfully!',
+                icon: const Icon(Icons.check_circle, color: Colors.white),
+                backgroundColor: const Color(0xFF00D09E),
+                duration: const Duration(seconds: 2),
+                margin: const EdgeInsets.all(8),
+                borderRadius: BorderRadius.circular(8),
+              ).show(context);
+            }
+          });
+        } else if (_hasClosedModal) {
+          print('⚠️ [EditReplyCommentDialog] Modal already closed, skipping duplicate close');
         }
       }
     } catch (e) {

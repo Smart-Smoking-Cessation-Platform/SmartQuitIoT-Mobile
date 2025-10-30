@@ -40,8 +40,14 @@ class CommentViewModel extends StateNotifier<CommentState> {
   /// Load comments from post detail
   void loadCommentsFromPost(int postId, List<PostComment> comments) {
     print('📝 [CommentViewModel] Loading ${comments.length} comments for post $postId');
+    
+    // Backend now correctly returns only root comments in main array
+    // Replies are nested in parent.replies[]
+    // No need for filtering workaround anymore! ✅
+    
     // ALWAYS replace comments to avoid showing old comments from previous posts
     state = CommentState(comments: comments);
+    print('✅ [CommentViewModel] Comments loaded: ${comments.length} root comments');
   }
   
   /// Clear all comments (call when leaving post detail)

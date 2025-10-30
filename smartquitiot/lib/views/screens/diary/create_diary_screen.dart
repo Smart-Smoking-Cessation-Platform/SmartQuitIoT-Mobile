@@ -1100,6 +1100,9 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         // Trigger metrics refresh after successful diary creation
         ref.read(metricsRefreshProvider.notifier).refreshMetrics();
         
+        // Trigger diary charts refresh to update analytics
+        ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+        
         if (!mounted) return;
         
         // Show success flushbar

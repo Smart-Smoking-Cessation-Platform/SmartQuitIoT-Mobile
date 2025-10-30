@@ -231,6 +231,21 @@ class PostViewModel extends StateNotifier<PostState> {
     state = state.copyWith(selectedPost: null);
   }
 
+  /// Load my posts
+  Future<void> loadMyPosts() async {
+    state = state.copyWith(isLoadingMyPosts: true, error: null);
+
+    try {
+      print('📱 [PostViewModel] Loading my posts...');
+      final myPosts = await _postRepository.getMyPosts();
+      print('✅ [PostViewModel] Loaded ${myPosts.length} my posts');
+      state = state.copyWith(myPosts: myPosts, isLoadingMyPosts: false, error: null);
+    } catch (e) {
+      print('❌ [PostViewModel] Error loading my posts: $e');
+      state = state.copyWith(isLoadingMyPosts: false, error: e.toString());
+    }
+  }
+
   /// Refresh posts
   Future<void> refreshPosts({int limit = 5}) async {
     await loadLatestPosts(limit: limit);

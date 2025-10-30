@@ -33,7 +33,15 @@ class CommentRepository {
 
       if (parentId != null) {
         commentData['parentId'] = parentId;
-        print('💬 [CommentRepository] Reply to comment $parentId');
+        print('💬 [CommentRepository] THIS IS A REPLY - Parent ID: $parentId');
+        print('⚠️ [CommentRepository] Validating parentId is set in request...');
+        if (!commentData.containsKey('parentId')) {
+          print('❌ [CommentRepository] CRITICAL: parentId NOT IN REQUEST DATA!');
+        } else {
+          print('✅ [CommentRepository] parentId confirmed in request: ${commentData['parentId']}');
+        }
+      } else {
+        print('📝 [CommentRepository] THIS IS A ROOT COMMENT (no parent)');
       }
 
       if (media != null && media.isNotEmpty) {
@@ -44,7 +52,8 @@ class CommentRepository {
         print('📎 [CommentRepository] ${media.length} media attachments');
       }
 
-      print('📦 [CommentRepository] Comment data: $commentData');
+      print('📦 [CommentRepository] Final comment data being sent to API:');
+      print('   $commentData');
 
       final comment = await _commentService.createComment(
         accessToken: token,

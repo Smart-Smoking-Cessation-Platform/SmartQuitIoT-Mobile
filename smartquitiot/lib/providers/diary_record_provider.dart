@@ -27,6 +27,10 @@ final diaryHistoryProvider = FutureProvider<List<DiaryHistory>>((ref) async {
 });
 
 final diaryChartsProvider = FutureProvider<DiaryCharts>((ref) async {
+  // Listen for refresh trigger
+  ref.watch(diaryChartsRefreshProvider);
+  
+  print('📊 [DiaryChartsProvider] Fetching diary charts data...');
   final repository = ref.read(diaryRecordRepositoryProvider);
   return await repository.getDiaryCharts();
 });
@@ -104,3 +108,17 @@ final diaryDetailProvider = FutureProvider.family<DiaryRecord, int>((ref, diaryI
   final repository = ref.watch(diaryRecordRepositoryProvider);
   return await repository.getDiaryRecordById(diaryId);
 });
+
+// Refresh Provider for diary charts (auto-refresh after creating diary)
+final diaryChartsRefreshProvider = StateNotifierProvider<DiaryChartsRefreshNotifier, int>((ref) {
+  return DiaryChartsRefreshNotifier();
+});
+
+class DiaryChartsRefreshNotifier extends StateNotifier<int> {
+  DiaryChartsRefreshNotifier() : super(0);
+
+  void refreshCharts() {
+    print('🔄 [DiaryChartsRefreshNotifier] Triggering charts refresh...');
+    state++;
+  }
+}

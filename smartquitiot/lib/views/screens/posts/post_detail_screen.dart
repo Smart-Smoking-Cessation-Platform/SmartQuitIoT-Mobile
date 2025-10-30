@@ -785,6 +785,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 
   void _replyToComment(int parentId) async {
+    print(' [PostDetailScreen] Reply to comment clicked');
+    print(' [PostDetailScreen] Parent ID received: $parentId');
+    print(' [PostDetailScreen] Post ID: ${widget.postId}');
+    
     // Show reply dialog with parentId
     final result = await showDialog<bool>(
       context: context,

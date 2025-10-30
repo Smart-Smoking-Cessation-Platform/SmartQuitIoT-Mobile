@@ -6,6 +6,7 @@ import 'package:SmartQuitIoT/views/screens/payment/payment_success_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/create_post_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/post_list_screen.dart';
+import 'package:SmartQuitIoT/views/screens/posts/my_posts_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -58,6 +59,10 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const PostListScreen(),
     ),
     GoRoute(
+      path: '/my-posts',
+      builder: (context, state) => const MyPostsScreen(),
+    ),
+    GoRoute(
       path: '/posts/:id',
       builder: (context, state) {
         final idStr = state.pathParameters['id'];
@@ -108,8 +113,9 @@ final GoRouter appRouter = GoRouter(
         final queryParams = state.uri.queryParameters;
 
         // Check if this is old flow or new flow
-        final isOldFlow = extra?['selectedPlan'] != null || extra?['paymentMethod'] != null;
-        
+        final isOldFlow =
+            extra?['selectedPlan'] != null || extra?['paymentMethod'] != null;
+
         if (isOldFlow) {
           // Old flow - use SuccessScreen
           final selectedPlan = extra?['selectedPlan'] ?? '';
@@ -125,10 +131,13 @@ final GoRouter appRouter = GoRouter(
             id: extra?['id']?.toString() ?? queryParams['id'],
             status: extra?['status']?.toString() ?? queryParams['status'],
             cancel: extra?['cancel']?.toString() ?? queryParams['cancel'],
-            orderCode: extra?['orderCode']?.toString() ?? queryParams['orderCode'],
-            packageName: extra?['packageName']?.toString() ?? queryParams['packageName'],
+            orderCode:
+                extra?['orderCode']?.toString() ?? queryParams['orderCode'],
+            packageName:
+                extra?['packageName']?.toString() ?? queryParams['packageName'],
             amount: extra?['amount']?.toString() ?? queryParams['amount'],
-            startDate: extra?['startDate']?.toString() ?? queryParams['startDate'],
+            startDate:
+                extra?['startDate']?.toString() ?? queryParams['startDate'],
             endDate: extra?['endDate']?.toString() ?? queryParams['endDate'],
           );
         }

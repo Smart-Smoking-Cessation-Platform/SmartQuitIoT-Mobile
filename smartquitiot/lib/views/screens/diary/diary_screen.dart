@@ -16,7 +16,43 @@ class DiaryScreen extends ConsumerStatefulWidget {
 
 class _DiaryScreenState extends ConsumerState<DiaryScreen> {
   @override
+  void initState() {
+    super.initState();
+    print('📊 [DiaryScreen] Initialized');
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Listen to refresh trigger - auto-refresh when new diary created
+    ref.listen<int>(diaryChartsRefreshProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        print('🔄 [DiaryScreen] Refresh triggered! Previous: $previous, Next: $next');
+        
+        // Show subtle refresh notification
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.refresh, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Refreshing charts...'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF00D09E),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+        
+        // Invalidate charts provider to force refresh
+        ref.invalidate(diaryChartsProvider);
+      }
+    });
+
     final chartsAsync = ref.watch(diaryChartsProvider);
 
     return Scaffold(
