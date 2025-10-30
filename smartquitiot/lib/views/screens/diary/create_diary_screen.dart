@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
 import 'package:SmartQuitIoT/providers/metrics_provider.dart';
+import 'package:SmartQuitIoT/providers/diary_refresh_provider.dart';
 import 'package:SmartQuitIoT/models/diary_record.dart';
 import 'package:intl/intl.dart';
 import 'package:health/health.dart';
@@ -1102,6 +1103,10 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         
         // Trigger diary charts refresh to update analytics
         ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+        
+        // Trigger diary history refresh to update history list
+        ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+        print('✅ [CreateDiary] Triggered diary history refresh');
         
         if (!mounted) return;
         

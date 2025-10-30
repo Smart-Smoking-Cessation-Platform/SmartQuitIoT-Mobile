@@ -901,11 +901,34 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
     // Reload post detail if edit was successful
     if (result == true && mounted) {
+      print('✅ [PostDetailScreen] Edit successful, refreshing...');
+      
+      // Show success Flushbar
+      Flushbar(
+        message: 'Comment updated successfully!',
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+      ).show(context);
+      
       // Force clear and reload to show edited comment
       ref.read(commentViewModelProvider.notifier).clearComments();
       await Future.delayed(const Duration(milliseconds: 100));
       if (mounted) {
+        print('🔄 [PostDetailScreen] Reloading post to show edited comment...');
         await ref.read(postViewModelProvider.notifier).loadPostDetail(widget.postId);
+        
+        // Force sync comments after reload
+        final post = ref.read(postViewModelProvider).selectedPost;
+        if (post?.comments != null) {
+          print('🔄 [PostDetailScreen] Syncing ${post!.comments!.length} comments after edit...');
+          ref.read(commentViewModelProvider.notifier).loadCommentsFromPost(
+            widget.postId,
+            post.comments!,
+          );
+        }
       }
     }
   }

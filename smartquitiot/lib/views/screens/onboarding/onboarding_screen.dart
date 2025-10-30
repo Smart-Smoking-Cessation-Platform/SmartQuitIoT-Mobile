@@ -45,6 +45,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // Validation flag
   bool _submitted = false;
   bool _isCreatingPlan = false;
+  String _loadingMessage = 'Creating your quit plan...';
 
   // First cigarette options
   final Map<String, int> firstCigaretteOptions = {
@@ -423,11 +424,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   color: Color(0xFF00D09E),
                                 ),
                                 const SizedBox(height: 16),
-                                const Text(
-                                  'Creating your quit plan...',
-                                  style: TextStyle(
+                                Text(
+                                  _loadingMessage,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
                                     color: Color(0xFF00D09E),
                                     fontWeight: FontWeight.w600,
+                                    fontSize: 16,
                                   ),
                                 ),
                               ],
@@ -503,23 +506,85 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                                 setState(() {
                                   _isCreatingPlan = true;
+                                  _loadingMessage =
+                                      'Creating your quit plan...';
                                 });
 
                                 try {
+                                  // Call API to create quit plan
+                                  print(
+                                    '📞 [OnboardingScreen] Calling API to create quit plan...',
+                                  );
                                   await ref
                                       .read(quitPlanViewModelProvider.notifier)
                                       .createPlan(request);
 
                                   print(
-                                    '✅ [OnboardingScreen] Quit plan created successfully',
+                                    '✅ [OnboardingScreen] API call completed, waiting for backend...',
                                   );
 
-                                  // Give backend time to initialize phase and missions (75 seconds)
-                                  print(
-                                    '⏳ [OnboardingScreen] Waiting 75 seconds for backend to initialize phase and missions...',
-                                  );
+                                  // Backend needs time to create phases and missions
+                                  // Show progressive messages during wait (115s total)
+
+                                  // Message 1: Creating missions (after 20s)
                                   await Future.delayed(
-                                    const Duration(seconds: 80),
+                                    const Duration(seconds: 30),
+                                  );
+                                  if (_isCreatingPlan && mounted) {
+                                    setState(() {
+                                      _loadingMessage =
+                                          'Creating missions and phases...\nThis may take a while';
+                                    });
+                                    print(
+                                      '📝 [OnboardingScreen] Creating missions and phases...',
+                                    );
+                                  }
+
+                                  // Message 2: Almost done (after 50s total)
+                                  await Future.delayed(
+                                    const Duration(seconds: 60),
+                                  );
+                                  if (_isCreatingPlan && mounted) {
+                                    setState(() {
+                                      _loadingMessage =
+                                          'Almost done!\nFinalizing your quit plan...';
+                                    });
+                                    print(
+                                      '⏰ [OnboardingScreen] Almost done...',
+                                    );
+                                  }
+
+                                  // Message 3: Final steps (after 80s total)
+                                  await Future.delayed(
+                                    const Duration(seconds: 60),
+                                  );
+                                  if (_isCreatingPlan && mounted) {
+                                    setState(() {
+                                      _loadingMessage =
+                                          'Setting up your personalized plan...\nJust a moment!';
+                                    });
+                                    print(
+                                      '🔧 [OnboardingScreen] Setting up personalized plan...',
+                                    );
+                                  }
+
+                                  // Wait remaining time (35s more = 115s total)
+                                  await Future.delayed(
+                                    const Duration(seconds: 50),
+                                  );
+
+                                  // Final message
+                                  if (mounted) {
+                                    setState(() {
+                                      _loadingMessage =
+                                          '✨ Done creating quit plan!\nRedirecting to home...';
+                                    });
+                                    print(
+                                      '✨ [OnboardingScreen] Quit plan ready!',
+                                    );
+                                  }
+                                  await Future.delayed(
+                                    const Duration(seconds: 2),
                                   );
 
                                   // Show success notification

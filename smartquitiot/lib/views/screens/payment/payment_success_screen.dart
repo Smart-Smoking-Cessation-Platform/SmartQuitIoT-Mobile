@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../providers/membership_provider.dart';
 
-class PaymentSuccessScreen extends StatelessWidget {
+class PaymentSuccessScreen extends ConsumerWidget {
   final String? code;
   final String? id;
   final String? status;
@@ -27,40 +29,53 @@ class PaymentSuccessScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Get data from constructor or ModalRoute
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    final displayOrderCode = orderCode ?? args?['orderCode'] ?? '';
-    final displayPackageName = packageName ?? args?['packageName'] ?? 'Premium Package';
-    final displayAmount = amount ?? args?['amount'] ?? '0';
-    final displayStartDate = startDate ?? args?['startDate'] ?? '';
-    final displayEndDate = endDate ?? args?['endDate'] ?? '';
+    // Get PayOS params
+    final displayCode = code ?? args?['code']?.toString() ?? '';
+    final displayId = id ?? args?['id']?.toString() ?? '';
+    final displayStatus = status ?? args?['status']?.toString() ?? '';
+    final displayOrderCode = orderCode ?? args?['orderCode']?.toString() ?? '';
 
-    // Format amount
-    String formattedAmount = '0';
-    try {
-      final amountInt = int.tryParse(displayAmount) ?? 0;
-      formattedAmount = NumberFormat('#,###', 'vi_VN').format(amountInt);
-    } catch (e) {
-      formattedAmount = displayAmount;
+    // Optional fields (may not be available from PayOS)
+    final displayPackageName =
+        packageName ?? args?['packageName']?.toString() ?? 'Premium Membership';
+    final displayAmount = amount ?? args?['amount']?.toString() ?? '';
+    final displayStartDate = startDate ?? args?['startDate']?.toString() ?? '';
+    final displayEndDate = endDate ?? args?['endDate']?.toString() ?? '';
+
+    // Format amount if available
+    String formattedAmount = '';
+    if (displayAmount.isNotEmpty) {
+      try {
+        final amountInt = int.tryParse(displayAmount) ?? 0;
+        formattedAmount = NumberFormat('#,###', 'vi_VN').format(amountInt);
+      } catch (e) {
+        formattedAmount = displayAmount;
+      }
     }
 
-    // Format dates
+    // Format dates if available
     String formattedStartDate = '';
     String formattedEndDate = '';
-    try {
-      if (displayStartDate.isNotEmpty) {
+    if (displayStartDate.isNotEmpty) {
+      try {
         final startDateTime = DateTime.parse(displayStartDate);
         formattedStartDate = DateFormat('dd/MM/yyyy').format(startDateTime);
+      } catch (e) {
+        formattedStartDate = displayStartDate;
       }
-      if (displayEndDate.isNotEmpty) {
+    }
+    if (displayEndDate.isNotEmpty) {
+      try {
         final endDateTime = DateTime.parse(displayEndDate);
         formattedEndDate = DateFormat('dd/MM/yyyy').format(endDateTime);
+      } catch (e) {
+        formattedEndDate = displayEndDate;
       }
-    } catch (e) {
-      formattedStartDate = displayStartDate;
-      formattedEndDate = displayEndDate;
     }
 
     return Scaffold(
@@ -147,21 +162,45 @@ class PaymentSuccessScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             _buildDetailRow(
-                              icon: Icons.workspace_premium,
-                              title: 'Package',
-                              value: displayPackageName,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildDetailRow(
-                              icon: Icons.attach_money,
-                              title: 'Amount',
-                              value: '$formattedAmount VND',
+                              icon: Icons.check_circle,
+                              title: 'Status',
+                              value: displayStatus.toUpperCase(),
                             ),
                             const SizedBox(height: 16),
                             _buildDetailRow(
                               icon: Icons.receipt_long,
                               title: 'Order Code',
                               value: displayOrderCode,
+                            ),
+                            if (displayCode.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _buildDetailRow(
+                                icon: Icons.qr_code,
+                                title: 'Payment Code',
+                                value: displayCode,
+                              ),
+                            ],
+                            if (displayId.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _buildDetailRow(
+                                icon: Icons.fingerprint,
+                                title: 'Transaction ID',
+                                value: displayId,
+                              ),
+                            ],
+                            if (formattedAmount.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              _buildDetailRow(
+                                icon: Icons.attach_money,
+                                title: 'Amount',
+                                value: '$formattedAmount VND',
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            _buildDetailRow(
+                              icon: Icons.workspace_premium,
+                              title: 'Package',
+                              value: displayPackageName,
                             ),
                             if (formattedStartDate.isNotEmpty) ...[
                               const SizedBox(height: 16),
@@ -188,8 +227,31 @@ class PaymentSuccessScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            context.go('/main');
+                          onPressed: () async {
+                            print(
+                              '🔄 [PaymentSuccess] Refreshing membership to unlock features...',
+                            );
+
+                            try {
+                              // Await refresh to ensure features are unlocked before navigation
+                              await ref
+                                  .read(currentSubscriptionProvider.notifier)
+                                  .fetchCurrentSubscription();
+                              print(
+                                '✅ [PaymentSuccess] Membership refreshed successfully',
+                              );
+                            } catch (e) {
+                              print(
+                                '⚠️ [PaymentSuccess] Refresh error (ignoring): $e',
+                              );
+                              // Continue anyway - user can try again later
+                            }
+
+                            // Navigate to home with unlocked features
+                            if (context.mounted) {
+                              print('🏠 [PaymentSuccess] Navigating to home');
+                              context.go('/main');
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,

@@ -414,21 +414,34 @@ class _EditReplyCommentDialogState
 
         print('✅ [EditReplyCommentDialog] Comment updated successfully');
         
-        if (mounted) {
-          setState(() => _isSubmitting = false);
-          Navigator.pop(context, true);
-          Flushbar(
-            message: 'Comment updated successfully!',
-            icon: const Icon(Icons.check_circle, color: Colors.white),
-            backgroundColor: const Color(0xFF00D09E),
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(8),
-            borderRadius: BorderRadius.circular(8),
-          ).show(context);
+        if (!_hasClosedModal) {
+          _hasClosedModal = true; // Set flag first to prevent race conditions
+          print('🚪 [EditReplyCommentDialog] Closing modal with success=true (edit)');
+          
+          // Always pop first, then update state if mounted
+          Navigator.of(context).pop(true); // Parent will show Flushbar
+          
+          // Update state after pop (safe even if unmounted)
+          if (mounted) {
+            try {
+              setState(() => _isSubmitting = false);
+            } catch (e) {
+              print('⚠️ [EditReplyCommentDialog] setState error after pop (safe to ignore): $e');
+            }
+          }
         }
       } else {
         // Create new comment or reply
         print('📝 [EditReplyCommentDialog] Calling createComment API...');
+        print('📦 [EditReplyCommentDialog] Content: "${content.substring(0, content.length > 50 ? 50 : content.length)}..."');
+        print('🎬 [EditReplyCommentDialog] Media count: ${_selectedMedia.length}');
+        if (_selectedMedia.isNotEmpty) {
+          for (var i = 0; i < _selectedMedia.length; i++) {
+            print('🖼️ [EditReplyCommentDialog] Media[$i]: ${_selectedMedia[i].mediaType} - ${_selectedMedia[i].mediaUrl.substring(0, 80)}...');
+          }
+        }
+        
+        // Call API
         await ref.read(commentViewModelProvider.notifier).createComment(
               postId: widget.postId,
               content: content,
@@ -437,32 +450,58 @@ class _EditReplyCommentDialogState
             );
 
         print('✅ [EditReplyCommentDialog] Comment ${widget.parentId != null ? "reply" : "root"} created successfully');
+        print('🔍 [EditReplyCommentDialog] _hasClosedModal before check: $_hasClosedModal');
+        print('🔍 [EditReplyCommentDialog] mounted: $mounted');
         
-        if (mounted && !_hasClosedModal) {
-          setState(() {
-            _isSubmitting = false;
-            _hasClosedModal = true;
-          });
+        // ALWAYS pop on success, no matter what
+        if (!_hasClosedModal) {
+          _hasClosedModal = true;
+          print('🚪 [EditReplyCommentDialog] Closing modal with success=true (reply/create)');
           
-          print('🚪 [EditReplyCommentDialog] Closing modal with success=true');
-          // Return true to indicate success - parent will show Flushbar
-          Navigator.pop(context, true);
-        } else if (_hasClosedModal) {
-          print('⚠️ [EditReplyCommentDialog] Modal already closed, skipping duplicate close');
+          // Pop with success=true so parent can refresh
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(true);
+            print('✅ [EditReplyCommentDialog] Dialog popped successfully');
+          } else {
+            print('⚠️ [EditReplyCommentDialog] Cannot pop - no route to pop');
+          }
+          
+          // Clean up state after pop
+          if (mounted) {
+            try {
+              setState(() => _isSubmitting = false);
+            } catch (e) {
+              print('⚠️ [EditReplyCommentDialog] setState error after pop: $e');
+            }
+          }
+        } else {
+          print('⚠️⚠️⚠️ [EditReplyCommentDialog] Modal ALREADY CLOSED before success! This should not happen!');
+          print('🔍 [EditReplyCommentDialog] API Call Count was: $_apiCallCount');
         }
       }
     } catch (e) {
       print('❌ [EditReplyCommentDialog] Error submitting comment: $e');
+      print('📊 [EditReplyCommentDialog] Error type: ${e.runtimeType}');
+      print('🧩 [EditReplyCommentDialog] Stack trace: ${StackTrace.current}');
       
       if (mounted) {
         setState(() => _isSubmitting = false);
+        
+        // Show error message
         Flushbar(
-          message: 'Error: $e',
+          message: 'Failed to post comment. Please try again.',
           icon: const Icon(Icons.error_outline, color: Colors.white),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 4),
           margin: const EdgeInsets.all(8),
           borderRadius: BorderRadius.circular(8),
+          mainButton: TextButton(
+            onPressed: () {
+              // User can dismiss error and try again
+              Navigator.of(context, rootNavigator: true).pop();
+            },
+            child: const Text('OK', style: TextStyle(color: Colors.white)),
+          ),
         ).show(context);
       }
     }

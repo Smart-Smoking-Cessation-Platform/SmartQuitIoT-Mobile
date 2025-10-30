@@ -30,7 +30,7 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
-  initialLocation: '/',
+  initialLocation: '/', // TODO: Change back to '/' after testing payment
   // redirect: (context, state) {
   //   final uri = state.uri;
   //   if (uri.scheme == 'smartquit') {

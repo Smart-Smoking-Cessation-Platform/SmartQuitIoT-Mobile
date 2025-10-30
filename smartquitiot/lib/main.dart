@@ -9,7 +9,6 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 // Services & Providers
-import 'package:SmartQuitIoT/providers/membership_provider.dart';
 import 'package:SmartQuitIoT/services/token_storage_service.dart';
 import 'package:SmartQuitIoT/services/app_token_manager.dart';
 
@@ -84,15 +83,18 @@ class _MyAppState extends ConsumerState<MyApp> {
     if (host == 'achievement') {
       debugPrint('🏆 Achievement notification received');
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Navigate to main screen (achievement tab)
       router.go('/main');
-      
+
       // Show snackbar to inform user
-      if (rootNavigatorKey.currentContext != null && rootNavigatorKey.currentContext!.mounted) {
+      if (rootNavigatorKey.currentContext != null &&
+          rootNavigatorKey.currentContext!.mounted) {
         ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
           const SnackBar(
-            content: Text('🎉 New achievement unlocked! Check your achievements.'),
+            content: Text(
+              '🎉 New achievement unlocked! Check your achievements.',
+            ),
             backgroundColor: Color(0xFF00D09E),
             duration: Duration(seconds: 3),
           ),
@@ -127,38 +129,18 @@ class _MyAppState extends ConsumerState<MyApp> {
     };
 
     debugPrint('🔗 Deep link received: $uri');
-    debugPrint('➡︎ Sending process body: $body');
+    debugPrint('📦 Payment params: $body');
 
-    showDialog(
-      context: rootNavigatorKey.currentContext!,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    try {
-      await ref
-          .read(membershipViewModelProvider.notifier)
-          .processPaymentResult(body);
-    } catch (e) {
-      debugPrint('Error processing payment result: $e');
-    }
-
-    if (rootNavigatorKey.currentContext!.mounted) {
-      Navigator.of(rootNavigatorKey.currentContext!).pop();
-    }
-
-    // Route based on payment status
+    // Route immediately without any dialogs to prevent GlobalKey conflicts
     if (cancel || path.contains('failed')) {
+      debugPrint('❌ [DeepLink] Payment cancelled/failed, navigating to cancel screen');
       router.go('/payment/cancel', extra: body);
     } else if (membershipStatus == 'AVAILABLE') {
+      debugPrint('✅ [DeepLink] Payment successful, navigating to success screen');
       router.go('/payment/success', extra: body);
     } else {
+      debugPrint('⚠️ [DeepLink] Unknown payment status, navigating to cancel screen');
       router.go('/payment/cancel', extra: body);
-      ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
-        SnackBar(content: Text('Payment failed for order: $orderCodeNum')),
-      );
     }
   }
 

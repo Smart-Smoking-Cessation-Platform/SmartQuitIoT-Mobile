@@ -44,6 +44,12 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
         backgroundColor: const Color(0xFF00D09E),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            context.go('/posts');
+          },
+        ),
         title: const Text(
           'My Posts',
           style: TextStyle(
