@@ -338,13 +338,19 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
+                      interval: 1, // Show labels only at integer positions
                       getTitlesWidget: (value, meta) {
+                        // Only show labels at exact integer positions (data points)
+                        if (value != value.toInt()) {
+                          return const Text('');
+                        }
+                        
                         if (value.toInt() >= 0 && value.toInt() < data.length) {
                           final date = DateTime.parse(data[value.toInt()].date);
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
-                              DateFormat('MM/dd').format(date),
+                              DateFormat('dd/MM').format(date),
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 10,
@@ -370,8 +376,8 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                     left: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
-                minX: 0,
-                maxX: (data.length - 1).toDouble(),
+                minX: -0.3, // Add left padding
+                maxX: (data.length - 1).toDouble() + 0.3, // Add right padding
                 minY: 0,
                 maxY: 10,
                 lineBarsData: [
