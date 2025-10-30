@@ -337,9 +337,10 @@ class _EditReplyCommentDialogState
     }
 
     final content = _contentController.text.trim();
-    if (content.isEmpty) {
+    // Allow submission if either content OR media exists
+    if (content.isEmpty && _selectedMedia.isEmpty) {
       Flushbar(
-        message: 'Please enter some text',
+        message: 'Please enter text or add media',
         icon: const Icon(Icons.warning, color: Colors.white),
         backgroundColor: Colors.orange,
         duration: const Duration(seconds: 2),
@@ -409,23 +410,8 @@ class _EditReplyCommentDialogState
           });
           
           print('🚪 [EditReplyCommentDialog] Closing modal with success=true');
+          // Return true to indicate success - parent will show Flushbar
           Navigator.pop(context, true);
-          
-          // Show success message after modal closes
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              Flushbar(
-                message: widget.parentId != null
-                    ? 'Reply posted successfully!'
-                    : 'Comment posted successfully!',
-                icon: const Icon(Icons.check_circle, color: Colors.white),
-                backgroundColor: const Color(0xFF00D09E),
-                duration: const Duration(seconds: 2),
-                margin: const EdgeInsets.all(8),
-                borderRadius: BorderRadius.circular(8),
-              ).show(context);
-            }
-          });
         } else if (_hasClosedModal) {
           print('⚠️ [EditReplyCommentDialog] Modal already closed, skipping duplicate close');
         }

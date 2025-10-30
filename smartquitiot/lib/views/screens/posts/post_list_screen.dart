@@ -39,6 +39,14 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
       return post.title.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
+    // Listen to refresh trigger
+    ref.listen<int>(postRefreshProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        print('🔄 [PostListScreen] Refresh triggered!');
+        ref.read(postViewModelProvider.notifier).loadAllPosts();
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -52,6 +60,15 @@ class _PostListScreenState extends ConsumerState<PostListScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.go('/main'),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: Colors.white),
+            tooltip: 'My Posts',
+            onPressed: () {
+              context.push('/my-posts');
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

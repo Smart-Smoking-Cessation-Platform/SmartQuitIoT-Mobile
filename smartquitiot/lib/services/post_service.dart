@@ -298,9 +298,26 @@ class PostService {
       print('📦 [PostService] Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+        final dynamic decoded = jsonDecode(response.body);
         print('✅ [PostService] My posts fetched successfully');
-        return PostListResponse.fromJson(data);
+        
+        // Check if response is wrapped or direct array
+        if (decoded is Map<String, dynamic>) {
+          // Wrapped response: { "success": true, "data": [...] }
+          return PostListResponse.fromJson(decoded);
+        } else if (decoded is List) {
+          // Direct array response: [{...}, {...}]
+          print('⚠️ [PostService] Direct array response detected, wrapping...');
+          return PostListResponse.fromJson({
+            'success': true,
+            'message': 'My posts fetched successfully',
+            'data': decoded,
+            'code': 200,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          });
+        } else {
+          throw PostException('Unexpected response format');
+        }
       } else {
         final Map<String, dynamic> errorData = jsonDecode(response.body);
         final errorResponse = ErrorResponse.fromJson(errorData);

@@ -17,7 +17,9 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
     super.initState();
     // Load my posts on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(postViewModelProvider.notifier).loadMyPosts();
+      if (mounted) {
+        ref.read(postViewModelProvider.notifier).loadMyPosts();
+      }
     });
   }
 
@@ -30,7 +32,7 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
 
     // Listen to refresh trigger
     ref.listen<int>(postRefreshProvider, (previous, next) {
-      if (previous != null && previous != next) {
+      if (mounted && previous != null && previous != next) {
         print('🔄 [MyPostsScreen] Refresh triggered!');
         ref.read(postViewModelProvider.notifier).loadMyPosts();
       }
@@ -62,15 +64,13 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF00D09E),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFF00D09E)),
             )
           : error != null
-              ? _buildErrorState(error)
-              : myPosts.isEmpty
-                  ? _buildEmptyState()
-                  : _buildPostsList(myPosts),
+          ? _buildErrorState(error)
+          : myPosts.isEmpty
+          ? _buildEmptyState()
+          : _buildPostsList(myPosts),
     );
   }
 
@@ -81,18 +81,11 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 80, color: Colors.red),
             const SizedBox(height: 16),
             const Text(
               'Failed to load posts',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -166,7 +159,10 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D09E),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -272,10 +268,7 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
                 post.description,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
               const SizedBox(height: 12),
 
@@ -303,23 +296,23 @@ class _MyPostsScreenState extends ConsumerState<MyPostsScreen> {
                 const SizedBox(height: 12),
 
               // Post Stats
-              Row(
-                children: [
-                  Icon(Icons.favorite, size: 18, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${post.likeCount}',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.comment, size: 18, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${post.comments?.length ?? 0}',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
+              // Row(
+              //   children: [
+              //     Icon(Icons.favorite, size: 18, color: Colors.grey[600]),
+              //     const SizedBox(width: 4),
+              //     Text(
+              //       '${post.likeCount}',
+              //       style: TextStyle(color: Colors.grey[600]),
+              //     ),
+              //     const SizedBox(width: 16),
+              //     Icon(Icons.comment, size: 18, color: Colors.grey[600]),
+              //     const SizedBox(width: 4),
+              //     Text(
+              //       '${post.comments?.length ?? 0}',
+              //       style: TextStyle(color: Colors.grey[600]),
+              //     ),
+              //   ],
+              // ),
             ],
           ),
         ),
