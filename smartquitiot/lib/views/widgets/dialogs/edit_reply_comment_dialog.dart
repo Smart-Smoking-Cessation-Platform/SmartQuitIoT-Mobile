@@ -7,6 +7,7 @@ import 'package:SmartQuitIoT/models/post_media.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/services/cloudinary_service.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 /// Dialog for editing or replying to comments
 class EditReplyCommentDialog extends ConsumerStatefulWidget {
@@ -287,9 +288,43 @@ class _EditReplyCommentDialogState
       if (file != null) {
         String uploadUrl;
         if (mediaType == 'IMAGE') {
+          print('📸 [EditReplyCommentDialog] Uploading image...');
           uploadUrl = await _cloudinaryService.uploadImage(File(file.path));
+          print('✅ [EditReplyCommentDialog] Image uploaded: $uploadUrl');
         } else {
+          print('🎥 [EditReplyCommentDialog] Uploading video...');
           uploadUrl = await _cloudinaryService.uploadVideo(File(file.path));
+          print('✅ [EditReplyCommentDialog] Video uploaded: $uploadUrl');
+          
+          // Generate and upload thumbnail for video
+          print('🖼️ [EditReplyCommentDialog] Generating video thumbnail...');
+          try {
+            final thumbnailData = await VideoThumbnail.thumbnailData(
+              video: file.path,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 300,
+              quality: 85,
+            );
+
+            if (thumbnailData != null) {
+              // Save thumbnail to temporary file
+              final tempDir = Directory.systemTemp;
+              final thumbnailFile = File('${tempDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg');
+              await thumbnailFile.writeAsBytes(thumbnailData);
+              print('💾 [EditReplyCommentDialog] Thumbnail saved to: ${thumbnailFile.path}');
+
+              // Upload thumbnail to Cloudinary
+              final thumbnailUrl = await _cloudinaryService.uploadImage(thumbnailFile);
+              print('✅ [EditReplyCommentDialog] Thumbnail uploaded: $thumbnailUrl');
+
+              // Clean up temp file
+              await thumbnailFile.delete();
+              print('🗑️ [EditReplyCommentDialog] Temp thumbnail file deleted');
+            }
+          } catch (e) {
+            print('⚠️ [EditReplyCommentDialog] Failed to generate thumbnail: $e');
+            // Continue without thumbnail - video will still work
+          }
         }
 
         setState(() {
