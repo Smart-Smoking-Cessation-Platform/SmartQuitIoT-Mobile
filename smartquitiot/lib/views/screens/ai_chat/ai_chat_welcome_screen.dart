@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'ai_chat_instructions_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'ai_chat_welcome_content.dart';
 
 class AiChatWelcomeScreen extends StatelessWidget {
@@ -27,16 +27,11 @@ class AiChatWelcomeScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: AiChatWelcomeContent(
-            title: 'Chào mừng tới SmartQuit AI',
-            subtitle: 'Bắt đầu chat với trợ lí AI của SmartQuit',
-            buttonText: 'Bắt Đầu',
+            title: 'Welcome to SmartQuit AI',
+            subtitle: 'Start chatting with your personal AI assistant',
+            buttonText: 'Get Started',
             onButtonPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AiChatInstructionsScreen(),
-                ),
-              );
+              context.push('/ai-chat');
             },
           ),
         ),

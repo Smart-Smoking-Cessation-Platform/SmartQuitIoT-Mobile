@@ -22,6 +22,12 @@ final allAchievementsProvider = FutureProvider<List<Achievement>>((ref) async {
   return await repository.getAllMyAchievements();
 });
 
+// Home Achievements Provider (random 4 achievements for home screen)
+final homeAchievementsProvider = FutureProvider.autoDispose<List<Achievement>>((ref) async {
+  final repository = ref.read(achievementRepositoryProvider);
+  return await repository.getHomeAchievements();
+});
+
 // Completed Achievements Provider
 final completedAchievementsProvider = Provider<List<Achievement>>((ref) {
   final asyncAchievements = ref.watch(allAchievementsProvider);

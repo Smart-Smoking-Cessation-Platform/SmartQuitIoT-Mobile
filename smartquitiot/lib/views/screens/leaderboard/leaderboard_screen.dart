@@ -12,7 +12,6 @@ class LeaderboardScreen extends ConsumerStatefulWidget {
 }
 
 class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
-
   @override
   void initState() {
     super.initState();
@@ -45,8 +44,6 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const CommunityProgressSection(),
-            const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -82,9 +79,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
       return const Padding(
         padding: EdgeInsets.all(40.0),
         child: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF00D09E),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF00D09E)),
         ),
       );
     }
@@ -95,11 +90,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
             Text(
               'Oops! Something went wrong',
@@ -113,15 +104,14 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
             Text(
               state.error!,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                ref.read(leaderboardViewModelProvider.notifier).loadTopLeaderBoards();
+                ref
+                    .read(leaderboardViewModelProvider.notifier)
+                    .loadTopLeaderBoards();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D09E),
@@ -139,11 +129,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
         padding: const EdgeInsets.all(40.0),
         child: Column(
           children: [
-            Icon(
-              Icons.leaderboard_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.leaderboard_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No Leaderboard Data Yet',
@@ -157,10 +143,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
             Text(
               'Be the first to earn achievements and climb the leaderboard!',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -196,10 +179,14 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: rank <= 3 ? const Color(0xFF00D09E).withOpacity(0.05) : Colors.white,
+        color: rank <= 3
+            ? const Color(0xFF00D09E).withOpacity(0.05)
+            : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: rank <= 3 ? const Color(0xFF00D09E).withOpacity(0.3) : Colors.grey[200]!,
+          color: rank <= 3
+              ? const Color(0xFF00D09E).withOpacity(0.3)
+              : Colors.grey[200]!,
           width: rank <= 3 ? 2 : 1,
         ),
         boxShadow: [
@@ -213,31 +200,100 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Rank + Name + Total Achievements
+          // Header: Rank + Avatar + Name + Total Achievements
           Row(
             children: [
-              // Rank with medal
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: medalColor ?? const Color(0xFF00D09E).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: medalIcon != null
-                      ? Icon(medalIcon, color: medalColor, size: 28)
-                      : Text(
-                          '#$rank',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[700],
+              // Avatar with rank badge overlay
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: Stack(
+                  children: [
+                    // Avatar
+                    Positioned(
+                      left: 5,
+                      top: 5,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(25),
+                        child: member.avatarUrl != null
+                            ? Image.network(
+                                member.avatarUrl!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF00D09E).withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: Color(0xFF00D09E),
+                                    size: 25,
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00D09E).withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Color(0xFF00D09E),
+                                  size: 25,
+                                ),
+                              ),
+                      ),
+                    ),
+                    // Rank badge (top-right corner)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: medalColor ?? const Color(0xFF00D09E),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
+                        child: Center(
+                          child: medalIcon != null
+                              ? Icon(
+                                  medalIcon,
+                                  color: Colors.white,
+                                  size: 14,
+                                )
+                              : Text(
+                                  '$rank',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               // Name and total achievements
               Expanded(
                 child: Column(
@@ -338,7 +394,9 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _getAchievementTypeColor(achievement.type).withOpacity(0.1),
+                        color: _getAchievementTypeColor(
+                          achievement.type,
+                        ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
