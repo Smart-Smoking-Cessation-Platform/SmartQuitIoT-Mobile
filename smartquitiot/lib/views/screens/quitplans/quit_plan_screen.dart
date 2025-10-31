@@ -561,6 +561,30 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
+  /// Check if a given date is today
+  bool _isToday(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return false;
+    try {
+      final date = DateTime.parse(dateString);
+      final today = DateTime.now();
+      return date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Check if all missions for a day are completed
+  bool _areAllMissionsCompleted(List<QuitMissionItem> missions) {
+    if (missions.isEmpty) return false;
+    return missions.every((mission) {
+      final missionId = mission.id ?? -1;
+      return mission.status == 'COMPLETED' ||
+          locallyCompletedMissionIds.contains(missionId);
+    });
+  }
+
   Widget _buildMissionsList(List<QuitMissionItem> missions, Color color) {
     if (missions.isEmpty) {
       return const Padding(
@@ -569,8 +593,92 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       );
     }
 
+    // Get the current selected day to check if it's today and if all missions are completed
+    final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
+    String? selectedDayDate;
+    quitPhaseState.when(
+      data: (quitPhase) {
+        if (quitPhase != null &&
+            quitPhase.phases != null &&
+            selectedPhaseIndex < quitPhase.phases!.length) {
+          final currentPhase = quitPhase.phases![selectedPhaseIndex];
+          final days = currentPhase.details ?? [];
+          if (selectedDayIndex < days.length) {
+            selectedDayDate = days[selectedDayIndex].date;
+          }
+        }
+      },
+      loading: () {},
+      error: (error, stack) {},
+    );
+
+    final isSelectedDayToday = _isToday(selectedDayDate);
+    final allMissionsCompleted = _areAllMissionsCompleted(missions);
+    final showCongratulations = isSelectedDayToday && allMissionsCompleted;
+
     return Column(
-      children: missions.map((mission) {
+      children: [
+        // Congratulations message for completed daily missions
+        if (showCongratulations)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.green.withOpacity(0.1),
+                  Colors.green.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.green.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      '🎉',
+                      style: TextStyle(fontSize: 24),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '🎆',
+                      style: TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '✨',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Congratulations!',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'You have completed all missions for today!\nCome back tomorrow for new challenges.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Missions list
+        ...missions.map((mission) {
         final missionId = mission.id ?? -1;
         final completed =
             mission.status == 'COMPLETED' ||
@@ -628,22 +736,24 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {
-                      // Get current phase ID from the selected phase
-                      final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
-                      quitPhaseState.when(
-                        data: (quitPhase) {
-                          if (quitPhase != null && quitPhase.phases != null && selectedPhaseIndex < quitPhase.phases!.length) {
-                            final currentPhase = quitPhase.phases![selectedPhaseIndex];
-                            _showMissionCompleteDialog(mission, currentPhase.id ?? 0);
+                    onPressed: isSelectedDayToday
+                        ? () {
+                            // Get current phase ID from the selected phase
+                            final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
+                            quitPhaseState.when(
+                              data: (quitPhase) {
+                                if (quitPhase != null && quitPhase.phases != null && selectedPhaseIndex < quitPhase.phases!.length) {
+                                  final currentPhase = quitPhase.phases![selectedPhaseIndex];
+                                  _showMissionCompleteDialog(mission, currentPhase.id ?? 0);
+                                }
+                              },
+                              loading: () {},
+                              error: (error, stack) {},
+                            );
                           }
-                        },
-                        loading: () {},
-                        error: (error, stack) {},
-                      );
-                    },
+                        : null, // Disable button for future days
                     style: TextButton.styleFrom(
-                      backgroundColor: color,
+                      backgroundColor: isSelectedDayToday ? color : Colors.grey,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -653,14 +763,17 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Complete Mission'),
+                    child: Text(
+                      isSelectedDayToday ? 'Complete Mission' : 'Not Available Yet',
+                    ),
                   ),
                 ),
               ],
             ],
           ),
         );
-      }).toList(),
+        }).toList(),
+      ],
     );
   }
 

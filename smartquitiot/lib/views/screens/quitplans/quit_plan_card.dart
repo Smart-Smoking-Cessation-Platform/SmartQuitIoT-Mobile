@@ -30,7 +30,9 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
       print('⏳ [QuitPlanCard] Waiting 500ms before initial load...');
       await Future.delayed(const Duration(milliseconds: 500));
       print('🚀 [QuitPlanCard] Auto-loading quit plan...');
-      ref.read(quitPlanHomepageViewModelProvider.notifier).loadQuitPlanHomePage();
+      ref
+          .read(quitPlanHomepageViewModelProvider.notifier)
+          .loadQuitPlanHomePage();
     });
   }
 
@@ -43,12 +45,14 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(quitPlanHomepageViewModelProvider);
-    
+
     // Listen for mission refresh trigger
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != next) {
         print('🔄 [QuitPlanCard] Refresh triggered - reloading quit plan...');
-        ref.read(quitPlanHomepageViewModelProvider.notifier).loadQuitPlanHomePage();
+        ref
+            .read(quitPlanHomepageViewModelProvider.notifier)
+            .loadQuitPlanHomePage();
       }
     });
 
@@ -75,9 +79,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20.0),
-          child: CircularProgressIndicator(
-            color: Color(0xFF00D09E),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF00D09E)),
         ),
       );
     }
@@ -97,10 +99,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
             Expanded(
               child: Text(
                 'Error: ${state.error}',
-                style: TextStyle(
-                  color: Colors.red[700],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.red[700], fontSize: 14),
               ),
             ),
           ],
@@ -122,10 +121,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
             Expanded(
               child: Text(
                 'No quit plan available',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ),
           ],
@@ -166,9 +162,9 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
                   ),
                   Text(
                     quitPlan.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey,
+                      color: _getPhaseTextColor(quitPlan.name),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -264,8 +260,10 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(12),
@@ -284,10 +282,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
               const SizedBox(height: 10),
               Text(
                 'Today: ${quitPlan.currentPhaseDetail.missionProgress} missions',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.white,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.white),
               ),
             ],
           ),
@@ -319,7 +314,8 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
                     final glow = 4 + (_glowController.value * 6);
                     return Container(
                       height: 12,
-                      width: MediaQuery.of(context).size.width *
+                      width:
+                          MediaQuery.of(context).size.width *
                           0.7 *
                           quitPlan.progressPercentage,
                       decoration: BoxDecoration(
@@ -369,9 +365,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
       decoration: BoxDecoration(
         color: Colors.grey.withOpacity(0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.2),
-        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,21 +407,33 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
     }
   }
 
-  // 🎨 Gradient cho từng giai đoạn
-  List<Color> _getPhaseGradient(String phaseName) {
-    switch (phaseName.toLowerCase()) {
+  Color _getPhaseTextColor(String phaseName) {
+    switch (phaseName.trim().toLowerCase()) {
       case 'preparation':
-        return [const Color(0xFF4FACFE), const Color(0xFF00F2FE)]; // xanh dương
+        return const Color(0xFF4A90E2); // xanh dương
       case 'onset':
-        return [const Color(0xFFFBAB7E), const Color(0xFFF7CE68)]; // vàng cam
+        return const Color(0xFFFF9800);
       case 'peak craving':
-        return [const Color(0xFFFF5F6D), const Color(0xFFFFC371)]; // đỏ cam
-      case 'subsiding':
-        return [const Color(0xFF74EBD5), const Color(0xFF9FACE6)]; // xanh tím nhẹ
+        return const Color(0xFFE91E63);
       case 'maintenance':
-        return [const Color(0xFF43E97B), const Color(0xFF38F9D7)]; // xanh lá
+        return const Color(0xFF9C27B0);
       default:
-        return [const Color(0xFF00D09E), const Color(0xFF3FCF8E)];
+        return const Color(0xFF00D09E); // xanh lá default
+    }
+  }
+
+  List<Color> _getPhaseGradient(String phaseName) {
+    switch (phaseName.trim().toLowerCase()) {
+      case 'preparation':
+        return [const Color(0xFF4A90E2), const Color(0xFF50E3C2)];
+      case 'onset':
+        return [const Color(0xFFFFC107), const Color(0xFFFF9800)];
+      case 'peak craving':
+        return [const Color(0xFFF44336), const Color(0xFFE91E63)];
+      case 'maintenance':
+        return [const Color(0xFF9C27B0), const Color(0xFFBA68C8)];
+      default:
+        return [const Color(0xFF00D09E), const Color(0xFF00E676)];
     }
   }
 
@@ -435,12 +441,19 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
   Widget _getPhaseIcon(String phaseName) {
     switch (phaseName.toLowerCase()) {
       case 'preparation':
-        return const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20);
+        return const Icon(
+          Icons.lightbulb_outline,
+          color: Colors.white,
+          size: 20,
+        );
       case 'onset':
         return const Icon(Icons.timeline, color: Colors.white, size: 20);
       case 'peak craving':
-        return const Icon(Icons.local_fire_department,
-            color: Colors.white, size: 20);
+        return const Icon(
+          Icons.local_fire_department,
+          color: Colors.white,
+          size: 20,
+        );
       case 'subsiding':
         return const Icon(Icons.water_drop, color: Colors.white, size: 20);
       case 'maintenance':

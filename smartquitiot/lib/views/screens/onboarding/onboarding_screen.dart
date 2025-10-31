@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'dart:async';
 import '../../../models/request/create_quit_plan_request.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
@@ -46,6 +47,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _submitted = false;
   bool _isCreatingPlan = false;
   String _loadingMessage = 'Creating your quit plan...';
+
+  // Progress tracking
+  double _creationProgress = 0.0;
+  int _currentStep = 0;
+  final List<String> _steps = [
+    'Analyzing your smoking habits',
+    'Creating personalized missions',
+    'Building quit phases',
+    'Finalizing your plan',
+  ];
+
+  // Tips rotation
+  final List<String> _quitTips = [
+    '💡 Tip: Drinking water helps reduce cravings',
+    '💡 Did you know? Your sense of taste improves within 48 hours',
+    '💡 Tip: Deep breathing exercises can help manage stress',
+    '💡 After 2 weeks, your circulation begins to improve',
+    '💡 Tip: Keep your hands busy to avoid reaching for cigarettes',
+    '💡 Your risk of heart attack begins to drop after 24 hours',
+    '💡 Tip: Exercise releases endorphins that reduce cravings',
+    '💡 Within 3 months, your lung function improves by 30%',
+  ];
+  int _currentTipIndex = 0;
+  Timer? _tipTimer;
 
   // First cigarette options
   final Map<String, int> firstCigaretteOptions = {
@@ -103,6 +128,49 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _tipTimer?.cancel();
+    _pageController.dispose();
+    _smokeAvgController.dispose();
+    _yearsController.dispose();
+    _moneyController.dispose();
+    _cigarettesPerPackController.dispose();
+    _quitPlanNameController.dispose();
+    _nicotineAmountController.dispose();
+    super.dispose();
+  }
+
+  void _startTipRotation() {
+    _tipTimer?.cancel();
+    _tipTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted && _isCreatingPlan) {
+        setState(() {
+          _currentTipIndex = (_currentTipIndex + 1) % _quitTips.length;
+        });
+      }
+    });
+  }
+
+  void _animateProgress(double from, double to, String message) {
+    setState(() => _loadingMessage = message);
+
+    // Smooth animation
+    const steps = 20;
+    const stepDuration = Duration(milliseconds: 50);
+    final increment = (to - from) / steps;
+
+    for (int i = 0; i <= steps; i++) {
+      Future.delayed(stepDuration * i, () {
+        if (mounted && _isCreatingPlan) {
+          setState(() {
+            _creationProgress = from + (increment * i);
+          });
+        }
+      });
+    }
+  }
+
   /// Validate and return first error page index, -1 if no error
   int _validateAndGetFirstErrorPage() {
     setState(() => _submitted = true);
@@ -127,6 +195,172 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     return -1; // no error
+  }
+
+  Widget _buildLoadingWidget() {
+    return Column(
+      children: [
+        // Animated circular progress
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 80,
+              height: 80,
+              child: CircularProgressIndicator(
+                value: _creationProgress,
+                strokeWidth: 6,
+                backgroundColor: Colors.grey[300],
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Color(0xFF00D09E),
+                ),
+              ),
+            ),
+            Text(
+              '${(_creationProgress * 100).toInt()}%',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF00D09E),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Step indicator
+        Text(
+          'Step ${_currentStep + 1} of ${_steps.length}',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Current step message with animation
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          child: Text(
+            _loadingMessage,
+            key: ValueKey<String>(_loadingMessage),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF00D09E),
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Linear progress with steps
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: List.generate(_steps.length, (index) {
+              final isCompleted = index < _currentStep;
+              final isCurrent = index == _currentStep;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isCompleted
+                            ? const Color(0xFF00D09E)
+                            : isCurrent
+                            ? const Color(0xFF00D09E).withOpacity(0.3)
+                            : Colors.grey[300],
+                      ),
+                      child: isCompleted
+                          ? const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            )
+                          : isCurrent
+                          ? Center(
+                              child: SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF00D09E),
+                                      ),
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _steps[index],
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isCurrent
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: isCompleted || isCurrent
+                              ? Colors.black87
+                              : Colors.grey[400],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Tips container
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00D09E).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF00D09E).withOpacity(0.3)),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.3),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              _quitTips[_currentTipIndex],
+              key: ValueKey<int>(_currentTipIndex),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+                color: Colors.black87,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -418,23 +652,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                       // Submit
                       _isCreatingPlan
-                          ? Column(
-                              children: [
-                                const CircularProgressIndicator(
-                                  color: Color(0xFF00D09E),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _loadingMessage,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Color(0xFF00D09E),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            )
+                          ? _buildLoadingWidget()
                           : PrimaryButton(
                               text: 'Finish',
                               onPressed: () async {
@@ -506,9 +724,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                                 setState(() {
                                   _isCreatingPlan = true;
-                                  _loadingMessage =
-                                      'Creating your quit plan...';
+                                  _currentStep = 0;
+                                  _creationProgress = 0.0;
+                                  _currentTipIndex = 0;
+                                  _loadingMessage = _steps[0];
                                 });
+
+                                // Start tip rotation
+                                _startTipRotation();
 
                                 try {
                                   // Call API to create quit plan
@@ -523,61 +746,54 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     '✅ [OnboardingScreen] API call completed, waiting for backend...',
                                   );
 
-                                  // Backend needs time to create phases and missions
-                                  // Show progressive messages during wait (115s total)
-
-                                  // Message 1: Creating missions (after 20s)
+                                  // Step 1: Analyzing (0-25%) - 20s
+                                  _animateProgress(0, 0.25, _steps[0]);
                                   await Future.delayed(
-                                    const Duration(seconds: 30),
+                                    const Duration(seconds: 20),
                                   );
+
+                                  // Step 2: Creating missions (25-50%) - 25s
                                   if (_isCreatingPlan && mounted) {
-                                    setState(() {
-                                      _loadingMessage =
-                                          'Creating missions and phases...\nThis may take a while';
-                                    });
+                                    setState(() => _currentStep = 1);
+                                    _animateProgress(0.25, 0.50, _steps[1]);
                                     print(
                                       '📝 [OnboardingScreen] Creating missions and phases...',
                                     );
                                   }
-
-                                  // Message 2: Almost done (after 50s total)
                                   await Future.delayed(
-                                    const Duration(seconds: 60),
+                                    const Duration(seconds: 25),
                                   );
+
+                                  // Step 3: Building phases (50-75%) - 25s
                                   if (_isCreatingPlan && mounted) {
-                                    setState(() {
-                                      _loadingMessage =
-                                          'Almost done!\nFinalizing your quit plan...';
-                                    });
+                                    setState(() => _currentStep = 2);
+                                    _animateProgress(0.50, 0.75, _steps[2]);
                                     print(
-                                      '⏰ [OnboardingScreen] Almost done...',
+                                      '⏰ [OnboardingScreen] Building phases...',
                                     );
                                   }
-
-                                  // Message 3: Final steps (after 80s total)
                                   await Future.delayed(
-                                    const Duration(seconds: 60),
+                                    const Duration(seconds: 25),
                                   );
+
+                                  // Step 4: Finalizing (75-100%) - 18s
                                   if (_isCreatingPlan && mounted) {
-                                    setState(() {
-                                      _loadingMessage =
-                                          'Setting up your personalized plan...\nJust a moment!';
-                                    });
+                                    setState(() => _currentStep = 3);
+                                    _animateProgress(0.75, 1.0, _steps[3]);
                                     print(
-                                      '🔧 [OnboardingScreen] Setting up personalized plan...',
+                                      '🔧 [OnboardingScreen] Finalizing plan...',
                                     );
                                   }
-
-                                  // Wait remaining time (35s more = 115s total)
                                   await Future.delayed(
-                                    const Duration(seconds: 50),
+                                    const Duration(seconds: 18),
                                   );
 
-                                  // Final message
+                                  // Complete
                                   if (mounted) {
                                     setState(() {
+                                      _creationProgress = 1.0;
                                       _loadingMessage =
-                                          '✨ Done creating quit plan!\nRedirecting to home...';
+                                          '✨ Quit plan ready!\nRedirecting to home...';
                                     });
                                     print(
                                       '✨ [OnboardingScreen] Quit plan ready!',
@@ -586,6 +802,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   await Future.delayed(
                                     const Duration(seconds: 2),
                                   );
+
+                                  // Stop tip rotation
+                                  _tipTimer?.cancel();
 
                                   // Show success notification
                                   if (mounted) {
@@ -620,7 +839,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     _isCreatingPlan = false;
                                   });
 
-                                  // Navigate immediately, cards sẽ tự retry nếu chưa sẵn sàng
+                                  // Navigate immediately
                                   if (mounted) {
                                     context.go('/main');
                                   }
@@ -628,6 +847,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   print(
                                     '❌ [OnboardingScreen] Error creating quit plan: $e',
                                   );
+
+                                  _tipTimer?.cancel();
 
                                   setState(() {
                                     _isCreatingPlan = false;

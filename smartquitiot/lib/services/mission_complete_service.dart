@@ -5,9 +5,9 @@ import '../models/mission_complete_request.dart';
 import '../models/response/error_response.dart';
 
 class MissionCompleteService {
-  static final String _baseUrl = 
+  static final String _baseUrl =
       dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080/api';
-  
+
   final Dio _dio;
   static const Duration _timeout = Duration(seconds: 30);
 
@@ -23,7 +23,7 @@ class MissionCompleteService {
     required MissionCompleteRequest request,
   }) async {
     try {
-      final url = '$_baseUrl/phase-detail-mission/complete/home-page';
+      final url = '$_baseUrl/phase-detail-mission/complete';
       print('📡 [MissionCompleteService] POST: $url');
       print('📦 [MissionCompleteService] Request: ${request.toJson()}');
 
@@ -44,7 +44,9 @@ class MissionCompleteService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       } else {
-        final errorResponse = ErrorResponse.fromJson(response.data as Map<String, dynamic>);
+        final errorResponse = ErrorResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
         throw MissionCompleteException(
           'Server returned ${response.statusCode}: ${errorResponse.message}',
         );
@@ -52,13 +54,17 @@ class MissionCompleteService {
     } on DioException catch (e) {
       print('🚨 [DioException] ${e.message}');
       print('🧩 [StackTrace]: ${StackTrace.current}');
-      
+
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
-        throw MissionCompleteException('Connection timeout. Please check your internet connection.');
+        throw MissionCompleteException(
+          'Connection timeout. Please check your internet connection.',
+        );
       } else if (e.type == DioExceptionType.connectionError) {
-        throw MissionCompleteException('Network error. Please check your connection.');
+        throw MissionCompleteException(
+          'Network error. Please check your connection.',
+        );
       } else if (e.response != null) {
         final statusCode = e.response!.statusCode;
         if (statusCode == 401) {
@@ -68,9 +74,13 @@ class MissionCompleteService {
         } else if (statusCode == 404) {
           throw MissionCompleteException('Mission not found.');
         } else if (statusCode! >= 500) {
-          throw MissionCompleteException('Server error. Please try again later.');
+          throw MissionCompleteException(
+            'Server error. Please try again later.',
+          );
         } else {
-          throw MissionCompleteException('Request failed with status: $statusCode');
+          throw MissionCompleteException(
+            'Request failed with status: $statusCode',
+          );
         }
       } else {
         throw MissionCompleteException('Network error: ${e.message}');
@@ -78,7 +88,9 @@ class MissionCompleteService {
     } catch (e) {
       print('🚨 [UnknownException] $e');
       print('🧩 [StackTrace]: ${StackTrace.current}');
-      throw MissionCompleteException('Failed to complete mission: ${e.toString()}');
+      throw MissionCompleteException(
+        'Failed to complete mission: ${e.toString()}',
+      );
     }
   }
 }
