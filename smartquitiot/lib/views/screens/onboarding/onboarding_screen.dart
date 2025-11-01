@@ -6,6 +6,7 @@ import 'dart:async';
 import '../../../models/request/create_quit_plan_request.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 import '../../../utils/notification_helper.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/common/page_indicator.dart';
@@ -832,36 +833,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 _startTipRotation();
 
                                 try {
-                                  // Call API in background (don't await - let animation run)
+                                  // Call API and start animation in parallel
                                   print(
                                     '📞 [OnboardingScreen] Calling API to create quit plan...',
                                   );
-                                  ref
+
+                                  // Start API call (will await later)
+                                  final apiCallFuture = ref
                                       .read(quitPlanViewModelProvider.notifier)
-                                      .createPlan(request)
-                                      .then((_) {
-                                        print(
-                                          '✅ [OnboardingScreen] API call completed successfully!',
-                                        );
-                                      })
-                                      .catchError((error) {
-                                        print(
-                                          '❌ [OnboardingScreen] API call failed: $error',
-                                        );
-                                      });
+                                      .createPlan(request);
 
                                   print(
                                     '🎬 [OnboardingScreen] Starting animation while API processes...',
                                   );
 
-                                  // Step 1: Analyzing (0-25%) - 28s (increased from 20s)
-                                  // Animation starts IMMEDIATELY, không đợi API
+                                  // Step 1: Analyzing (0-25%) - 45s
                                   _animateProgress(0, 0.25, _steps[0]);
                                   await Future.delayed(
-                                    const Duration(seconds: 30),
+                                    const Duration(seconds: 45),
                                   );
 
-                                  // Step 2: Creating missions (25-50%) - 32s (increased from 25s)
+                                  // Step 2: Creating missions (25-50%) - 50s
                                   if (_isCreatingPlan && mounted) {
                                     setState(() => _currentStep = 1);
                                     _animateProgress(0.25, 0.50, _steps[1]);
@@ -870,10 +862,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 35),
+                                    const Duration(seconds: 50),
                                   );
 
-                                  // Step 3: Building phases (50-75%) - 32s (increased from 25s)
+                                  // Step 3: Building phases (50-75%) - 55s
                                   if (_isCreatingPlan && mounted) {
                                     setState(() => _currentStep = 2);
                                     _animateProgress(0.50, 0.75, _steps[2]);
@@ -882,10 +874,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 40),
+                                    const Duration(seconds: 55),
                                   );
 
-                                  // Step 4: Finalizing (75-100%) - 26s (increased from 18s)
+                                  // Step 4: Finalizing (75-100%) - 50s
                                   if (_isCreatingPlan && mounted) {
                                     setState(() => _currentStep = 3);
                                     _animateProgress(0.75, 1.0, _steps[3]);
@@ -894,7 +886,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 35),
+                                    const Duration(seconds: 50),
+                                  );
+
+                                  // NOW await API call to ensure it completes
+                                  print(
+                                    '⏳ [OnboardingScreen] Ensuring API call completes...',
+                                  );
+                                  await apiCallFuture;
+                                  print(
+                                    '✅ [OnboardingScreen] API call completed successfully!',
                                   );
 
                                   // Complete
@@ -902,14 +903,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     setState(() {
                                       _creationProgress = 1.0;
                                       _loadingMessage =
-                                          '✨ Quit plan ready!\nRedirecting to home...';
+                                          '✨ Quit plan ready!\nLoading your dashboard...';
                                     });
                                     print(
                                       '✨ [OnboardingScreen] Quit plan ready!',
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 8),
+                                    const Duration(seconds: 15),
                                   );
 
                                   // Stop timers
@@ -933,16 +934,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     ).show(context);
                                   }
 
-                                  // Trigger refresh for quit plan and missions cards
+                                  // Refresh ALL providers to load new data
                                   print(
-                                    '🔄 [OnboardingScreen] Backend ready, triggering cards refresh...',
+                                    '🔄 [OnboardingScreen] Refreshing all providers with new data...',
                                   );
+
+                                  // Refresh quit plan homepage (for quit plan card)
+                                  await ref
+                                      .read(
+                                        quitPlanHomepageViewModelProvider
+                                            .notifier,
+                                      )
+                                      .refreshQuitPlan();
+                                  print('✅ Quit plan homepage refreshed');
+
+                                  // Trigger mission refresh (for mission cards)
                                   ref
                                       .read(missionRefreshProvider.notifier)
                                       .refreshAll();
+                                  print('✅ Mission refresh triggered');
+
+                                  // Small delay to ensure providers update
+                                  await Future.delayed(
+                                    const Duration(seconds: 2),
+                                  );
 
                                   print(
-                                    '🚀 [OnboardingScreen] Navigating to main screen...',
+                                    '🚀 [OnboardingScreen] Navigating to main screen with fresh data...',
                                   );
 
                                   setState(() {
