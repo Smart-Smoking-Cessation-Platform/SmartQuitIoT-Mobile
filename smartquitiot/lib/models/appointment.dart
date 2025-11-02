@@ -101,4 +101,41 @@ class Appointment {
     final s = (appointmentStatus ?? runtimeStatus ?? '').toString().toUpperCase();
     return s.contains('CANCEL');
   }
+
+  /// copyWith: trả về instance mới, giữ giá trị cũ nếu param null.
+  Appointment copyWith({
+    int? appointmentId,
+    int? coachId,
+    String? coachName,
+    int? slotId,
+    String? date,
+    String? startTime,
+    String? endTime,
+    String? runtimeStatus,
+    String? appointmentStatus,
+    String? cancelledBy,
+    DateTime? cancelledAt,
+    String? channelName,
+    String? meetingUrl,
+    DateTime? joinWindowStart,
+    DateTime? joinWindowEnd,
+  }) {
+    return Appointment(
+      appointmentId: appointmentId ?? this.appointmentId,
+      coachId: coachId ?? this.coachId,
+      coachName: coachName ?? this.coachName,
+      slotId: slotId ?? this.slotId,
+      date: date ?? this.date,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      runtimeStatus: runtimeStatus ?? this.runtimeStatus,
+      appointmentStatus: appointmentStatus ?? this.appointmentStatus,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      channelName: channelName ?? this.channelName,
+      meetingUrl: meetingUrl ?? this.meetingUrl,
+      joinWindowStart: joinWindowStart ?? this.joinWindowStart,
+      joinWindowEnd: joinWindowEnd ?? this.joinWindowEnd,
+    );
+  }
 }
