@@ -13,15 +13,18 @@ class PaymentConfirmationScreen extends StatelessWidget {
   Future<void> _launchURL(BuildContext context, String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open link: $url')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open link: $url')));
     }
   }
 
-
   String _formatCurrency(num amount) {
-    final formatCurrency = NumberFormat.currency(locale: 'en_US', symbol: '\$');
+    final formatCurrency = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: '₫',
+      decimalDigits: 0,
+    );
     return formatCurrency.format(amount);
   }
 
@@ -29,9 +32,18 @@ class PaymentConfirmationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Confirm Payment'), // Translated
         backgroundColor: const Color(0xFF00D09E),
         elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'Confirm Payment',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18, // nhỏ lại một chút
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       backgroundColor: Colors.grey[100],
       body: SingleChildScrollView(
@@ -40,8 +52,12 @@ class PaymentConfirmationScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Text(
-              'Scan VietQR Code to Pay', // Translated
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+              'Scan VietQR Code to Pay',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -75,19 +91,23 @@ class PaymentConfirmationScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildInfoRow('Description', paymentData.description), // Translated
+                  _buildInfoRow('Description', paymentData.description),
                   const Divider(height: 24),
-                  _buildInfoRow('Amount', _formatCurrency(paymentData.amount)), // Translated
+                  _buildInfoRow('Amount', _formatCurrency(paymentData.amount)),
                   const Divider(height: 24),
-                  _buildInfoRow('Order Code', paymentData.orderCode.toString()), // Translated
+                  _buildInfoRow('Order Code', paymentData.orderCode.toString()),
                   const Divider(height: 24),
-                  _buildInfoRow('Account Name', paymentData.accountName, isHighlight: false), // Translated
+                  _buildInfoRow(
+                    'Account Name',
+                    paymentData.accountName,
+                    isHighlight: false,
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
             const Text(
-              'or', // Translated
+              'or',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 16),
@@ -95,12 +115,15 @@ class PaymentConfirmationScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.open_in_browser_rounded),
-                label: const Text('Open with Web/Banking App'), // Translated
+                label: const Text('Open with Web/Banking App'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00D09E),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -111,29 +134,6 @@ class PaymentConfirmationScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            // SizedBox(
-            //   width: double.infinity,
-            //   child: OutlinedButton.icon(
-            //     icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent),
-            //     label: const Text(
-            //       'Cancel Payment',
-            //       style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
-            //     ),
-            //     style: OutlinedButton.styleFrom(
-            //       padding: const EdgeInsets.symmetric(vertical: 16),
-            //       side: const BorderSide(color: Colors.redAccent),
-            //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            //     ),
-            //     onPressed: () {
-            //       // // ✅ Nếu bạn muốn chỉ quay về
-            //       // Navigator.pop(context);
-            //       // ✅ Nếu bạn muốn gọi API BE để cancel thật:
-            //
-            //       ref.read(paymentViewModelProvider.notifier).cancelPayment(paymentData.orderCode);
-            //     },
-            //   ),
-            // ),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -141,7 +141,7 @@ class PaymentConfirmationScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Please keep this screen open until you receive a successful payment confirmation.', // Translated
+                    'Please keep this screen open until you receive a successful payment confirmation.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.red.shade700, fontSize: 13),
                   ),
@@ -158,7 +158,10 @@ class PaymentConfirmationScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 15, color: Colors.black54)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 15, color: Colors.black54),
+        ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(

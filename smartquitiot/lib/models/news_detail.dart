@@ -27,6 +27,7 @@ class NewsMedia {
 class NewsDetail extends News {
   @override
   final String content;
+  final String status;
   final List<NewsMedia> media;
 
   NewsDetail({
@@ -35,6 +36,7 @@ class NewsDetail extends News {
     super.thumbnail,
     required super.createdAt,
     required this.content,
+    required this.status,
     required this.media,
   }) : super(
          content: content,
@@ -45,9 +47,12 @@ class NewsDetail extends News {
       id: json['id'],
       title: json['title'],
       thumbnail: json['thumbnail'],
-      createdAt: DateTime.parse(json['createdAt']),
-      content: json['content'],
-      media: (json['media'] as List).map((e) => NewsMedia.fromJson(e)).toList(),
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      content: json['content'] ?? '',
+      status: json['status'] ?? 'PUBLISH',
+      media: json['media'] != null 
+          ? (json['media'] as List).map((e) => NewsMedia.fromJson(e)).toList()
+          : [],
     );
   }
 }

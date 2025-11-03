@@ -87,18 +87,15 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
 
     late Duration difference;
     late String title;
-    late Color bgColor;
 
     if (isBeforeStart) {
       // Chưa tới quit plan - COUNTDOWN đến start date
       difference = startDate.difference(_now);
       title = 'Countdown to Quit Plan';
-      bgColor = Color(0xFF00D09E); // Màu xanh lá
     } else {
       // Đã bắt đầu quit plan - Hiển thị TIME SMOKE FREE
       difference = _now.difference(startDate);
       title = 'Time Smoke Free';
-      bgColor = Color(0xFF00D09E); // Màu xanh dương
     }
 
     // Calculate days, hours, minutes, seconds
@@ -117,87 +114,101 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
     print('📊 [SmokeFreeTimer] Title: $title');
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF00D09E),
+            const Color(0xFF00BF8F),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: bgColor.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF00D09E).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
         children: [
-          // Tiêu đề động
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+          // Background pattern với opacity thấp
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Icon(
+              isBeforeStart ? Icons.timer : Icons.smoke_free_rounded,
+              size: 140,
+              color: Colors.white.withOpacity(0.08),
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          // Icon + Timer (2x2 Grid)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isBeforeStart ? Icons.timer : Icons.smoke_free,
-                  size: 30,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Time Grid (2x2)
-              Expanded(
-                child: Column(
+          
+          // Main content
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon + Title
+                Row(
                   children: [
-                    // Row 1: Days & Hours
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _TimeColumn(value: days.toString(), label: 'days'.tr()),
-                        _TimeColumn(
-                          value: hours.toString(),
-                          label: 'hours'.tr(),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isBeforeStart ? Icons.timer_outlined : Icons.smoke_free_rounded,
+                        size: 28,
+                        color: Colors.white,
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    // Row 2: Minutes & Seconds
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _TimeColumn(
-                          value: minutes.toString(),
-                          label: 'minutes'.tr(),
-                        ),
-                        _TimeColumn(
-                          value: seconds.toString(),
-                          label: 'seconds'.tr(),
-                        ),
-                      ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isBeforeStart ? 'Your journey begins soon' : 'You\'re doing amazing!',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 20),
+
+                // Time Grid (2x2) - Đẹp hơn
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _TimeBox(value: days.toString().padLeft(2, '0'), label: 'days'.tr()),
+                    _TimeBox(value: hours.toString().padLeft(2, '0'), label: 'hours'.tr()),
+                    _TimeBox(value: minutes.toString().padLeft(2, '0'), label: 'mins'.tr()),
+                    _TimeBox(value: seconds.toString().padLeft(2, '0'), label: 'secs'.tr()),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -205,34 +216,49 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
   }
 }
 
-class _TimeColumn extends StatelessWidget {
+class _TimeBox extends StatelessWidget {
   final String value;
   final String label;
 
-  const _TimeColumn({required this.value, required this.label});
+  const _TimeBox({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
         ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              height: 1,
+              letterSpacing: 1,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.85),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

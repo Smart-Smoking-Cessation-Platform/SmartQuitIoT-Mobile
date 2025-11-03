@@ -242,12 +242,19 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                   maxHeight: 150, // Cho phép text field mở rộng khi chat dài
                 ),
                 decoration: BoxDecoration(
-                  // color: const Color(0xFFF1FFF3),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: const Color(0xFF00D09E),
-                    width: 1.5,
+                    width: 2.0,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00D09E).withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: TextField(
                   controller: _messageController,
@@ -259,6 +266,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     hintText: 'Type your message...',
                     hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none, // Thêm dòng này
+                    focusedBorder: InputBorder.none, // Thêm dòng này
+                    filled: false, // Quan trọng: không fill background
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,

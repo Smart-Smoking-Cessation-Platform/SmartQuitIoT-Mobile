@@ -255,32 +255,39 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
   Widget _buildErrorState(String error) => SizedBox(
     height: 180,
     child: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          const Text(
-            'Failed to load news',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 40, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              const Text(
+                'Failed to load news',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Please check your connection',
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () =>
+                    ref.read(newsViewModelProvider.notifier).refreshNews(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D09E),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                child: const Text('Retry', style: TextStyle(fontSize: 13)),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: const TextStyle(fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () =>
-                ref.read(newsViewModelProvider.notifier).refreshNews(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D09E),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Retry'),
-          ),
-        ],
+        ),
       ),
     ),
   );

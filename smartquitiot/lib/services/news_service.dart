@@ -1,42 +1,57 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/news.dart';
 import '../core/errors/exception.dart';
 import '../models/news_detail.dart';
 
 class NewsService {
-  final String baseUrl;
+  static final String _baseUrl =
+      dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080/api';
 
-  NewsService({String? baseUrl})
-    : baseUrl = baseUrl ?? dotenv.env['API_NEWS_URL'] ?? '';
+  final Dio _dio;
+  static const Duration _timeout = Duration(seconds: 30);
+
+  NewsService({Dio? dio}) : _dio = dio ?? Dio() {
+    _dio.options.connectTimeout = _timeout;
+    _dio.options.receiveTimeout = _timeout;
+    _dio.options.sendTimeout = _timeout;
+    print('🌍 [NewsService] Base URL loaded: $_baseUrl');
+  }
 
   Future<List<News>> getAllNews({String? query, String? accessToken}) async {
     try {
-      final uri = query != null && query.isNotEmpty
-          ? Uri.parse('$baseUrl?query=$query')
-          : Uri.parse(baseUrl);
+      print('📰 [NewsService] Getting all news...');
 
-      final headers = <String, String>{'Content-Type': 'application/json'};
-      if (accessToken != null && accessToken.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $accessToken';
-      }
+      final url = query != null && query.isNotEmpty
+          ? '$_baseUrl/news?query=$query'
+          : '$_baseUrl/news';
 
-      final response = await http.get(uri, headers: headers);
+      print('🌐 [NewsService] URL: $url');
+
+      final options = Options(
+        headers: {
+          'Content-Type': 'application/json',
+          if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+        },
+      );
+
+      final response = await _dio.get(url, options: options);
 
       if (response.statusCode == 200) {
-        final jsonBody = jsonDecode(response.body) as Map<String, dynamic>;
+        final jsonBody = response.data as Map<String, dynamic>;
         final List<dynamic> data = jsonBody['data'] ?? [];
+        print('✅ [NewsService] Parsed ${data.length} news items');
         return data.map((e) => News.fromJson(e)).toList();
-      } else if (response.statusCode == 401) {
-        throw NewsException('Unauthorized. Token may be expired.');
       } else {
         throw NewsException(
-          'Failed to load news. Status code: ${response.statusCode}, body: ${response.body}',
+          'Failed to load news. Code: ${response.statusCode}',
         );
       }
+    } on DioException catch (e) {
+      print('❌ [NewsService] Dio error: ${e.message}');
+      throw NewsException('Failed to load news: ${e.message}');
     } catch (e) {
-      if (e is NewsException) rethrow;
+      print('❌ [NewsService] Unexpected error: $e');
       throw NewsException('Failed to load news: ${e.toString()}');
     }
   }
@@ -46,52 +61,50 @@ class NewsService {
     required String accessToken,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/latest?limit=$limit');
-      final response = await http.get(
-        uri,
+      final url = '$_baseUrl/news/latest?limit=$limit';
+      print('🌐 [NewsService] URL: $url');
+
+      final options = Options(
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
         },
       );
 
+      final response = await _dio.get(url, options: options);
       if (response.statusCode == 200) {
-        final jsonBody = json.decode(response.body) as Map<String, dynamic>;
+        final jsonBody = response.data as Map<String, dynamic>;
         final List<dynamic> data = jsonBody['data'] ?? [];
         return data.map((e) => News.fromJson(e)).toList();
-      } else if (response.statusCode == 401) {
-        throw NewsException('Unauthorized. Token may be expired.');
       } else {
-        throw NewsException(
-          'Failed to fetch latest news: Status code ${response.statusCode}',
-        );
+        throw NewsException('Failed to fetch latest news');
       }
-    } catch (e) {
-      if (e is NewsException) rethrow;
-      throw NewsException('Failed to fetch latest news: ${e.toString()}');
+    } on DioException catch (e) {
+      throw NewsException('Failed to fetch latest news: ${e.message}');
     }
   }
 
   Future<NewsDetail> getNewsDetail(int id, {String? accessToken}) async {
-    final headers = <String, String>{'Content-Type': 'application/json'};
-    if (accessToken != null) headers['Authorization'] = 'Bearer $accessToken';
+    try {
+      final url = '$_baseUrl/news/$id';
+      print('🌐 [NewsService] URL: $url');
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/$id'),
-      headers: headers,
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body)['data'];
-      return NewsDetail.fromJson(data);
-    } else if (response.statusCode == 401) {
-      throw NewsException('Unauthorized');
-    } else if (response.statusCode == 404) {
-      throw NewsException('News not found');
-    } else {
-      throw NewsException(
-        'Failed to load news detail. Status code: ${response.statusCode}',
+      final options = Options(
+        headers: {
+          'Content-Type': 'application/json',
+          if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+        },
       );
+
+      final response = await _dio.get(url, options: options);
+      if (response.statusCode == 200) {
+        final data = response.data['data'];
+        return NewsDetail.fromJson(data);
+      } else {
+        throw NewsException('Failed to load news detail');
+      }
+    } on DioException catch (e) {
+      throw NewsException('Failed to load news detail: ${e.message}');
     }
   }
 }
