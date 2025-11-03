@@ -62,7 +62,9 @@ class NewsService {
   }) async {
     try {
       final url = '$_baseUrl/news/latest?limit=$limit';
+      print('📰 [NewsService] Getting latest news...');
       print('🌐 [NewsService] URL: $url');
+      print('🔑 [NewsService] Token: ${accessToken.substring(0, 20)}...');
 
       final options = Options(
         headers: {
@@ -72,15 +74,38 @@ class NewsService {
       );
 
       final response = await _dio.get(url, options: options);
+      
+      print('📊 [NewsService] Response Status: ${response.statusCode}');
+      print('📦 [NewsService] Response Type: ${response.data.runtimeType}');
+      print('📦 [NewsService] Raw Response: ${response.data}');
+      
       if (response.statusCode == 200) {
         final jsonBody = response.data as Map<String, dynamic>;
+        print('✅ [NewsService] JSON Body Keys: ${jsonBody.keys.toList()}');
+        
         final List<dynamic> data = jsonBody['data'] ?? [];
-        return data.map((e) => News.fromJson(e)).toList();
+        print('✅ [NewsService] Data length: ${data.length}');
+        print('✅ [NewsService] First item: ${data.isNotEmpty ? data[0] : "empty"}');
+        
+        final newsList = data.map((e) {
+          print('🔄 [NewsService] Parsing item: $e');
+          return News.fromJson(e);
+        }).toList();
+        
+        print('✅ [NewsService] Successfully parsed ${newsList.length} news items');
+        return newsList;
       } else {
-        throw NewsException('Failed to fetch latest news');
+        throw NewsException('Failed to fetch latest news. Status: ${response.statusCode}');
       }
     } on DioException catch (e) {
+      print('❌ [NewsService] Dio error: ${e.type}');
+      print('❌ [NewsService] Error message: ${e.message}');
+      print('❌ [NewsService] Response: ${e.response?.data}');
       throw NewsException('Failed to fetch latest news: ${e.message}');
+    } catch (e, stackTrace) {
+      print('❌ [NewsService] Unexpected error: $e');
+      print('❌ [NewsService] StackTrace: $stackTrace');
+      throw NewsException('Failed to fetch latest news: ${e.toString()}');
     }
   }
 

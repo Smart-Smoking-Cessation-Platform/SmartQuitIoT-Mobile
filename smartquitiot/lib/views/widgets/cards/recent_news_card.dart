@@ -173,9 +173,10 @@ class _RecentNewsCardState extends ConsumerState<RecentNewsCard> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: news.thumbnail != null && news.thumbnail!.isNotEmpty
+              child: (news.thumbnailUrl != null && news.thumbnailUrl!.isNotEmpty) ||
+                      (news.thumbnail != null && news.thumbnail!.isNotEmpty)
                   ? Image.network(
-                      news.thumbnail!,
+                      news.thumbnailUrl ?? news.thumbnail!,
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,

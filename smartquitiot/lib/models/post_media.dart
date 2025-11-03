@@ -3,11 +3,7 @@ class PostMedia {
   final String mediaUrl;
   final String mediaType;
 
-  const PostMedia({
-    this.id,
-    required this.mediaUrl,
-    required this.mediaType,
-  });
+  const PostMedia({this.id, required this.mediaUrl, required this.mediaType});
 
   factory PostMedia.fromJson(Map<String, dynamic> json) {
     return PostMedia(

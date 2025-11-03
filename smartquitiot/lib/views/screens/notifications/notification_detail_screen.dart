@@ -17,26 +17,26 @@ class NotificationDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF1FFF3),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        shadowColor: Colors.grey.withOpacity(0.1),
+        backgroundColor: const Color(0xFF00D09E),
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Notification Details',
           style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
+            color: Colors.white,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: () {},
           ),
         ],
@@ -75,7 +75,7 @@ class NotificationDetailScreen extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: Image.asset(
-                        'lib/assets/Achivement.png',
+                        'lib/assets/images/Achievement.png',
                         fit: BoxFit.contain,
                       ),
                     ),
@@ -263,76 +263,76 @@ class NotificationDetailScreen extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           height: 50,
-          child: ElevatedButton(
-            onPressed: () {
-              // Mark as read action
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Notification marked as read'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: iconColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Mark as Read',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
+          // child: ElevatedButton(
+          //   onPressed: () {
+          //     // Mark as read action
+          //     ScaffoldMessenger.of(context).showSnackBar(
+          //       const SnackBar(
+          //         content: Text('Notification marked as read'),
+          //         duration: Duration(seconds: 2),
+          //       ),
+          //     );
+          //   },
+          //   style: ElevatedButton.styleFrom(
+          //     backgroundColor: iconColor,
+          //     foregroundColor: Colors.white,
+          //     shape: RoundedRectangleBorder(
+          //       borderRadius: BorderRadius.circular(25),
+          //     ),
+          //     elevation: 0,
+          //   ),
+          //   child: const Text(
+          //     'Mark as Read',
+          //     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          //   ),
+          // ),
         ),
 
         const SizedBox(height: 12),
 
         // Secondary Actions Row
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: Icon(Icons.archive, size: 18, color: Colors.grey[600]),
-                label: Text(
-                  'Archive',
-                  style: TextStyle(color: Colors.grey[700]),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  side: BorderSide(color: Colors.grey[300]!),
-                ),
-              ),
-            ),
+        // Row(
+        //   children: [
+        //     Expanded(
+        //       child: OutlinedButton.icon(
+        //         onPressed: () {},
+        //         icon: Icon(Icons.archive, size: 18, color: Colors.grey[600]),
+        //         label: Text(
+        //           'Archive',
+        //           style: TextStyle(color: Colors.grey[700]),
+        //         ),
+        //         style: OutlinedButton.styleFrom(
+        //           padding: const EdgeInsets.symmetric(vertical: 12),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(25),
+        //           ),
+        //           side: BorderSide(color: Colors.grey[300]!),
+        //         ),
+        //       ),
+        //     ),
 
-            const SizedBox(width: 12),
+        //     const SizedBox(width: 12),
 
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: Icon(
-                  Icons.delete_outline,
-                  size: 18,
-                  color: Colors.red[400],
-                ),
-                label: Text('Delete', style: TextStyle(color: Colors.red[400])),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  side: BorderSide(color: Colors.red[200]!),
-                ),
-              ),
-            ),
-          ],
-        ),
+        //     Expanded(
+        //       child: OutlinedButton.icon(
+        //         onPressed: () {},
+        //         icon: Icon(
+        //           Icons.delete_outline,
+        //           size: 18,
+        //           color: Colors.red[400],
+        //         ),
+        //         label: Text('Delete', style: TextStyle(color: Colors.red[400])),
+        //         style: OutlinedButton.styleFrom(
+        //           padding: const EdgeInsets.symmetric(vertical: 12),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(25),
+        //           ),
+        //           side: BorderSide(color: Colors.red[200]!),
+        //         ),
+        //       ),
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }

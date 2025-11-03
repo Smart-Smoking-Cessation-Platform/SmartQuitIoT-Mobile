@@ -39,7 +39,39 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
     final quitPlanState = ref.watch(quitPlanHomepageViewModelProvider);
     final quitPlan = quitPlanState.quitPlan;
 
-    // If no quit plan, show empty state
+    // Show loading spinner while loading
+    if (quitPlanState.isLoading) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF00D09E),
+              const Color(0xFF00BF8F),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00D09E).withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            strokeWidth: 3,
+          ),
+        ),
+      );
+    }
+
+    // If no quit plan after loading, show empty state
     if (quitPlan == null) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
