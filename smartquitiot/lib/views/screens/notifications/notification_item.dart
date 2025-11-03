@@ -9,6 +9,7 @@ class NotificationItem extends StatelessWidget {
   final bool hasDownload;
   final bool hasProgress;
   final String? progress;
+  final bool isUnread;
 
   const NotificationItem({
     super.key,
@@ -20,6 +21,7 @@ class NotificationItem extends StatelessWidget {
     this.hasDownload = false,
     this.hasProgress = false,
     this.progress,
+    this.isUnread = false,
   });
 
   @override
@@ -30,8 +32,11 @@ class NotificationItem extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isUnread ? const Color(0xFFF1FFF3) : Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: isUnread
+              ? Border.all(color: const Color(0xFF00D09E).withOpacity(0.3), width: 1)
+              : null,
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
