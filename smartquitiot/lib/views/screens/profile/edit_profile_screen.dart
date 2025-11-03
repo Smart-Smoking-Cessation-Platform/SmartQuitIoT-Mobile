@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:SmartQuitIoT/viewmodels/user_view_model.dart';
 import 'package:SmartQuitIoT/services/cloudinary_service.dart';
@@ -111,9 +112,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         _showFlushbar('Error: $error', Colors.red);
       } else {
         _showFlushbar('Profile updated successfully!', const Color(0xFF00D09E));
-        // Navigate back after short delay
+        // Navigate to profile screen để user thấy thay đổi
         Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) Navigator.pop(context);
+          if (mounted) {
+            context.go('/profile');
+          }
         });
       }
     }
@@ -172,7 +175,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => context.go('/profile'),
                     ),
                     const Expanded(
                       child: Text(

@@ -7,6 +7,7 @@ import 'package:SmartQuitIoT/views/screens/posts/create_post_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/post_list_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/my_posts_screen.dart';
+import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -46,6 +47,7 @@ final GoRouter appRouter = GoRouter(
   // },
   routes: [
     GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+    GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
     GoRoute(path: '/auth', builder: (_, __) => const AuthWrapper()),
     GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
     GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
