@@ -1088,12 +1088,15 @@ class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
         Uri.parse(widget.videoUrl),
       );
       await _controller!.initialize();
+      // Set default volume to 1.0 (unmuted)
+      await _controller!.setVolume(1.0);
       if (mounted) {
         setState(() {
           _isInitialized = true;
         });
       }
     } catch (e) {
+      print('❌ [VideoPlayerWidget] Error loading video: $e');
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -1155,7 +1158,8 @@ class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
         child: Stack(
           children: [
             VideoPlayer(_controller!),
-            Center(
+            // Tap anywhere to play/pause
+            Positioned.fill(
               child: GestureDetector(
                 onTap: () {
                   setState(() {
@@ -1166,19 +1170,52 @@ class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
                     }
                   });
                 },
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+            // Play/Pause icon overlay (only show when paused)
+            if (!_controller!.value.isPlaying)
+              Center(
                 child: Container(
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.black54,
+                    color: Colors.black.withOpacity(0.6),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    _controller!.value.isPlaying
-                        ? Icons.pause
-                        : Icons.play_arrow,
+                  child: const Icon(
+                    Icons.play_arrow,
                     color: Colors.white,
-                    size: 30,
+                    size: 36,
+                  ),
+                ),
+              ),
+            // Volume control button
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (_controller!.value.volume > 0) {
+                      _controller!.setVolume(0);
+                    } else {
+                      _controller!.setVolume(1.0);
+                    }
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    _controller!.value.volume > 0
+                        ? Icons.volume_up
+                        : Icons.volume_off,
+                    color: Colors.white,
+                    size: 20,
                   ),
                 ),
               ),
