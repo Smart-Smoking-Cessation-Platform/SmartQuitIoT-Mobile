@@ -11,13 +11,14 @@ class HomeHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-
     // final username = ref.watch(authViewModelProvider.select((state) => state.username));
     final authState = ref.watch(authViewModelProvider);
     final username = authState.username;
     final notifications = ref.watch(achievementNotificationsProvider);
     final unreadCount = notifications.where((n) => !n.isRead).length;
-    print('--- >>> HOME_HEADER BUILD: Username is [$username], IsAuthenticated is [${authState.isAuthenticated}], Unread Notifications: $unreadCount');
+    print(
+      '--- >>> HOME_HEADER BUILD: Username is [$username], IsAuthenticated is [${authState.isAuthenticated}], Unread Notifications: $unreadCount',
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -44,60 +45,60 @@ class HomeHeader extends ConsumerWidget {
           ),
           Row(
             children: [
-              GestureDetector(
-                onTap: () {
-                  context.push('/notifications');
-                },
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1FFF3),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Image.asset(
-                        'lib/assets/images/notification.png',
-                        width: 20,
-                        height: 20,
-                      ),
-                    ),
-                    // Badge counter
-                    if (unreadCount > 0)
-                      Positioned(
-                        right: -4,
-                        top: -4,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 1.5,
-                            ),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 18,
-                            minHeight: 18,
-                          ),
-                          child: Center(
-                            child: Text(
-                              unreadCount > 99 ? '99+' : '$unreadCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                height: 1.0,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+              // GestureDetector(
+              //   onTap: () {
+              //     context.push('/notifications');
+              //   },
+              //   child: Stack(
+              //     clipBehavior: Clip.none,
+              //     children: [
+              //       Container(
+              //         padding: const EdgeInsets.all(8),
+              //         decoration: BoxDecoration(
+              //           color: const Color(0xFFF1FFF3),
+              //           borderRadius: BorderRadius.circular(8),
+              //         ),
+              //         child: Image.asset(
+              //           'lib/assets/images/notification.png',
+              //           width: 20,
+              //           height: 20,
+              //         ),
+              //       ),
+              //       // Badge counter
+              //       if (unreadCount > 0)
+              //         Positioned(
+              //           right: -4,
+              //           top: -4,
+              //           child: Container(
+              //             padding: const EdgeInsets.all(4),
+              //             decoration: BoxDecoration(
+              //               color: Colors.red,
+              //               shape: BoxShape.circle,
+              //               border: Border.all(
+              //                 color: Colors.white,
+              //                 width: 1.5,
+              //               ),
+              //             ),
+              //             constraints: const BoxConstraints(
+              //               minWidth: 18,
+              //               minHeight: 18,
+              //             ),
+              //             child: Center(
+              //               child: Text(
+              //                 unreadCount > 99 ? '99+' : '$unreadCount',
+              //                 style: const TextStyle(
+              //                   color: Colors.white,
+              //                   fontSize: 10,
+              //                   fontWeight: FontWeight.bold,
+              //                   height: 1.0,
+              //                 ),
+              //               ),
+              //             ),
+              //           ),
+              //         ),
+              //     ],
+              //   ),
+              // ),
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () {
