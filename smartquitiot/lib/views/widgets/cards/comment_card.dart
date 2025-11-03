@@ -277,7 +277,10 @@ class CommentMediaList extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      mediaItem.mediaUrl,
+                      // Use thumbnail for videos if available, otherwise use mediaUrl
+                      isVideo && mediaItem.thumbnailUrl != null
+                          ? mediaItem.thumbnailUrl!
+                          : mediaItem.mediaUrl,
                       fit: BoxFit.cover,
                       width: 100,
                       height: 100,

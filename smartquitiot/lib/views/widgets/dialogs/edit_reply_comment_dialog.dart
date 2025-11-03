@@ -102,12 +102,16 @@ class _EditReplyCommentDialogState
                   children: _selectedMedia.asMap().entries.map((entry) {
                     final index = entry.key;
                     final media = entry.value;
+                    final isVideo = media.mediaType == 'VIDEO';
                     return Stack(
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            media.mediaUrl,
+                            // Use thumbnail for videos if available
+                            isVideo && media.thumbnailUrl != null
+                                ? media.thumbnailUrl!
+                                : media.mediaUrl,
                             width: 60,
                             height: 60,
                             fit: BoxFit.cover,
@@ -121,7 +125,7 @@ class _EditReplyCommentDialogState
                             },
                           ),
                         ),
-                        if (media.mediaType == 'VIDEO')
+                        if (isVideo)
                           Positioned.fill(
                             child: Container(
                               decoration: BoxDecoration(
@@ -285,6 +289,8 @@ class _EditReplyCommentDialogState
 
       if (file != null) {
         String uploadUrl;
+        String? thumbnailUrl; // Store thumbnail URL for videos
+        
         if (mediaType == 'IMAGE') {
           print('📸 [EditReplyCommentDialog] Uploading image...');
           uploadUrl = await _cloudinaryService.uploadImage(File(file.path));
@@ -316,7 +322,7 @@ class _EditReplyCommentDialogState
               );
 
               // Upload thumbnail to Cloudinary
-              final thumbnailUrl = await _cloudinaryService.uploadImage(
+              thumbnailUrl = await _cloudinaryService.uploadImage(
                 thumbnailFile,
               );
               print(
@@ -337,7 +343,12 @@ class _EditReplyCommentDialogState
 
         setState(() {
           _selectedMedia.add(
-            PostMedia(id: 0, mediaUrl: uploadUrl, mediaType: mediaType),
+            PostMedia(
+              id: 0,
+              mediaUrl: uploadUrl,
+              mediaType: mediaType,
+              thumbnailUrl: thumbnailUrl, // ✅ Pass thumbnail URL
+            ),
           );
         });
 
