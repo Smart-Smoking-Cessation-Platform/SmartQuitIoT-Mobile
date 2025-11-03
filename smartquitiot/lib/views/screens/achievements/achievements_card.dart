@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/screens/badges/badges_screen.dart';
+import 'package:SmartQuitIoT/providers/achievement_provider.dart';
+import 'package:SmartQuitIoT/providers/websocket_provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-class AchievementsCard extends StatelessWidget {
+class AchievementsCard extends ConsumerWidget {
   const AchievementsCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final achievementsAsync = ref.watch(homeAchievementsProvider);
+    
+    // Listen to achievement notifications and refresh
+    ref.listen(achievementNotificationsProvider, (previous, next) {
+      if (previous != next && next.isNotEmpty) {
+        // Refresh achievements when new achievement is earned
+        ref.invalidate(homeAchievementsProvider);
+      }
+    });
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
       padding: const EdgeInsets.all(22),
@@ -60,98 +72,207 @@ class AchievementsCard extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // Badges Row 1
-          Row(
-            children: [
-              Expanded(
-                child: _buildAchievementBadge(
-                  title: 'streak_7'.tr(),
-                  subtitle: 'streak_7_sub'.tr(),
-                  icon: Icons.local_fire_department,
-                  color: Colors.orangeAccent,
+          // Achievements content
+          achievementsAsync.when(
+            data: (achievements) {
+              if (achievements.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: Text(
+                      'No achievements yet',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                );
+              }
+              
+              // Display achievements in 2x2 grid
+              return Column(
+                children: [
+                  // Row 1
+                  Row(
+                    children: [
+                      if (achievements.length > 0)
+                        Expanded(
+                          child: _buildAchievementBadgeFromData(
+                            achievement: achievements[0],
+                          ),
+                        ),
+                      if (achievements.length > 1) ...[
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _buildAchievementBadgeFromData(
+                            achievement: achievements[1],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  // Row 2
+                  if (achievements.length > 2) ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildAchievementBadgeFromData(
+                            achievement: achievements[2],
+                          ),
+                        ),
+                        if (achievements.length > 3) ...[
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _buildAchievementBadgeFromData(
+                              achievement: achievements[3],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
+              );
+            },
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _buildAchievementBadge(
-                  title: 'royal_streak'.tr(),
-                  subtitle: 'royal_streak_sub'.tr(),
-                  icon: Icons.emoji_events,
-                  color: Colors.amber,
+            ),
+            error: (error, stack) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  'Failed to load achievements',
+                  style: TextStyle(color: Colors.red[300]),
                 ),
               ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // Badges Row 2
-          Row(
-            children: [
-              Expanded(
-                child: _buildAchievementBadge(
-                  title: 'on_target'.tr(),
-                  subtitle: 'on_target_sub'.tr(),
-                  icon: Icons.flag,
-                  color: Colors.lightBlueAccent,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _buildAchievementBadge(
-                  title: 'consistency'.tr(),
-                  subtitle: 'consistency_sub'.tr(),
-                  icon: Icons.star,
-                  color: Colors.purpleAccent,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAchievementBadge({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
+  Widget _buildAchievementBadgeFromData({
+    required achievement,
   }) {
+    final bool isUnlocked = achievement.unlocked;
+    final Color color = _getAchievementTypeColor(achievement.type);
+    
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: isUnlocked 
+            ? color.withOpacity(0.15) 
+            : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.2),
+        border: Border.all(
+          color: isUnlocked 
+              ? color.withOpacity(0.4) 
+              : Colors.grey.withOpacity(0.3), 
+          width: isUnlocked ? 2 : 1.2,
+        ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111827),
-            ),
-            textAlign: TextAlign.center,
+          Column(
+            children: [
+              // Achievement Icon
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  achievement.icon,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  color: isUnlocked ? null : Colors.grey,
+                  colorBlendMode: isUnlocked ? null : BlendMode.saturation,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.emoji_events,
+                    color: isUnlocked ? color : Colors.grey,
+                    size: 40,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                achievement.name,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isUnlocked 
+                      ? const Color(0xFF111827) 
+                      : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                achievement.description,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isUnlocked ? Colors.grey[700] : Colors.grey[400],
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
+          // Locked overlay
+          if (!isUnlocked)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Icon(
+                Icons.lock,
+                size: 20,
+                color: Colors.grey[400],
+              ),
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          // Unlocked badge
+          if (isUnlocked)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  size: 12,
+                  color: Colors.white,
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  Color _getAchievementTypeColor(String type) {
+    switch (type.toUpperCase()) {
+      case 'SOCIAL':
+        return Colors.blue;
+      case 'PROGRESS':
+        return Colors.purple;
+      case 'STREAK':
+        return Colors.orangeAccent;
+      case 'HEALTH':
+        return Colors.green;
+      case 'MILESTONE':
+        return Colors.amber;
+      default:
+        return Colors.grey;
+    }
   }
 }

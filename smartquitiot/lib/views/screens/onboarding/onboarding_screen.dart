@@ -6,6 +6,7 @@ import 'dart:async';
 import '../../../models/request/create_quit_plan_request.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 import '../../../utils/notification_helper.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/common/page_indicator.dart';
@@ -72,6 +73,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _currentTipIndex = 0;
   Timer? _tipTimer;
 
+  // Motivational messages
+  final List<String> _motivationalMessages = [
+    '🌟 Every journey begins with a single step',
+    '💪 You\'re stronger than your cravings',
+    '🎯 Building your personalized roadmap to freedom',
+    '✨ Your healthier life starts here',
+    '🌈 Creating a smoke-free future for you',
+    '🔥 Igniting your path to wellness',
+  ];
+  int _currentMotivationalIndex = 0;
+  Timer? _motivationalTimer;
+
   // First cigarette options
   final Map<String, int> firstCigaretteOptions = {
     "≤5 minutes": 5,
@@ -131,6 +144,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void dispose() {
     _tipTimer?.cancel();
+    _motivationalTimer?.cancel();
     _pageController.dispose();
     _smokeAvgController.dispose();
     _yearsController.dispose();
@@ -147,6 +161,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (mounted && _isCreatingPlan) {
         setState(() {
           _currentTipIndex = (_currentTipIndex + 1) % _quitTips.length;
+        });
+      }
+    });
+
+    // Start motivational message rotation
+    _motivationalTimer?.cancel();
+    _motivationalTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted && _isCreatingPlan) {
+        setState(() {
+          _currentMotivationalIndex =
+              (_currentMotivationalIndex + 1) % _motivationalMessages.length;
         });
       }
     });
@@ -200,33 +225,107 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildLoadingWidget() {
     return Column(
       children: [
-        // Animated circular progress
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 80,
-              height: 80,
-              child: CircularProgressIndicator(
-                value: _creationProgress,
-                strokeWidth: 6,
-                backgroundColor: Colors.grey[300],
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFF00D09E),
+        // Animated motivational message at top
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 800),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.8, end: 1.0).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Text(
+            _motivationalMessages[_currentMotivationalIndex],
+            key: ValueKey<int>(_currentMotivationalIndex),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        // Enhanced circular progress with gradient
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00D09E).withOpacity(0.3),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer glow
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularProgressIndicator(
+                  value: _creationProgress,
+                  strokeWidth: 8,
+                  backgroundColor: Colors.grey[200],
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF00D09E),
+                  ),
                 ),
               ),
-            ),
-            Text(
-              '${(_creationProgress * 100).toInt()}%',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF00D09E),
+              // Inner circle with gradient
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF00D09E).withOpacity(0.1),
+                      const Color(0xFF00D09E).withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${(_creationProgress * 100).toInt()}%',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00D09E),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Creating',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
 
         // Step indicator
         Text(
@@ -734,25 +833,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 _startTipRotation();
 
                                 try {
-                                  // Call API to create quit plan
+                                  // Call API and start animation in parallel
                                   print(
                                     '📞 [OnboardingScreen] Calling API to create quit plan...',
                                   );
-                                  await ref
+
+                                  // Start API call (will await later)
+                                  final apiCallFuture = ref
                                       .read(quitPlanViewModelProvider.notifier)
                                       .createPlan(request);
 
                                   print(
-                                    '✅ [OnboardingScreen] API call completed, waiting for backend...',
+                                    '🎬 [OnboardingScreen] Starting animation while API processes...',
                                   );
 
-                                  // Step 1: Analyzing (0-25%) - 20s
+                                  // Step 1: Analyzing (0-25%) - 45s
                                   _animateProgress(0, 0.25, _steps[0]);
                                   await Future.delayed(
-                                    const Duration(seconds: 20),
+                                    const Duration(seconds: 10),
                                   );
 
-                                  // Step 2: Creating missions (25-50%) - 25s
+                                  // Step 2: Creating missions (25-50%) - 50s
                                   if (_isCreatingPlan && mounted) {
                                     setState(() => _currentStep = 1);
                                     _animateProgress(0.25, 0.50, _steps[1]);
@@ -761,10 +862,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 25),
+                                    const Duration(seconds: 10),
                                   );
 
-                                  // Step 3: Building phases (50-75%) - 25s
+                                  // Step 3: Building phases (50-75%) - 55s
                                   if (_isCreatingPlan && mounted) {
                                     setState(() => _currentStep = 2);
                                     _animateProgress(0.50, 0.75, _steps[2]);
@@ -773,10 +874,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 25),
+                                    const Duration(seconds: 10),
                                   );
 
-                                  // Step 4: Finalizing (75-100%) - 18s
+                                  // Step 4: Finalizing (75-100%) - 50s
                                   if (_isCreatingPlan && mounted) {
                                     setState(() => _currentStep = 3);
                                     _animateProgress(0.75, 1.0, _steps[3]);
@@ -785,7 +886,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 18),
+                                    const Duration(seconds: 10),
+                                  );
+
+                                  // NOW await API call to ensure it completes
+                                  print(
+                                    '⏳ [OnboardingScreen] Ensuring API call completes...',
+                                  );
+                                  await apiCallFuture;
+                                  print(
+                                    '✅ [OnboardingScreen] API call completed successfully!',
                                   );
 
                                   // Complete
@@ -793,18 +903,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     setState(() {
                                       _creationProgress = 1.0;
                                       _loadingMessage =
-                                          '✨ Quit plan ready!\nRedirecting to home...';
+                                          '✨ Quit plan ready!\nLoading your dashboard...';
                                     });
                                     print(
                                       '✨ [OnboardingScreen] Quit plan ready!',
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 2),
+                                    const Duration(seconds: 10),
                                   );
 
-                                  // Stop tip rotation
+                                  // Stop timers
                                   _tipTimer?.cancel();
+                                  _motivationalTimer?.cancel();
 
                                   // Show success notification
                                   if (mounted) {
@@ -823,16 +934,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     ).show(context);
                                   }
 
-                                  // Trigger refresh for quit plan and missions cards
+                                  // Refresh ALL providers to load new data
                                   print(
-                                    '🔄 [OnboardingScreen] Backend ready, triggering cards refresh...',
+                                    '🔄 [OnboardingScreen] Refreshing all providers with new data...',
                                   );
+
+                                  // Refresh quit plan homepage (for quit plan card)
+                                  await ref
+                                      .read(
+                                        quitPlanHomepageViewModelProvider
+                                            .notifier,
+                                      )
+                                      .refreshQuitPlan();
+                                  print('✅ Quit plan homepage refreshed');
+
+                                  // Trigger mission refresh (for mission cards)
                                   ref
                                       .read(missionRefreshProvider.notifier)
                                       .refreshAll();
+                                  print('✅ Mission refresh triggered');
+
+                                  // Small delay to ensure providers update
+                                  await Future.delayed(
+                                    const Duration(seconds: 2),
+                                  );
 
                                   print(
-                                    '🚀 [OnboardingScreen] Navigating to main screen...',
+                                    '🚀 [OnboardingScreen] Navigating to main screen with fresh data...',
                                   );
 
                                   setState(() {

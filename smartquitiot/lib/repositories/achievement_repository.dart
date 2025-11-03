@@ -41,6 +41,40 @@ class AchievementRepository {
     }
   }
 
+  /// Get home achievements (random 4 for home screen)
+  Future<List<Achievement>> getHomeAchievements() async {
+    try {
+      print('🏠 [AchievementRepository] Fetching home achievements...');
+      final response = await _achievementService.getHomeAchievements();
+
+      if (response.statusCode == 200) {
+        print('🔍 [AchievementRepository] Parsing home achievements...');
+        
+        if (response.data is List) {
+          final achievements = (response.data as List)
+              .map((json) => Achievement.fromJson(json))
+              .toList();
+          
+          print('✅ [AchievementRepository] Parsed ${achievements.length} home achievements');
+          print('   - Unlocked: ${achievements.where((a) => a.unlocked).length}');
+          print('   - Locked: ${achievements.where((a) => !a.unlocked).length}');
+          
+          return achievements;
+        } else {
+          throw ServerFailure('Response data is not a List');
+        }
+      } else {
+        throw ServerFailure(
+          'Failed to fetch home achievements: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      throw ServerFailure(_handleDioError(e));
+    } catch (e) {
+      throw ServerFailure('Unexpected error: ${e.toString()}');
+    }
+  }
+
   String _handleDioError(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:

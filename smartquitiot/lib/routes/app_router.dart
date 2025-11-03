@@ -25,9 +25,14 @@ import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
 import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
+<<<<<<< HEAD
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_screen.dart';
+=======
 // import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
+>>>>>>> 820873ab9b3daed850232d89014dc2a299ca4813
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -193,6 +198,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/ai-chat-welcome',
+      builder: (context, state) => const AiChatWelcomeScreen(),
+    ),
+    GoRoute(
+      path: '/ai-chat',
+      builder: (context, state) => const AiChatScreen(),
     ),
   ],
 );

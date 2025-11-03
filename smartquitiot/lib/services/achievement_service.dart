@@ -49,6 +49,12 @@ class AchievementService {
     return await _dio.get('/achievement/all-my-achievements');
   }
 
+  /// Get home achievements (random 4 achievements for home screen)
+  Future<Response> getHomeAchievements() async {
+    print('🏠 [AchievementService] Fetching home achievements...');
+    return await _dio.get('/achievement/my-achievements-at-home');
+  }
+
   /// Get top leaderboards with achievements
   Future<Response> getTopLeaderBoards() async {
     print('🏆 [AchievementService] Fetching top leaderboards...');

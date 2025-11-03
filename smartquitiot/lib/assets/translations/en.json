@@ -1,4 +1,4 @@
-﻿{
+{
   "app_title": "Smoke Quit",
   "welcome": "Welcome, {}!",
   "login": "Login",
@@ -52,6 +52,7 @@
   "days": "Days",
   "hours": "Hours",
   "minutes": "Minutes",
+  "seconds": "Seconds",
   "coach_card": {
     "title": "Need support?",
     "subtitle": "Book a consultation with our coach"
