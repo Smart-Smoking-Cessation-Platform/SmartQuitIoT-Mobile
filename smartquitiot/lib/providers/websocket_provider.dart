@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/services/websocket_service.dart';
 import 'package:SmartQuitIoT/services/local_notification_service.dart';
-import 'package:SmartQuitIoT/services/notification_storage_service.dart';
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
 import 'package:SmartQuitIoT/models/achievement_notification.dart';
 
@@ -19,74 +18,38 @@ final localNotificationServiceProvider = Provider<LocalNotificationService>((
   return LocalNotificationService();
 });
 
-// Notification Storage Service Provider
-// final notificationStorageServiceProvider = Provider<NotificationStorageService>(
-//   (ref) {
-//     return NotificationStorageService();
-//   },
-// );
-
 // Achievement Notifications State Provider
-// final achievementNotificationsProvider =
-//     StateNotifierProvider<
-//       AchievementNotificationsNotifier,
-//       List<AchievementNotification>
-//     >((ref) {
-//       final storageService = ref.watch(notificationStorageServiceProvider);
-//       return AchievementNotificationsNotifier(storageService);
-//     });
+final achievementNotificationsProvider =
+    StateNotifierProvider<
+      AchievementNotificationsNotifier,
+      List<AchievementNotification>
+    >((ref) {
+      return AchievementNotificationsNotifier();
+    });
 
 class AchievementNotificationsNotifier
     extends StateNotifier<List<AchievementNotification>> {
-  // final NotificationStorageService _storageService;
+  AchievementNotificationsNotifier() : super([]);
 
-//   AchievementNotificationsNotifier(this._storageService) : super([]) {
-//     // Load cached notifications on init
-//     _loadCachedNotifications();
-//   }
+  void addNotification(AchievementNotification notification) {
+    state = [notification, ...state];
+  }
 
-//   /// Load notifications from storage on init
-//   Future<void> _loadCachedNotifications() async {
-//     final cachedNotifications = await _storageService.loadNotifications();
-//     state = cachedNotifications;
-//   }
+  void markAsRead(int notificationId) {
+    state = state.map((notif) {
+      if (notif.id == notificationId) {
+        return notif.copyWith(isRead: true);
+      }
+      return notif;
+    }).toList();
+  }
 
-//   /// Add new notification and save to storage
-//   Future<void> addNotification(AchievementNotification notification) async {
-//     // Add to state
-//     state = [notification, ...state];
+  void clearAll() {
+    state = [];
+  }
 
-//     // Save to storage
-//     await _storageService.saveNotifications(state);
-//   }
-
-//   /// Mark notification as read and save to storage
-//   Future<void> markAsRead(int notificationId) async {
-//     // Update state
-//     state = state.map((notif) {
-//       if (notif.id == notificationId) {
-//         return notif.copyWith(isRead: true);
-//       }
-//       return notif;
-//     }).toList();
-
-//     // Save to storage
-//     await _storageService.saveNotifications(state);
-//   }
-
-//   /// Clear all notifications and storage
-//   Future<void> clearAll() async {
-//     state = [];
-//     await _storageService.clearAll();
-//   }
-
-//   /// Refresh notifications from storage
-//   Future<void> refresh() async {
-//     await _loadCachedNotifications();
-//   }
-
-//   int get unreadCount => state.where((n) => !n.isRead).length;
-// }
+  int get unreadCount => state.where((n) => !n.isRead).length;
+}
 
 // WebSocket Manager Provider - Handles connection lifecycle
 final websocketManagerProvider = Provider<WebSocketManager>((ref) {
