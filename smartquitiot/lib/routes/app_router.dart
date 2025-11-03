@@ -25,14 +25,11 @@ import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
 import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
-<<<<<<< HEAD
-import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
-import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_screen.dart';
-=======
 // import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
->>>>>>> 820873ab9b3daed850232d89014dc2a299ca4813
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -151,20 +148,29 @@ final GoRouter appRouter = GoRouter(
         }
       },
     ),
-    GoRoute(path: '/payment/cancel', builder: (_, __) => const PaymentCancelScreen()),
+    GoRoute(
+      path: '/payment/cancel',
+      builder: (_, __) => const PaymentCancelScreen(),
+    ),
     GoRoute(
       path: '/meeting',
       name: 'meeting',
       builder: (context, state) {
-        final extra = state.extra is Map<String, dynamic> ? state.extra as Map<String, dynamic> : <String,dynamic>{};
+        final extra = state.extra is Map<String, dynamic>
+            ? state.extra as Map<String, dynamic>
+            : <String, dynamic>{};
         final appointmentId = extra['appointmentId'] is int
             ? extra['appointmentId'] as int
             : int.tryParse((extra['appointmentId'] ?? '').toString()) ?? 0;
         // pass prefilled token data if provided (may be null)
         final preChannel = extra['channel'] as String?;
         final preToken = extra['token'] as String?;
-        final preUid = extra['uid'] is int ? extra['uid'] as int : int.tryParse((extra['uid'] ?? '').toString());
-        final preExpiresAt = extra['expiresAt'] is int ? extra['expiresAt'] as int : int.tryParse((extra['expiresAt'] ?? '').toString());
+        final preUid = extra['uid'] is int
+            ? extra['uid'] as int
+            : int.tryParse((extra['uid'] ?? '').toString());
+        final preExpiresAt = extra['expiresAt'] is int
+            ? extra['expiresAt'] as int
+            : int.tryParse((extra['expiresAt'] ?? '').toString());
 
         return MeetingScreen(
           appointmentId: appointmentId,
