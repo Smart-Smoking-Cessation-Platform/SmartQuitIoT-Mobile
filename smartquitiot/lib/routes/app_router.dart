@@ -199,10 +199,10 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-    GoRoute(
-      path: '/notifications',
-      builder: (context, state) => const NotificationsScreen(),
-    ),
+    // GoRoute(
+    //   path: '/notifications',
+    //   builder: (context, state) => const NotificationsScreen(),
+    // ),
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),

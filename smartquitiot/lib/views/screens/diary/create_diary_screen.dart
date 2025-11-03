@@ -910,7 +910,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         HealthDataType
             .BLOOD_OXYGEN, // Trong package health không có SP02 trực tiếp nên test thử cái này coi có lấy đc ko
         HealthDataType.BLOOD_GLUCOSE,
-        HealthDataType.EXERCISE_TIME,
+        // HealthDataType.EXERCISE_TIME,
       ];
 
       final permissions = types.map((e) => HealthDataAccess.READ).toList();
