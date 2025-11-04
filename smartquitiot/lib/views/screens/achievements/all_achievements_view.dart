@@ -4,12 +4,21 @@ import 'package:SmartQuitIoT/views/screens/achievements/achievement_section.dart
 import 'package:lottie/lottie.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/providers/achievement_provider.dart';
+import 'package:SmartQuitIoT/providers/achievement_refresh_provider.dart';
 
 class AllAchievementsView extends ConsumerWidget {
   const AllAchievementsView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Listen for achievement refresh triggers
+    ref.listen(achievementRefreshProvider, (previous, next) {
+      if (previous != next) {
+        print('🔄 [AllAchievementsView] Refresh triggered, invalidating achievements provider...');
+        ref.invalidate(allAchievementsProvider);
+      }
+    });
+
     final achievementsAsync = ref.watch(allAchievementsProvider);
 
     return achievementsAsync.when(

@@ -453,6 +453,106 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
             ),
             const SizedBox(height: 12),
           ],
+          if (phase.avgCravingLevel != null || 
+              phase.avgCigarettes != null || 
+              phase.fmCigarettesTotal != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FFFE),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: color.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.analytics_outlined, 
+                        size: 16, 
+                        color: color),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Phase Statistics',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      if (phase.avgCravingLevel != null)
+                        Expanded(
+                          child: _buildSmallStat(
+                            label: 'Avg Craving',
+                            value: phase.avgCravingLevel!.toStringAsFixed(1),
+                            color: Colors.red,
+                          ),
+                        ),
+                      if (phase.avgCigarettes != null) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildSmallStat(
+                            label: 'Avg Cigs',
+                            value: phase.avgCigarettes!.toStringAsFixed(1),
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (phase.fmCigarettesTotal != null) ...[
+                    const SizedBox(height: 6),
+                    _buildSmallStat(
+                      label: 'Total Cigarettes',
+                      value: phase.fmCigarettesTotal!.toStringAsFixed(0),
+                      color: Colors.deepOrange,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (phase.condition != null && 
+              (phase.condition!.rules?.isNotEmpty ?? false)) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: color.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.verified_outlined, 
+                        size: 16, 
+                        color: color),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Conditions to Pass',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPhaseConditions(phase.condition!, color),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           if (days.isEmpty)
             Padding(
               padding: const EdgeInsets.all(20),
@@ -777,17 +877,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
-  String _formatDate(String? dateString) {
-  if (dateString == null || dateString.isEmpty) return '';
-  try {
-    final date = DateTime.parse(dateString);
-    return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
-  } catch (e) {
-    return dateString; // fallback nếu parse lỗi
-  }
-}
-
-
   IconData _getPhaseIcon(String phaseName) {
     switch (phaseName.toLowerCase()) {
       case 'preparation':
@@ -802,6 +891,180 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
         return Icons.health_and_safety;
       default:
         return Icons.flag;
+    }
+  }
+
+  Widget _buildSmallStat({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 24,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[600],
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhaseConditions(PhaseCondition condition, Color color) {
+    final rules = condition.rules ?? [];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (condition.logic != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'Logic: ${condition.logic}',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        const SizedBox(height: 6),
+        ...rules.map<Widget>((rule) => _buildPhaseRule(rule, color)).toList(),
+      ],
+    );
+  }
+
+  Widget _buildPhaseRule(PhaseRule rule, Color color, {int indent = 0}) {
+    return Container(
+      margin: EdgeInsets.only(left: indent * 12.0, bottom: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (rule.rules != null && rule.rules!.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(Icons.alt_route, size: 12, color: Colors.blue[700]),
+                const SizedBox(width: 4),
+                Text(
+                  'Logic: ${rule.logic ?? "AND"}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[700],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ...rule.rules!.map<Widget>((nestedRule) => 
+              _buildPhaseRule(nestedRule, color, indent: indent + 1)
+            ).toList(),
+          ] else ...[
+            Row(
+              children: [
+                Icon(Icons.check_circle_outline, size: 12, color: Colors.green[700]),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _formatPhaseFieldName(rule.field),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        _formatPhaseRuleCondition(rule),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatPhaseFieldName(String? field) {
+    if (field == null) return '';
+    switch (field) {
+      case 'progress':
+        return 'Mission Progress';
+      case 'craving_level_avg':
+        return 'Average Craving Level';
+      case 'avg_cigarettes':
+        return 'Average Cigarettes';
+      default:
+        return field.replaceAll('_', ' ').toUpperCase();
+    }
+  }
+
+  String _formatPhaseRuleCondition(PhaseRule rule) {
+    final operator = rule.operator ?? '';
+    
+    if (rule.formula != null) {
+      final formula = rule.formula!;
+      final base = formula['base'] ?? '';
+      final percent = formula['percent'] ?? 0;
+      final op = formula['operator'] ?? '';
+      return 'Must be $operator ${(percent * 100).toInt()}% $op $base';
+    }
+    
+    final value = rule.value;
+    return 'Must be $operator $value';
+  }
+
+  String _formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return '';
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+    } catch (e) {
+      return '';
     }
   }
 }

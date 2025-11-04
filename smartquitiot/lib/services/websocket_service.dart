@@ -30,7 +30,9 @@ class WebSocketService {
     }
 
     _currentUserId = userId;
-    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://192.168.110.64:8080';
+    // Get base URL - keep /api if present, backend might need /api/ws
+    var baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+    
     final wsUrl = baseUrl
         .replaceFirst('http://', 'ws://')
         .replaceFirst('https://', 'wss://');

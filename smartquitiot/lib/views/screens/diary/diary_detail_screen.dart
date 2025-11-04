@@ -58,7 +58,7 @@ class DiaryDetailScreen extends ConsumerWidget {
 
   Widget _buildDiaryDetail(DiaryRecord diary) {
     final moneyFormatter = NumberFormat('#,###', 'vi_VN');
-    
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -114,7 +114,7 @@ class DiaryDetailScreen extends ConsumerWidget {
     final dayOfMonth = DateFormat('d').format(parsedDate);
     final monthYear = DateFormat('MMMM yyyy').format(parsedDate);
     final dayOfWeek = DateFormat('EEEE').format(parsedDate);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -239,7 +239,10 @@ class DiaryDetailScreen extends ConsumerWidget {
               ),
               if (diary.haveSmoked)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red[50],
                     borderRadius: BorderRadius.circular(20),
@@ -292,13 +295,25 @@ class DiaryDetailScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 20),
-          _buildMoodItem('Cravings', diary.cravingLevel, const Color(0xFFE91E63)),
+          _buildMoodItem(
+            'Cravings',
+            diary.cravingLevel,
+            const Color(0xFFE91E63),
+          ),
           const SizedBox(height: 16),
           _buildMoodItem('Mood', diary.moodLevel, const Color(0xFF2196F3)),
           const SizedBox(height: 16),
-          _buildMoodItem('Confidence', diary.confidenceLevel, const Color(0xFF4CAF50)),
+          _buildMoodItem(
+            'Confidence',
+            diary.confidenceLevel,
+            const Color(0xFF4CAF50),
+          ),
           const SizedBox(height: 16),
-          _buildMoodItem('Anxiety', diary.anxietyLevel, const Color(0xFFFF9800)),
+          _buildMoodItem(
+            'Anxiety',
+            diary.anxietyLevel,
+            const Color(0xFFFF9800),
+          ),
         ],
       ),
     );
@@ -383,7 +398,10 @@ class DiaryDetailScreen extends ConsumerWidget {
             runSpacing: 8,
             children: triggers.map((trigger) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF00D09E).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -449,7 +467,10 @@ class DiaryDetailScreen extends ConsumerWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.green[50],
                   borderRadius: BorderRadius.circular(20),
@@ -470,82 +491,83 @@ class DiaryDetailScreen extends ConsumerWidget {
     );
   }
 
-Widget _buildHealthSection(DiaryRecord diary) {
-  return Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Row(
-          children: [
-            Icon(Icons.health_and_safety, color: Color(0xFF2196F3), size: 24),
-            SizedBox(width: 12),
-            Text(
-              'Health Data',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+  Widget _buildHealthSection(DiaryRecord diary) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.health_and_safety, color: Color(0xFF2196F3), size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Health Data',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D3748),
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Row 1
-        Row(
-          children: [
-            Expanded(
-              child: _buildHealthItem('Steps', '${diary.steps}', Icons.directions_walk),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildHealthItem('Heart Rate', '${diary.heartRate} bpm', Icons.favorite),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Row 2
-        Row(
-          children: [
-            Expanded(
-              child: _buildHealthItem('SpO2', '${diary.spo2}%', Icons.healing),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildHealthItem('Activity', '${diary.activityMinutes} min', Icons.fitness_center),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Row 3
-        Row(
-          children: [
-            Expanded(
-              child: _buildHealthItem('Respiratory', '${diary.respiratoryRate}', Icons.air),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildHealthItem('Sleep', '${diary.sleepDuration}h', Icons.bedtime),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Row 1
+          Row(
+            children: [
+              Expanded(
+                child: _buildHealthItem(
+                  'Steps',
+                  '${diary.steps}',
+                  Icons.directions_walk,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildHealthItem(
+                  'Heart Rate',
+                  '${diary.heartRate} bpm',
+                  Icons.favorite,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Row 2
+          Row(
+            children: [
+              Expanded(
+                child: _buildHealthItem(
+                  'SpO2',
+                  '${diary.spo2}%',
+                  Icons.healing,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildHealthItem(
+                  'Sleep',
+                  '${diary.sleepDuration}h',
+                  Icons.bedtime,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildHealthItem(String label, String value, IconData icon) {
     return Container(
@@ -575,10 +597,7 @@ Widget _buildHealthSection(DiaryRecord diary) {
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
@@ -644,7 +663,7 @@ Widget _buildHealthSection(DiaryRecord diary) {
 
   Widget _buildStatisticsSection(DiaryRecord diary) {
     final formatter = NumberFormat('#,###', 'vi_VN');
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -721,10 +740,7 @@ Widget _buildHealthSection(DiaryRecord diary) {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],

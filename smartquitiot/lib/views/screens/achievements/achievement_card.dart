@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class AchievementCard extends StatelessWidget {
   final String title;
@@ -6,8 +7,8 @@ class AchievementCard extends StatelessWidget {
   final String iconUrl;
   final bool isCompleted;
   final double? progress;
-  final String? completedDate;
   final Color categoryColor;
+  final DateTime? completedAt;
   final VoidCallback? onTap;
 
   const AchievementCard({
@@ -17,8 +18,8 @@ class AchievementCard extends StatelessWidget {
     required this.iconUrl,
     required this.isCompleted,
     this.progress,
-    this.completedDate,
     required this.categoryColor,
+    this.completedAt,
     this.onTap,
   });
 
@@ -154,12 +155,30 @@ class AchievementCard extends StatelessWidget {
                           size: 18,
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          'Completed on $completedDate',
-                          style: const TextStyle(
-                            color: Color(0xFF00D09E),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Completed',
+                                style: TextStyle(
+                                  color: Color(0xFF00D09E),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (completedAt != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  _formatCompletedDate(completedAt!),
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 11,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ],
@@ -188,5 +207,35 @@ class AchievementCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatCompletedDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    // If completed today
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        if (difference.inMinutes == 0) {
+          return 'Completed just now';
+        }
+        return 'Completed ${difference.inMinutes}m ago';
+      }
+      return 'Completed ${difference.inHours}h ago';
+    }
+    
+    // If completed yesterday
+    if (difference.inDays == 1) {
+      return 'Completed yesterday';
+    }
+    
+    // If completed within a week
+    if (difference.inDays < 7) {
+      return 'Completed ${difference.inDays} days ago';
+    }
+    
+    // Otherwise show full date
+    final formatter = DateFormat('MMM dd, yyyy');
+    return 'Completed on ${formatter.format(date)}';
   }
 }

@@ -1,12 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_message_bubble.dart';
-import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_enhanced_input.dart';
 import 'package:SmartQuitIoT/providers/chatbot_provider.dart';
-import 'package:SmartQuitIoT/models/chat_message.dart';
-import 'package:SmartQuitIoT/services/cloudinary_service.dart';
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -18,12 +14,7 @@ class AiChatScreen extends ConsumerStatefulWidget {
 class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey<AiChatEnhancedInputState> _inputKey = GlobalKey();
-  final CloudinaryService _cloudinaryService = CloudinaryService();
-
-  List<File> _selectedImages = [];
-  List<File> _selectedVideos = [];
-  bool _isUploadingMedia = false;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -38,6 +29,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -225,38 +217,119 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   Widget _buildMessageInput() {
     final chatState = ref.watch(chatbotViewModelProvider);
+    final isSending = chatState.isSending;
 
-    return AiChatEnhancedInput(
-      key: _inputKey,
-      controller: _messageController,
-      isUploading: _isUploadingMedia || chatState.isSending,
-      onMediaSelected: (images, videos) {
-        setState(() {
-          _selectedImages = images;
-          _selectedVideos = videos;
-        });
-      },
-      onSubmitted: (text) {
-        if (text.trim().isNotEmpty ||
-            _selectedImages.isNotEmpty ||
-            _selectedVideos.isNotEmpty) {
-          _sendMessage();
-        }
-      },
-      onSend: () {
-        if (_messageController.text.trim().isNotEmpty ||
-            _selectedImages.isNotEmpty ||
-            _selectedVideos.isNotEmpty) {
-          _sendMessage();
-        }
-      },
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(
+                  minHeight: 40,
+                  maxHeight: 150, // Cho phép text field mở rộng khi chat dài
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFF00D09E),
+                    width: 2.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00D09E).withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  focusNode: _focusNode,
+                  enabled: !isSending,
+                  maxLines: null, // Cho phép nhiều dòng
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: 'Type your message...',
+                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none, // Thêm dòng này
+                    focusedBorder: InputBorder.none, // Thêm dòng này
+                    filled: false, // Quan trọng: không fill background
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  onSubmitted: (_) {
+                    if (_messageController.text.trim().isNotEmpty) {
+                      _sendMessage();
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: isSending ? Colors.grey[400] : const Color(0xFF00D09E),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00D09E).withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: isSending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                onPressed: isSending
+                    ? null
+                    : () {
+                        if (_messageController.text.trim().isNotEmpty) {
+                          _sendMessage();
+                        }
+                      },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
 
-    if (text.isEmpty && _selectedImages.isEmpty && _selectedVideos.isEmpty) {
+    if (text.isEmpty) {
       return;
     }
 
@@ -266,65 +339,16 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     }
 
     try {
-      List<ChatMessageMedia>? mediaList;
-
-      // Upload media to Cloudinary if any
-      if (_selectedImages.isNotEmpty || _selectedVideos.isNotEmpty) {
-        setState(() => _isUploadingMedia = true);
-
-        mediaList = [];
-
-        // Upload images
-        for (final imageFile in _selectedImages) {
-          try {
-            debugPrint('📤 Uploading image to Cloudinary...');
-            final imageUrl = await _cloudinaryService.uploadImage(imageFile);
-            mediaList.add(
-              ChatMessageMedia(mediaUrl: imageUrl, mediaType: 'IMAGE'),
-            );
-            debugPrint('✅ Image uploaded: $imageUrl');
-          } catch (e) {
-            debugPrint('❌ Error uploading image: $e');
-            _showFlushbar('Failed to upload image', isError: true);
-          }
-        }
-
-        // Upload videos
-        for (final videoFile in _selectedVideos) {
-          try {
-            debugPrint('📤 Uploading video to Cloudinary...');
-            final videoUrl = await _cloudinaryService.uploadVideo(videoFile);
-            mediaList.add(
-              ChatMessageMedia(mediaUrl: videoUrl, mediaType: 'VIDEO'),
-            );
-            debugPrint('✅ Video uploaded: $videoUrl');
-          } catch (e) {
-            debugPrint('❌ Error uploading video: $e');
-            _showFlushbar('Failed to upload video', isError: true);
-          }
-        }
-
-        setState(() => _isUploadingMedia = false);
-      }
-
-      // Send message via ViewModel
-      await ref
-          .read(chatbotViewModelProvider.notifier)
-          .sendMessage(text.isNotEmpty ? text : '(Sent media)', mediaList);
-
-      // Clear input
+      // Clear input immediately
       _messageController.clear();
-      setState(() {
-        _selectedImages.clear();
-        _selectedVideos.clear();
-      });
-      _inputKey.currentState?.clearMedia();
+
+      // Send message via ViewModel (text only, no media)
+      await ref.read(chatbotViewModelProvider.notifier).sendMessage(text, null);
 
       // Scroll to bottom
       _scrollToBottom();
     } catch (e) {
       debugPrint('❌ Error sending message: $e');
-      setState(() => _isUploadingMedia = false);
       _showFlushbar('Failed to send message: $e', isError: true);
     }
   }

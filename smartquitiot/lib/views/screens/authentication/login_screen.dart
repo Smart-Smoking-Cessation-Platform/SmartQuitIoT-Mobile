@@ -12,8 +12,7 @@ import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import '../../../models/state/auth_state.dart';
 import '../../../utils/notification_helper.dart';
-import 'package:SmartQuitIoT/providers/user_provider.dart';
-import 'package:SmartQuitIoT/providers/websocket_provider.dart';
+import 'package:SmartQuitIoT/providers/achievement_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -95,21 +94,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           next.refreshToken ?? '',
         );
 
-        // Initialize WebSocket connection
-        try {
-          debugPrint('🔌 [LoginScreen] Initializing WebSocket...');
-          final userService = ref.read(userServiceProvider);
-          final userProfile = await userService.getUserProfile();
-          final memberId = userProfile.id;
-          
-          debugPrint('👤 [LoginScreen] Member ID: $memberId');
-          final websocketManager = ref.read(websocketManagerProvider);
-          await websocketManager.initialize(memberId);
-          debugPrint('✅ [LoginScreen] WebSocket initialized successfully!');
-        } catch (e) {
-          debugPrint('❌ [LoginScreen] WebSocket initialization error: $e');
-          // Continue login flow even if WebSocket fails
-        }
+        // Clear cached data from previous user
+        debugPrint('🔄 [LoginScreen] Clearing cached data from previous user...');
+        ref.invalidate(allAchievementsProvider);
+        ref.invalidate(homeAchievementsProvider);
+
+        // WebSocket will be initialized by MainNavigationScreen
+        debugPrint('ℹ️ [LoginScreen] WebSocket will be initialized after navigation');
 
         // Wait 2 seconds with spinner visible
         await Future.delayed(const Duration(seconds: 2));

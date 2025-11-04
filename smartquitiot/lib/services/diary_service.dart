@@ -10,7 +10,8 @@ class DiaryService {
   late final String baseUrl;
 
   DiaryService(this._authRepository) {
-    baseUrl = dotenv.env['API_DIARY_RECORD_URL'] ?? 'http://localhost:8080/api/diary-records';
+    final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+    baseUrl = '$apiBaseUrl/diary-records';
     
     // Setup Dio interceptors
     _dio.interceptors.add(

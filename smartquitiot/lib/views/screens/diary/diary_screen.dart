@@ -14,11 +14,38 @@ class DiaryScreen extends ConsumerStatefulWidget {
   ConsumerState<DiaryScreen> createState() => _DiaryScreenState();
 }
 
-class _DiaryScreenState extends ConsumerState<DiaryScreen> {
+class _DiaryScreenState extends ConsumerState<DiaryScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     print('📊 [DiaryScreen] Initialized');
+    WidgetsBinding.instance.addObserver(this);
+
+    // Force refresh khi vào screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🔄 [DiaryScreen] First load - refreshing charts...');
+      ref.invalidate(diaryChartsProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Refresh khi app quay lại foreground
+    if (state == AppLifecycleState.resumed) {
+      print('🔄 [DiaryScreen] App resumed - refreshing charts...');
+      if (mounted) {
+        ref.invalidate(diaryChartsProvider);
+      }
+    }
   }
 
   @override
@@ -26,8 +53,10 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
     // Listen to refresh trigger - auto-refresh when new diary created
     ref.listen<int>(diaryChartsRefreshProvider, (previous, next) {
       if (previous != null && previous != next) {
-        print('🔄 [DiaryScreen] Refresh triggered! Previous: $previous, Next: $next');
-        
+        print(
+          '🔄 [DiaryScreen] Refresh triggered! Previous: $previous, Next: $next',
+        );
+
         // Show subtle refresh notification
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -47,7 +76,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
             ),
           ),
         );
-        
+
         // Invalidate charts provider to force refresh
         ref.invalidate(diaryChartsProvider);
       }
@@ -74,6 +103,28 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
         actions: [
           IconButton(
             onPressed: () {
+              print('🔄 [DiaryScreen] Manual refresh triggered');
+              ref.invalidate(diaryChartsProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Row(
+                    children: [
+                      Icon(Icons.refresh, color: Colors.white, size: 20),
+                      SizedBox(width: 8),
+                      Text('Refreshing charts...'),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFF00D09E),
+                  duration: const Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Refresh Charts',
+          ),
+          IconButton(
+            onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -82,11 +133,21 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
               );
             },
             icon: const Icon(Icons.history, color: Colors.white),
+            tooltip: 'View History',
           ),
         ],
       ),
       body: chartsAsync.when(
-        data: (charts) => _buildChartsContent(charts),
+        data: (charts) => RefreshIndicator(
+          onRefresh: () async {
+            print('🔄 [DiaryScreen] Pull to refresh triggered');
+            ref.invalidate(diaryChartsProvider);
+            // Wait a bit for the refresh to complete
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          color: const Color(0xFF00D09E),
+          child: _buildChartsContent(charts),
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _buildErrorState(error),
       ),
@@ -100,18 +161,11 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 80, color: Colors.red),
             const SizedBox(height: 16),
             Text(
               'Failed to load charts',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -143,10 +197,15 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
         charts.confidenceLevel.isEmpty &&
         charts.cravingLevel.isEmpty &&
         charts.anxietyLevel.isEmpty) {
-      return _buildEmptyState();
+      // Wrap empty state với ListView để pull-to-refresh work
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [_buildEmptyState()],
+      );
     }
 
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,28 +240,38 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
           if (charts.moodLevel.isNotEmpty)
             _buildChartCard(
               'Mood Level',
-              charts.moodLevel.map((e) => ChartDataPoint(e.date, e.moodLevel.toDouble())).toList(),
+              charts.moodLevel
+                  .map((e) => ChartDataPoint(e.date, e.moodLevel.toDouble()))
+                  .toList(),
               const Color(0xFF2196F3),
               Icons.sentiment_satisfied,
             ),
           if (charts.confidenceLevel.isNotEmpty)
             _buildChartCard(
               'Confidence Level',
-              charts.confidenceLevel.map((e) => ChartDataPoint(e.date, e.confidenceLevel.toDouble())).toList(),
+              charts.confidenceLevel
+                  .map(
+                    (e) => ChartDataPoint(e.date, e.confidenceLevel.toDouble()),
+                  )
+                  .toList(),
               const Color(0xFFFF9800),
               Icons.psychology_alt,
             ),
           if (charts.cravingLevel.isNotEmpty)
             _buildChartCard(
               'Craving Level',
-              charts.cravingLevel.map((e) => ChartDataPoint(e.date, e.cravingLevel.toDouble())).toList(),
+              charts.cravingLevel
+                  .map((e) => ChartDataPoint(e.date, e.cravingLevel.toDouble()))
+                  .toList(),
               const Color(0xFFE91E63),
               Icons.psychology,
             ),
           if (charts.anxietyLevel.isNotEmpty)
             _buildChartCard(
               'Anxiety Level',
-              charts.anxietyLevel.map((e) => ChartDataPoint(e.date, e.anxietyLevel.toDouble())).toList(),
+              charts.anxietyLevel
+                  .map((e) => ChartDataPoint(e.date, e.anxietyLevel.toDouble()))
+                  .toList(),
               const Color(0xFF9C27B0),
               Icons.mood_bad,
             ),
@@ -257,7 +326,10 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D09E),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -269,7 +341,12 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
     );
   }
 
-  Widget _buildChartCard(String title, List<ChartDataPoint> data, Color color, IconData icon) {
+  Widget _buildChartCard(
+    String title,
+    List<ChartDataPoint> data,
+    Color color,
+    IconData icon,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(20),
@@ -311,10 +388,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                   drawVerticalLine: false,
                   horizontalInterval: 2,
                   getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: Colors.grey[200]!,
-                      strokeWidth: 1,
-                    );
+                    return FlLine(color: Colors.grey[200]!, strokeWidth: 1);
                   },
                 ),
                 titlesData: FlTitlesData(
@@ -344,7 +418,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                         if (value != value.toInt()) {
                           return const Text('');
                         }
-                        
+
                         if (value.toInt() >= 0 && value.toInt() < data.length) {
                           final date = DateTime.parse(data[value.toInt()].date);
                           return Padding(

@@ -224,6 +224,109 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
         ),
         const SizedBox(height: 16),
 
+        // 📊 Statistics Section
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FFFE),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF00D09E).withOpacity(0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.analytics_outlined, 
+                    size: 18, 
+                    color: const Color(0xFF00D09E)),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Phase Statistics',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00D09E),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      label: 'Avg Craving',
+                      value: quitPlan.avgCravingLevel.toStringAsFixed(1),
+                      icon: Icons.favorite_border,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatItem(
+                      label: 'Avg Cigarettes',
+                      value: quitPlan.avgCigarettes.toStringAsFixed(1),
+                      icon: Icons.smoking_rooms,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _buildStatItem(
+                label: 'Total Cigarettes',
+                value: quitPlan.fmCigarettesTotal.toStringAsFixed(0),
+                icon: Icons.local_fire_department,
+                color: Colors.deepOrange,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // 🎯 Conditions to Pass Section
+        if (quitPlan.condition.rules.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF00D09E).withOpacity(0.1),
+                  const Color(0xFF3FCF8E).withOpacity(0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF00D09E).withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.verified_outlined, 
+                      size: 18, 
+                      color: const Color(0xFF00D09E)),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Conditions to Pass',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00D09E),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildConditionRules(quitPlan.condition),
+              ],
+            ),
+          ),
+        const SizedBox(height: 16),
+
         // 🔥 Styled Phase Section
         Container(
           padding: const EdgeInsets.all(16),
@@ -461,5 +564,170 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
       default:
         return const Icon(Icons.flag, color: Colors.white, size: 20);
     }
+  }
+
+  Widget _buildStatItem({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConditionRules(condition) {
+    final rules = condition.rules;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (condition.logic != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00D09E).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Logic: ${condition.logic}',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF00D09E),
+              ),
+            ),
+          ),
+        const SizedBox(height: 8),
+        ...rules.map<Widget>((rule) => _buildRule(rule)).toList(),
+      ],
+    );
+  }
+
+  Widget _buildRule(rule, {int indent = 0}) {
+    return Container(
+      margin: EdgeInsets.only(left: indent * 16.0, bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // If this rule has nested rules (OR logic)
+          if (rule.rules != null && rule.rules!.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(Icons.alt_route, size: 14, color: Colors.blue[700]),
+                const SizedBox(width: 6),
+                Text(
+                  'Logic: ${rule.logic ?? "AND"}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[700],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...rule.rules!.map<Widget>((nestedRule) => 
+              _buildRule(nestedRule, indent: indent + 1)
+            ).toList(),
+          ] else ...[
+            // Single rule display
+            Row(
+              children: [
+                Icon(Icons.check_circle_outline, size: 14, color: Colors.green[700]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _formatFieldName(rule.field),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatRuleCondition(rule),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatFieldName(String? field) {
+    if (field == null) return '';
+    switch (field) {
+      case 'progress':
+        return 'Mission Progress';
+      case 'craving_level_avg':
+        return 'Average Craving Level';
+      case 'avg_cigarettes':
+        return 'Average Cigarettes';
+      default:
+        return field.replaceAll('_', ' ').toUpperCase();
+    }
+  }
+
+  String _formatRuleCondition(rule) {
+    final operator = rule.operator ?? '';
+    
+    // Handle formula-based rules
+    if (rule.formula != null) {
+      final formula = rule.formula!;
+      final base = formula['base'] ?? '';
+      final percent = formula['percent'] ?? 0;
+      final op = formula['operator'] ?? '';
+      return 'Must be $operator ${(percent * 100).toInt()}% $op $base';
+    }
+    
+    // Simple value-based rules
+    final value = rule.value;
+    return 'Must be $operator $value';
   }
 }

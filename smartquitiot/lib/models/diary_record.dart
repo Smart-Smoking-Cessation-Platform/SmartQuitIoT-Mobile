@@ -15,10 +15,7 @@ class DiaryRecord {
   final int steps;
   final int heartRate;
   final int spo2;
-  final int activityMinutes;
-  final int respiratoryRate;
   final double sleepDuration;
-  final int sleepQuality;
   final double estimatedNicotineIntake;
   final double reductionPercentage;
 
@@ -39,10 +36,7 @@ class DiaryRecord {
     required this.steps,
     required this.heartRate,
     required this.spo2,
-    required this.activityMinutes,
-    required this.respiratoryRate,
     required this.sleepDuration,
-    required this.sleepQuality,
     required this.estimatedNicotineIntake,
     required this.reductionPercentage,
   });
@@ -65,10 +59,7 @@ class DiaryRecord {
       steps: json['steps'] ?? 0,
       heartRate: json['heartRate'] ?? 0,
       spo2: json['spo2'] ?? 0,
-      activityMinutes: json['activityMinutes'] ?? 0,
-      respiratoryRate: json['respiratoryRate'] ?? 0,
       sleepDuration: (json['sleepDuration'] ?? 0.0).toDouble(),
-      sleepQuality: json['sleepQuality'] ?? 5,
       estimatedNicotineIntake: (json['estimatedNicotineIntake'] ?? 0.0).toDouble(),
       reductionPercentage: (json['reductionPercentage'] ?? 0.0).toDouble(),
     );
@@ -92,10 +83,7 @@ class DiaryRecord {
       'steps': steps,
       'heartRate': heartRate,
       'spo2': spo2,
-      'activityMinutes': activityMinutes,
-      'respiratoryRate': respiratoryRate,
       'sleepDuration': sleepDuration,
-      'sleepQuality': sleepQuality,
       'estimatedNicotineIntake': estimatedNicotineIntake,
       'reductionPercentage': reductionPercentage,
     };
@@ -118,10 +106,7 @@ class DiaryRecord {
     int? steps,
     int? heartRate,
     int? spo2,
-    int? activityMinutes,
-    int? respiratoryRate,
     double? sleepDuration,
-    int? sleepQuality,
     double? estimatedNicotineIntake,
     double? reductionPercentage,
   }) {
@@ -142,10 +127,7 @@ class DiaryRecord {
       steps: steps ?? this.steps,
       heartRate: heartRate ?? this.heartRate,
       spo2: spo2 ?? this.spo2,
-      activityMinutes: activityMinutes ?? this.activityMinutes,
-      respiratoryRate: respiratoryRate ?? this.respiratoryRate,
       sleepDuration: sleepDuration ?? this.sleepDuration,
-      sleepQuality: sleepQuality ?? this.sleepQuality,
       estimatedNicotineIntake: estimatedNicotineIntake ?? this.estimatedNicotineIntake,
       reductionPercentage: reductionPercentage ?? this.reductionPercentage,
     );
@@ -168,10 +150,7 @@ class DiaryRecordRequest {
   final int steps;
   final int heartRate;
   final int spo2;
-  final int activityMinutes;
-  final int respiratoryRate;
   final double sleepDuration;
-  final int sleepQuality;
 
   DiaryRecordRequest({
     required this.date,
@@ -189,10 +168,7 @@ class DiaryRecordRequest {
     required this.steps,
     required this.heartRate,
     required this.spo2,
-    required this.activityMinutes,
-    required this.respiratoryRate,
     required this.sleepDuration,
-    required this.sleepQuality,
   });
 
   Map<String, dynamic> toJson() {
@@ -212,10 +188,7 @@ class DiaryRecordRequest {
       'steps': steps,
       'heartRate': heartRate,
       'spo2': spo2,
-      'activityMinutes': activityMinutes,
-      'respiratoryRate': respiratoryRate,
       'sleepDuration': sleepDuration,
-      'sleepQuality': sleepQuality,
     };
   }
 }

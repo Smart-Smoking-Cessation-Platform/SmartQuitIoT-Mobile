@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/leaderboard_provider.dart';
+import '../../../providers/achievement_refresh_provider.dart';
 import '../../../viewmodels/leaderboard_view_model.dart';
 import 'community_progress_section.dart';
 
@@ -23,6 +24,16 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for achievement refresh triggers
+    ref.listen(achievementRefreshProvider, (previous, next) {
+      if (previous != next) {
+        print(
+          '🔄 [LeaderboardScreen] Achievement refresh triggered, reloading leaderboard...',
+        );
+        ref.read(leaderboardViewModelProvider.notifier).loadTopLeaderBoards();
+      }
+    });
+
     final leaderboardState = ref.watch(leaderboardViewModelProvider);
 
     return Scaffold(
@@ -164,15 +175,22 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
     // Medal colors for top 3
     Color? medalColor;
     IconData? medalIcon;
+    Color rankTextColor;
+
     if (rank == 1) {
       medalColor = Colors.amber;
       medalIcon = Icons.workspace_premium;
+      rankTextColor = Colors.amber;
     } else if (rank == 2) {
       medalColor = Colors.grey[400];
       medalIcon = Icons.workspace_premium;
+      rankTextColor = Colors.grey[600]!;
     } else if (rank == 3) {
       medalColor = Colors.brown[300];
       medalIcon = Icons.workspace_premium;
+      rankTextColor = Colors.brown[400]!;
+    } else {
+      rankTextColor = const Color(0xFF00D09E);
     }
 
     return Container(
@@ -200,100 +218,67 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Rank + Avatar + Name + Total Achievements
+          // Header: Rank Number + Avatar + Name + Total Achievements
           Row(
             children: [
-              // Avatar with rank badge overlay
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: Stack(
+              // ✨ RANK NUMBER (Large and prominent)
+              Container(
+                width: 50,
+                child: Column(
                   children: [
-                    // Avatar
-                    Positioned(
-                      left: 5,
-                      top: 5,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: member.avatarUrl != null
-                            ? Image.network(
-                                member.avatarUrl!,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF00D09E).withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.person,
-                                    color: Color(0xFF00D09E),
-                                    size: 25,
-                                  ),
-                                ),
-                              )
-                            : Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF00D09E).withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Color(0xFF00D09E),
-                                  size: 25,
-                                ),
-                              ),
+                    Text(
+                      '#$rank',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: rankTextColor,
+                        height: 1.0,
                       ),
                     ),
-                    // Rank badge (top-right corner)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: medalColor ?? const Color(0xFF00D09E),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: medalIcon != null
-                              ? Icon(
-                                  medalIcon,
-                                  color: Colors.white,
-                                  size: 14,
-                                )
-                              : Text(
-                                  '$rank',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ),
+                    if (medalIcon != null)
+                      Icon(medalIcon, color: medalColor, size: 20),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
+              // Avatar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: member.avatarUrl != null
+                    ? Image.network(
+                        member.avatarUrl!,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00D09E).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Color(0xFF00D09E),
+                            size: 30,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00D09E).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Color(0xFF00D09E),
+                          size: 30,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
               // Name and total achievements
               Expanded(
                 child: Column(

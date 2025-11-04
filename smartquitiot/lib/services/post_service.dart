@@ -10,8 +10,9 @@ import '../models/response/post_list_response.dart';
 import 'dart:io'; // <-- thêm dòng này để dùng SocketException
 
 class PostService {
-  static final String _baseUrl =
-      dotenv.env['API_POSTS_URL'] ?? 'http://localhost:8080/api/posts';
+  static final String _apiBaseUrl =
+      dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+  static final String _baseUrl = '$_apiBaseUrl/posts';
   // static const Duration _timeout = Duration(seconds: 30);
 
   Future<PostListResponse> getLatestPosts({

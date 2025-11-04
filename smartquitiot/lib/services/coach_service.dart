@@ -7,10 +7,11 @@ class CoachService {
 
   Future<List<Coach>> fetchCoaches(String token) async {
     try {
-      final coachUrl = dotenv.env['API_COACH_URL'];
+      final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+      final coachUrl = '$apiBaseUrl/coaches';
 
       final response = await _dio.get(
-        coachUrl!,
+        coachUrl,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 

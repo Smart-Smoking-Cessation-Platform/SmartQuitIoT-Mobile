@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/diary_record.dart';
 import 'package:SmartQuitIoT/models/diary_history.dart';
 import 'package:SmartQuitIoT/models/diary_charts.dart';
+import 'package:SmartQuitIoT/models/diary_create_result.dart';
 import 'package:SmartQuitIoT/repositories/diary_record_repository.dart';
 import 'package:SmartQuitIoT/services/diary_service.dart';
 import 'package:SmartQuitIoT/core/errors/failures.dart';
@@ -64,13 +65,13 @@ final todayDiaryRecordProvider = FutureProvider<DiaryRecord?>((ref) async {
 });
 
 final diaryRecordNotifierProvider =
-    StateNotifierProvider<DiaryRecordNotifier, AsyncValue<void>>((ref) {
+    StateNotifierProvider<DiaryRecordNotifier, AsyncValue<DiaryCreateResult?>>((ref) {
       print('🏗️ Creating DiaryRecordNotifier instance...');
       final repository = ref.watch(diaryRecordRepositoryProvider);
       return DiaryRecordNotifier(repository);
     });
 
-class DiaryRecordNotifier extends StateNotifier<AsyncValue<void>> {
+class DiaryRecordNotifier extends StateNotifier<AsyncValue<DiaryCreateResult?>> {
   final DiaryRecordRepository _repository;
 
   DiaryRecordNotifier(this._repository) : super(const AsyncValue.data(null)) {
@@ -81,9 +82,9 @@ class DiaryRecordNotifier extends StateNotifier<AsyncValue<void>> {
     print('📝 [DiaryRecordNotifier] Starting createDiaryRecord...');
     state = const AsyncValue.loading();
     try {
-      await _repository.createDiaryRecord(request);
-      print('✅ [DiaryRecordNotifier] Diary created successfully!');
-      state = const AsyncValue.data(null);
+      final result = await _repository.createDiaryRecord(request);
+      print('✅ [DiaryRecordNotifier] Diary created with status code: ${result.statusCode}');
+      state = AsyncValue.data(result);
     } on ServerFailure catch (e) {
       print('❌ [DiaryRecordNotifier] ServerFailure: ${e.message}');
       state = AsyncValue.error(e.message, StackTrace.current);

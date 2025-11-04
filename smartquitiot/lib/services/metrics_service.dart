@@ -9,7 +9,7 @@ class MetricsService {
   late final String baseUrl;
 
   MetricsService(this._authRepository) {
-    baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://192.168.110.64:8080';
+    baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
 
     // Setup Dio interceptors
     _dio.interceptors.add(

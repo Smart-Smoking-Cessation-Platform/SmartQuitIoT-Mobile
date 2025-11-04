@@ -14,9 +14,9 @@ class AppointmentService {
 
   /// book appointment: reqBody must be encodable (Map) and returns decoded JSON map on success
   Future<Map<String, dynamic>> bookAppointment(
-      Map<String, dynamic> reqBody,
-      String accessToken,
-      ) async {
+    Map<String, dynamic> reqBody,
+    String accessToken,
+  ) async {
     final url = '$_baseUrl/appointments';
     final headers = {
       'Content-Type': 'application/json',
@@ -50,8 +50,9 @@ class AppointmentService {
           return Map<String, dynamic>.from(body);
         } else {
           final msg =
-          (body['message'] ?? 'Booking failed (server returned success=false)')
-              .toString();
+              (body['message'] ??
+                      'Booking failed (server returned success=false)')
+                  .toString();
           throw Exception(msg);
         }
       } else {
@@ -115,9 +116,9 @@ class AppointmentService {
 
   /// POST join token for an appointment (backend expects POST with no body)
   Future<Map<String, dynamic>> requestJoinToken(
-      int appointmentId,
-      String accessToken,
-      ) async {
+    int appointmentId,
+    String accessToken,
+  ) async {
     final url = '$_baseUrl/appointments/$appointmentId/join-token';
     final headers = {
       'Accept': 'application/json',
@@ -175,7 +176,9 @@ class AppointmentService {
 
     http.Response resp;
     try {
-      resp = await http.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 15));
+      resp = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 15));
     } catch (e) {
       throw Exception('Network error: $e');
     }
@@ -187,7 +190,9 @@ class AppointmentService {
       body = null;
     }
 
-    debugPrint('[AppointmentService] GET $url -> status=${resp.statusCode} body=$body');
+    debugPrint(
+      '[AppointmentService] GET $url -> status=${resp.statusCode} body=$body',
+    );
 
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       // backend expected: { success, message, data: { allowed, used, remaining, periodStart, periodEnd, note } }
@@ -213,11 +218,11 @@ class AppointmentService {
   /// POST rating for an appointment
   /// body: { "star": int(1..5), "content": String (optional) }
   Future<void> rateAppointment(
-      int appointmentId,
-      int rating,
-      String? comment,
-      String accessToken,
-      ) async {
+    int appointmentId,
+    int rating,
+    String? comment,
+    String accessToken,
+  ) async {
     // validate rating
     if (rating < 1 || rating > 5) {
       throw Exception('Rating must be between 1 and 5');
@@ -232,7 +237,8 @@ class AppointmentService {
 
     final body = <String, dynamic>{
       'star': rating,
-      if (comment != null && comment.trim().isNotEmpty) 'content': comment.trim(),
+      if (comment != null && comment.trim().isNotEmpty)
+        'content': comment.trim(),
     };
 
     http.Response resp;
@@ -251,7 +257,9 @@ class AppointmentService {
       parsed = null;
     }
 
-    debugPrint('[AppointmentService] POST $url -> status=${resp.statusCode} body=$parsed');
+    debugPrint(
+      '[AppointmentService] POST $url -> status=${resp.statusCode} body=$parsed',
+    );
 
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       // Accept success either as plain 2xx or wrapper { success: true, data: ... }
@@ -259,7 +267,8 @@ class AppointmentService {
         // if backend returns success flag, ensure it's true
         if (parsed.containsKey('success')) {
           if (parsed['success'] == true) return;
-          final msg = parsed['message']?.toString() ?? 'Failed to submit rating';
+          final msg =
+              parsed['message']?.toString() ?? 'Failed to submit rating';
           throw Exception(msg);
         }
         // if backend returns { data: ... } or plain object, treat as success
@@ -276,7 +285,6 @@ class AppointmentService {
     throw Exception(msg);
   }
 
-
   /// DELETE /appointments/{id} - cancel by member
   Future<void> cancelAppointment(int appointmentId, String accessToken) async {
     final url = '$_baseUrl/appointments/$appointmentId';
@@ -287,7 +295,9 @@ class AppointmentService {
 
     http.Response resp;
     try {
-      resp = await http.delete(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 15));
+      resp = await http
+          .delete(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 15));
     } catch (e) {
       throw Exception('Network error: $e');
     }
@@ -299,15 +309,18 @@ class AppointmentService {
       body = null;
     }
 
-    debugPrint('[AppointmentService] DELETE $url -> status=${resp.statusCode} body=$body');
+    debugPrint(
+      '[AppointmentService] DELETE $url -> status=${resp.statusCode} body=$body',
+    );
 
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       // success
       return;
     }
 
-    final msg = (body is Map && body.containsKey('message')) ? body['message'].toString() : 'Failed to cancel appointment: HTTP ${resp.statusCode}';
+    final msg = (body is Map && body.containsKey('message'))
+        ? body['message'].toString()
+        : 'Failed to cancel appointment: HTTP ${resp.statusCode}';
     throw Exception(msg);
   }
-
 }

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../../../viewmodels/quit_plan_homepage_view_model.dart';
+import '../../../providers/quit_plan_time_provider.dart';
 
 class SmokeFreeTimerCard extends ConsumerStatefulWidget {
   const SmokeFreeTimerCard({super.key});
@@ -18,6 +18,11 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
   @override
   void initState() {
     super.initState();
+    // Load start time from API
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(quitPlanTimeViewModelProvider.notifier).loadStartTime();
+    });
+
     // Update timer every second
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
@@ -36,11 +41,75 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
 
   @override
   Widget build(BuildContext context) {
-    final quitPlanState = ref.watch(quitPlanHomepageViewModelProvider);
-    final quitPlan = quitPlanState.quitPlan;
+    final quitPlanTimeState = ref.watch(quitPlanTimeViewModelProvider);
 
-    // If no quit plan, show empty state
-    if (quitPlan == null) {
+    // Show loading spinner while loading
+    if (quitPlanTimeState.isLoading) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [const Color(0xFF00D09E), const Color(0xFF00BF8F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00D09E).withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            strokeWidth: 3,
+          ),
+        ),
+      );
+    }
+
+    // Show error state if error
+    if (quitPlanTimeState.error != null) {
+      return GestureDetector(
+        onTap: () {
+          ref.read(quitPlanTimeViewModelProvider.notifier).refresh();
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.red[100],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red[700], size: 32),
+              const SizedBox(height: 8),
+              Text(
+                'Error Loading Timer',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tap to retry',
+                style: TextStyle(color: Colors.red[600], fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // If no start time after loading, show empty state
+    if (quitPlanTimeState.startTime == null) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         padding: const EdgeInsets.all(24),
@@ -68,37 +137,22 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
       );
     }
 
-    // Parse dates
-    DateTime? startDate;
-    DateTime? endDate;
-    try {
-      startDate = DateTime.parse(quitPlan.startDateOfQuitPlan);
-      endDate = DateTime.parse(quitPlan.endDate);
-    } catch (e) {
-      print('❌ Error parsing dates: $e');
-    }
-
-    if (startDate == null || endDate == null) {
-      return const SizedBox.shrink();
-    }
+    final startDate = quitPlanTimeState.startTime!;
 
     // Calculate time difference
     final isBeforeStart = _now.isBefore(startDate);
 
     late Duration difference;
     late String title;
-    late Color bgColor;
 
     if (isBeforeStart) {
       // Chưa tới quit plan - COUNTDOWN đến start date
       difference = startDate.difference(_now);
       title = 'Countdown to Quit Plan';
-      bgColor = Color(0xFF00D09E); // Màu xanh lá
     } else {
       // Đã bắt đầu quit plan - Hiển thị TIME SMOKE FREE
       difference = _now.difference(startDate);
       title = 'Time Smoke Free';
-      bgColor = Color(0xFF00D09E); // Màu xanh dương
     }
 
     // Calculate days, hours, minutes, seconds
@@ -108,96 +162,123 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
     final seconds = difference.inSeconds % 60;
 
     // Debug logging
-    print('⏰ [SmokeFreeTimer] Current: $_now');
-    print('📅 [SmokeFreeTimer] Start: $startDate');
-    print('🔍 [SmokeFreeTimer] Before start? $isBeforeStart');
-    print(
-      '⏱️ [SmokeFreeTimer] Time: ${days}d ${hours}h ${minutes}m ${seconds}s',
-    );
-    print('📊 [SmokeFreeTimer] Title: $title');
+    // print('⏰ [SmokeFreeTimer] Current: $_now');
+    // print('📅 [SmokeFreeTimer] Start: $startDate');
+    // print('🔍 [SmokeFreeTimer] Before start? $isBeforeStart');
+    // print(
+    //   '⏱️ [SmokeFreeTimer] Time: ${days}d ${hours}h ${minutes}m ${seconds}s',
+    // );
+    // print('📊 [SmokeFreeTimer] Title: $title');
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [const Color(0xFF00D09E), const Color(0xFF00BF8F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: bgColor.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF00D09E).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
         children: [
-          // Tiêu đề động
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+          // Background pattern với opacity thấp
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Icon(
+              isBeforeStart ? Icons.timer : Icons.smoke_free_rounded,
+              size: 140,
+              color: Colors.white.withOpacity(0.08),
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // Icon + Timer (2x2 Grid)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isBeforeStart ? Icons.timer : Icons.smoke_free,
-                  size: 30,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Time Grid (2x2)
-              Expanded(
-                child: Column(
+          // Main content
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon + Title
+                Row(
                   children: [
-                    // Row 1: Days & Hours
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _TimeColumn(value: days.toString(), label: 'days'.tr()),
-                        _TimeColumn(
-                          value: hours.toString(),
-                          label: 'hours'.tr(),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isBeforeStart
+                            ? Icons.timer_outlined
+                            : Icons.smoke_free_rounded,
+                        size: 28,
+                        color: Colors.white,
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    // Row 2: Minutes & Seconds
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _TimeColumn(
-                          value: minutes.toString(),
-                          label: 'minutes'.tr(),
-                        ),
-                        _TimeColumn(
-                          value: seconds.toString(),
-                          label: 'seconds'.tr(),
-                        ),
-                      ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isBeforeStart
+                                ? 'Your journey begins soon'
+                                : 'You\'re doing amazing!',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 20),
+
+                // Time Grid (2x2) - Đẹp hơn
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _TimeBox(
+                      value: days.toString().padLeft(2, '0'),
+                      label: 'days'.tr(),
+                    ),
+                    _TimeBox(
+                      value: hours.toString().padLeft(2, '0'),
+                      label: 'hours'.tr(),
+                    ),
+                    _TimeBox(
+                      value: minutes.toString().padLeft(2, '0'),
+                      label: 'mins'.tr(),
+                    ),
+                    _TimeBox(
+                      value: seconds.toString().padLeft(2, '0'),
+                      label: 'secs'.tr(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -205,34 +286,46 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
   }
 }
 
-class _TimeColumn extends StatelessWidget {
+class _TimeBox extends StatelessWidget {
   final String value;
   final String label;
 
-  const _TimeColumn({required this.value, required this.label});
+  const _TimeBox({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              height: 1,
+              letterSpacing: 1,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
+          const SizedBox(height: 4),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.85),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

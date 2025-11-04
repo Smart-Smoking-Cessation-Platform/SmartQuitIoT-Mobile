@@ -114,18 +114,18 @@ class SettingsScreen extends ConsumerWidget {
                         title: 'Change smoking data',
                         onTap: () {},
                       ),
-                      _buildSettingItem(
-                        icon: Icons.notifications_outlined,
-                        title: 'Notifications',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NotificationsScreen(),
-                            ),
-                          );
-                        },
-                      ),
+                      // _buildSettingItem(
+                      //   icon: Icons.notifications_outlined,
+                      //   title: 'Notifications',
+                      //   onTap: () {
+                      //     Navigator.push(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => const NotificationsScreen(),
+                      //       ),
+                      //     );
+                      //   },
+                      // ),
                       _buildSettingItem(
                         icon: Icons.card_membership_outlined,
                         title: 'Membership',
@@ -196,16 +196,22 @@ class SettingsScreen extends ConsumerWidget {
                                 TextButton(
                                   onPressed: () async {
                                     Navigator.pop(dialogContext);
-                                    
+
                                     // Disconnect WebSocket before logout
                                     try {
-                                      final websocketManager = ref.read(websocketManagerProvider);
+                                      final websocketManager = ref.read(
+                                        websocketManagerProvider,
+                                      );
                                       await websocketManager.disconnect();
-                                      debugPrint('✅ [SettingsScreen] WebSocket disconnected');
+                                      debugPrint(
+                                        '✅ [SettingsScreen] WebSocket disconnected',
+                                      );
                                     } catch (e) {
-                                      debugPrint('❌ [SettingsScreen] WebSocket disconnect error: $e');
+                                      debugPrint(
+                                        '❌ [SettingsScreen] WebSocket disconnect error: $e',
+                                      );
                                     }
-                                    
+
                                     await ref
                                         .read(authViewModelProvider.notifier)
                                         .logout();
