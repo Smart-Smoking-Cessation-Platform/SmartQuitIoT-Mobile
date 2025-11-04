@@ -140,6 +140,12 @@ class _MeetingScreenState extends State<MeetingScreen> {
     _engine = createAgoraRtcEngine();
     await _engine!.initialize(RtcEngineContext(appId: _agoraAppId));
 
+    // Set channel profile to communication (for video calls)
+    await _engine!.setChannelProfile(ChannelProfileType.channelProfileCommunication);
+    
+    // Set client role to broadcaster (can send and receive)
+    await _engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (connection, elapsed) {
@@ -178,16 +184,38 @@ class _MeetingScreenState extends State<MeetingScreen> {
           debugPrint('[Agora][ERROR] code=$err msg=$msg');
           if (mounted) _showError('Agora error $err: $msg');
         },
+        onLocalVideoStateChanged: (source, state, error) {
+          debugPrint('[Agora] local video state changed: source=$source state=$state error=$error');
+        },
+        onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
+          debugPrint('[Agora] remote video state changed: uid=$remoteUid state=$state reason=$reason');
+        },
+        onFirstLocalVideoFrame: (source, width, height, elapsed) {
+          debugPrint('[Agora] first local video frame: ${width}x$height elapsed=$elapsed');
+        },
+        onFirstRemoteVideoFrame: (connection, remoteUid, width, height, elapsed) {
+          debugPrint('[Agora] first remote video frame: uid=$remoteUid ${width}x$height');
+        },
       ),
     );
 
+    // Configure video settings
     await _engine!.enableVideo();
+    await _engine!.setVideoEncoderConfiguration(
+      const VideoEncoderConfiguration(
+        dimensions: VideoDimensions(width: 640, height: 480),
+        frameRate: 15,
+        bitrate: 800,
+        orientationMode: OrientationMode.orientationModeAdaptive,
+      ),
+    );
 
-    // Start local preview BEFORE join. Use uid = 0 for preview reliability on many devices/emulators.
+    // Start local preview BEFORE join
     try {
       await _engine!.startPreview();
+      debugPrint('[Agora] startPreview() success');
     } catch (e) {
-      debugPrint('startPreview failed: $e');
+      debugPrint('[Agora] startPreview() failed: $e');
     }
 
     // start join timeout
@@ -224,10 +252,17 @@ class _MeetingScreenState extends State<MeetingScreen> {
   Future<void> _toggleCamera() async {
     _cameraOff = !_cameraOff;
     try {
-      if (_cameraOff) await _engine?.disableVideo();
-      else await _engine?.enableVideo();
+      if (_cameraOff) {
+        await _engine?.stopPreview();
+        await _engine?.disableVideo();
+        debugPrint('[Agora] Camera OFF');
+      } else {
+        await _engine?.enableVideo();
+        await _engine?.startPreview();
+        debugPrint('[Agora] Camera ON');
+      }
     } catch (e) {
-      debugPrint('camera toggle error $e');
+      debugPrint('[Agora] camera toggle error: $e');
     }
     if (mounted) setState(() {});
   }
@@ -344,14 +379,47 @@ class _MeetingScreenState extends State<MeetingScreen> {
     if (_engine == null) {
       return const Center(child: Text('Starting preview...'));
     }
-    // use uid 0 for preview (before join). After join use real local uid.
-    final previewUid = _joined ? _localUid : 0;
+    
+    // Show placeholder if camera is off
+    if (_cameraOff) {
+      return Container(
+        color: Colors.black87,
+        child: Stack(
+          children: [
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.videocam_off, size: 48, color: Colors.white38),
+                  SizedBox(height: 8),
+                  Text('Camera Off', style: TextStyle(color: Colors.white70)),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 6,
+              top: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text('You', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // ✅ LUÔN dùng uid = 0 cho local preview (theo Agora docs)
     return Stack(
       children: [
         AgoraVideoView(
           controller: VideoViewController(
             rtcEngine: _engine!,
-            canvas: VideoCanvas(uid: previewUid),
+            canvas: const VideoCanvas(uid: 0),
           ),
         ),
         // small "You" label
