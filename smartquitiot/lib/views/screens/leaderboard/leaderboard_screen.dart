@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/leaderboard_provider.dart';
+import '../../../providers/achievement_refresh_provider.dart';
 import '../../../viewmodels/leaderboard_view_model.dart';
 import 'community_progress_section.dart';
 
@@ -23,6 +24,16 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for achievement refresh triggers
+    ref.listen(achievementRefreshProvider, (previous, next) {
+      if (previous != next) {
+        print(
+          '🔄 [LeaderboardScreen] Achievement refresh triggered, reloading leaderboard...',
+        );
+        ref.read(leaderboardViewModelProvider.notifier).loadTopLeaderBoards();
+      }
+    });
+
     final leaderboardState = ref.watch(leaderboardViewModelProvider);
 
     return Scaffold(

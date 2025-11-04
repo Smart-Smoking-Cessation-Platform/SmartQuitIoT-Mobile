@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../../utils/snackbar_helper.dart';
 import '../../../providers/websocket_provider.dart'; // Import websocket_provider
+import '../../../providers/achievement_provider.dart'; // Import achievement_provider
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
@@ -164,6 +165,12 @@ class HomeHeader extends ConsumerWidget {
               GestureDetector(
                 onTap: () async {
                   await ref.read(authViewModelProvider.notifier).logout();
+                  
+                  // Invalidate all user-specific data providers to clear cache
+                  print('🔄 [HomeHeader] Clearing all user data after logout...');
+                  ref.invalidate(allAchievementsProvider);
+                  ref.invalidate(homeAchievementsProvider);
+                  
                   if (context.mounted) {
                     SnackBarHelper.showSuccess(context, 'Logout successfully!');
                   }

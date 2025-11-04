@@ -51,7 +51,6 @@ class AchievementSection extends StatelessWidget {
               iconUrl: achievement.icon,
               isCompleted: achievement.unlocked,
               progress: null, // API doesn't provide progress yet
-              completedDate: null, // API doesn't provide completed date yet
               categoryColor: sectionColor,
             ),
           ),

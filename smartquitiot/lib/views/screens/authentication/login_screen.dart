@@ -14,6 +14,7 @@ import '../../../models/state/auth_state.dart';
 import '../../../utils/notification_helper.dart';
 import 'package:SmartQuitIoT/providers/user_provider.dart';
 import 'package:SmartQuitIoT/providers/websocket_provider.dart';
+import 'package:SmartQuitIoT/providers/achievement_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -94,6 +95,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           next.accessToken ?? '',
           next.refreshToken ?? '',
         );
+
+        // Clear cached data from previous user
+        debugPrint('🔄 [LoginScreen] Clearing cached data from previous user...');
+        ref.invalidate(allAchievementsProvider);
+        ref.invalidate(homeAchievementsProvider);
 
         // Initialize WebSocket connection
         try {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/services/websocket_service.dart';
 import 'package:SmartQuitIoT/services/local_notification_service.dart';
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
+import 'package:SmartQuitIoT/providers/achievement_refresh_provider.dart';
 import 'package:SmartQuitIoT/models/achievement_notification.dart';
 
 // WebSocket Service Provider
@@ -58,11 +59,15 @@ final websocketManagerProvider = Provider<WebSocketManager>((ref) {
   final notificationsNotifier = ref.watch(
     achievementNotificationsProvider.notifier,
   );
+  final achievementRefreshNotifier = ref.watch(
+    achievementRefreshProvider.notifier,
+  );
 
   return WebSocketManager(
     websocketService,
     localNotificationService,
     notificationsNotifier,
+    achievementRefreshNotifier,
   );
 });
 
@@ -70,12 +75,14 @@ class WebSocketManager {
   final WebSocketService _websocketService;
   final LocalNotificationService _localNotificationService;
   final AchievementNotificationsNotifier _notificationsNotifier;
+  final AchievementRefreshNotifier _achievementRefreshNotifier;
   StreamSubscription<AchievementNotification>? _subscription;
 
   WebSocketManager(
     this._websocketService,
     this._localNotificationService,
     this._notificationsNotifier,
+    this._achievementRefreshNotifier,
   );
 
   Future<void> initialize(int userId) async {
@@ -89,6 +96,16 @@ class WebSocketManager {
 
       // Show local notification
       _localNotificationService.showAchievementNotification(notification);
+
+      // Trigger achievement refresh when notification is received
+      if (notification.type == 'ACHIEVEMENT') {
+        print('🏆 [WebSocketManager] Achievement notification received, triggering refresh...');
+        _achievementRefreshNotifier.refreshOnAchievementUnlocked();
+      } else {
+        // For other types (MISSION, HEALTH, etc.) that might affect achievements
+        print('📊 [WebSocketManager] ${notification.type} notification received, triggering achievement refresh...');
+        _achievementRefreshNotifier.refreshOnProgressUpdate();
+      }
     });
 
     // Connect WebSocket

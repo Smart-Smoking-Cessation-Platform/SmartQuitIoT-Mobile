@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/views/screens/badges/badges_screen.dart';
 import 'package:SmartQuitIoT/providers/achievement_provider.dart';
 import 'package:SmartQuitIoT/providers/websocket_provider.dart';
+import 'package:SmartQuitIoT/providers/achievement_refresh_provider.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:go_router/go_router.dart';
 
 class AchievementsCard extends ConsumerWidget {
   const AchievementsCard({super.key});
@@ -11,8 +13,18 @@ class AchievementsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final achievementsAsync = ref.watch(homeAchievementsProvider);
-    
-    // Listen to achievement notifications and refresh
+
+    // Listen for achievement refresh triggers
+    ref.listen(achievementRefreshProvider, (previous, next) {
+      if (previous != next) {
+        print(
+          '🔄 [AchievementsCard] Refresh triggered, invalidating home achievements provider...',
+        );
+        ref.invalidate(homeAchievementsProvider);
+      }
+    });
+
+    // Keep the old listener for backward compatibility
     ref.listen(achievementNotificationsProvider, (previous, next) {
       if (previous != next && next.isNotEmpty) {
         // Refresh achievements when new achievement is earned
@@ -50,16 +62,13 @@ class AchievementsCard extends ConsumerWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => BadgesScreen()),
-                  );
+                  context.push('/achievement');
                 },
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 12),
+                child: const Padding(
+                  padding: EdgeInsets.only(right: 12),
                   child: Text(
-                    'view_more'.tr(),
-                    style: const TextStyle(
+                    'View more',
+                    style: TextStyle(
                       color: Color(0xFF00D09E),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -86,7 +95,7 @@ class AchievementsCard extends ConsumerWidget {
                   ),
                 );
               }
-              
+
               // Display achievements in 2x2 grid
               return Column(
                 children: [
@@ -156,23 +165,21 @@ class AchievementsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildAchievementBadgeFromData({
-    required achievement,
-  }) {
+  Widget _buildAchievementBadgeFromData({required achievement}) {
     final bool isUnlocked = achievement.unlocked;
     final Color color = _getAchievementTypeColor(achievement.type);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
       decoration: BoxDecoration(
-        color: isUnlocked 
-            ? color.withOpacity(0.15) 
+        color: isUnlocked
+            ? color.withOpacity(0.15)
             : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isUnlocked 
-              ? color.withOpacity(0.4) 
-              : Colors.grey.withOpacity(0.3), 
+          color: isUnlocked
+              ? color.withOpacity(0.4)
+              : Colors.grey.withOpacity(0.3),
           width: isUnlocked ? 2 : 1.2,
         ),
       ),
@@ -203,8 +210,8 @@ class AchievementsCard extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: isUnlocked 
-                      ? const Color(0xFF111827) 
+                  color: isUnlocked
+                      ? const Color(0xFF111827)
                       : Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
@@ -230,11 +237,7 @@ class AchievementsCard extends ConsumerWidget {
             Positioned(
               top: 0,
               right: 0,
-              child: Icon(
-                Icons.lock,
-                size: 20,
-                color: Colors.grey[400],
-              ),
+              child: Icon(Icons.lock, size: 20, color: Colors.grey[400]),
             ),
           // Unlocked badge
           if (isUnlocked)
@@ -243,15 +246,8 @@ class AchievementsCard extends ConsumerWidget {
               right: 0,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check,
-                  size: 12,
-                  color: Colors.white,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: const Icon(Icons.check, size: 12, color: Colors.white),
               ),
             ),
         ],

@@ -6,7 +6,6 @@ class AchievementCard extends StatelessWidget {
   final String iconUrl;
   final bool isCompleted;
   final double? progress;
-  final String? completedDate;
   final Color categoryColor;
   final VoidCallback? onTap;
 
@@ -17,7 +16,6 @@ class AchievementCard extends StatelessWidget {
     required this.iconUrl,
     required this.isCompleted,
     this.progress,
-    this.completedDate,
     required this.categoryColor,
     this.onTap,
   });
@@ -154,9 +152,9 @@ class AchievementCard extends StatelessWidget {
                           size: 18,
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          'Completed on $completedDate',
-                          style: const TextStyle(
+                        const Text(
+                          'Completed',
+                          style: TextStyle(
                             color: Color(0xFF00D09E),
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
