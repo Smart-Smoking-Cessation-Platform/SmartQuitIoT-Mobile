@@ -123,20 +123,21 @@ class _MyAppState extends ConsumerState<MyApp> {
     final body = {
       'code': code,
       'id': id,
-      'cancel': cancel,
+      'cancel': cancel.toString(), // Convert bool to string
       'status': statusStr,
-      'orderCode': orderCodeNum,
+      'orderCode': orderCodeNum.toString(), // Convert int to string
     };
 
     debugPrint('🔗 Deep link received: $uri');
     debugPrint('📦 Payment params: $body');
 
-    // Route immediately without any dialogs to prevent GlobalKey conflicts
+    // Navigate directly to success/cancel screen, API will be called in the screen
     if (cancel || path.contains('failed')) {
       debugPrint('❌ [DeepLink] Payment cancelled/failed, navigating to cancel screen');
       router.go('/payment/cancel', extra: body);
     } else if (membershipStatus == 'AVAILABLE') {
       debugPrint('✅ [DeepLink] Payment successful, navigating to success screen');
+      // Pass payment params to success screen which will call API
       router.go('/payment/success', extra: body);
     } else {
       debugPrint('⚠️ [DeepLink] Unknown payment status, navigating to cancel screen');

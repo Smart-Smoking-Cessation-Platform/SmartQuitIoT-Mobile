@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../../../viewmodels/quit_plan_homepage_view_model.dart';
+import '../../../providers/quit_plan_time_provider.dart';
 
 class SmokeFreeTimerCard extends ConsumerStatefulWidget {
   const SmokeFreeTimerCard({super.key});
@@ -18,6 +18,11 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
   @override
   void initState() {
     super.initState();
+    // Load start time from API
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(quitPlanTimeViewModelProvider.notifier).loadStartTime();
+    });
+
     // Update timer every second
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
@@ -36,20 +41,16 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
 
   @override
   Widget build(BuildContext context) {
-    final quitPlanState = ref.watch(quitPlanHomepageViewModelProvider);
-    final quitPlan = quitPlanState.quitPlan;
+    final quitPlanTimeState = ref.watch(quitPlanTimeViewModelProvider);
 
     // Show loading spinner while loading
-    if (quitPlanState.isLoading) {
+    if (quitPlanTimeState.isLoading) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         padding: const EdgeInsets.all(40),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              const Color(0xFF00D09E),
-              const Color(0xFF00BF8F),
-            ],
+            colors: [const Color(0xFF00D09E), const Color(0xFF00BF8F)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -71,8 +72,44 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
       );
     }
 
-    // If no quit plan after loading, show empty state
-    if (quitPlan == null) {
+    // Show error state if error
+    if (quitPlanTimeState.error != null) {
+      return GestureDetector(
+        onTap: () {
+          ref.read(quitPlanTimeViewModelProvider.notifier).refresh();
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.red[100],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red[700], size: 32),
+              const SizedBox(height: 8),
+              Text(
+                'Error Loading Timer',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tap to retry',
+                style: TextStyle(color: Colors.red[600], fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // If no start time after loading, show empty state
+    if (quitPlanTimeState.startTime == null) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         padding: const EdgeInsets.all(24),
@@ -100,19 +137,7 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
       );
     }
 
-    // Parse dates
-    DateTime? startDate;
-    DateTime? endDate;
-    try {
-      startDate = DateTime.parse(quitPlan.startDateOfQuitPlan);
-      endDate = DateTime.parse(quitPlan.endDate);
-    } catch (e) {
-      print('❌ Error parsing dates: $e');
-    }
-
-    if (startDate == null || endDate == null) {
-      return const SizedBox.shrink();
-    }
+    final startDate = quitPlanTimeState.startTime!;
 
     // Calculate time difference
     final isBeforeStart = _now.isBefore(startDate);
@@ -137,21 +162,18 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
     final seconds = difference.inSeconds % 60;
 
     // Debug logging
-    print('⏰ [SmokeFreeTimer] Current: $_now');
-    print('📅 [SmokeFreeTimer] Start: $startDate');
-    print('🔍 [SmokeFreeTimer] Before start? $isBeforeStart');
-    print(
-      '⏱️ [SmokeFreeTimer] Time: ${days}d ${hours}h ${minutes}m ${seconds}s',
-    );
-    print('📊 [SmokeFreeTimer] Title: $title');
+    // print('⏰ [SmokeFreeTimer] Current: $_now');
+    // print('📅 [SmokeFreeTimer] Start: $startDate');
+    // print('🔍 [SmokeFreeTimer] Before start? $isBeforeStart');
+    // print(
+    //   '⏱️ [SmokeFreeTimer] Time: ${days}d ${hours}h ${minutes}m ${seconds}s',
+    // );
+    // print('📊 [SmokeFreeTimer] Title: $title');
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFF00D09E),
-            const Color(0xFF00BF8F),
-          ],
+          colors: [const Color(0xFF00D09E), const Color(0xFF00BF8F)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -176,7 +198,7 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
               color: Colors.white.withOpacity(0.08),
             ),
           ),
-          
+
           // Main content
           Padding(
             padding: const EdgeInsets.all(20),
@@ -193,7 +215,9 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        isBeforeStart ? Icons.timer_outlined : Icons.smoke_free_rounded,
+                        isBeforeStart
+                            ? Icons.timer_outlined
+                            : Icons.smoke_free_rounded,
                         size: 28,
                         color: Colors.white,
                       ),
@@ -214,7 +238,9 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            isBeforeStart ? 'Your journey begins soon' : 'You\'re doing amazing!',
+                            isBeforeStart
+                                ? 'Your journey begins soon'
+                                : 'You\'re doing amazing!',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 12,
@@ -233,10 +259,22 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _TimeBox(value: days.toString().padLeft(2, '0'), label: 'days'.tr()),
-                    _TimeBox(value: hours.toString().padLeft(2, '0'), label: 'hours'.tr()),
-                    _TimeBox(value: minutes.toString().padLeft(2, '0'), label: 'mins'.tr()),
-                    _TimeBox(value: seconds.toString().padLeft(2, '0'), label: 'secs'.tr()),
+                    _TimeBox(
+                      value: days.toString().padLeft(2, '0'),
+                      label: 'days'.tr(),
+                    ),
+                    _TimeBox(
+                      value: hours.toString().padLeft(2, '0'),
+                      label: 'hours'.tr(),
+                    ),
+                    _TimeBox(
+                      value: minutes.toString().padLeft(2, '0'),
+                      label: 'mins'.tr(),
+                    ),
+                    _TimeBox(
+                      value: seconds.toString().padLeft(2, '0'),
+                      label: 'secs'.tr(),
+                    ),
                   ],
                 ),
               ],
@@ -261,10 +299,7 @@ class _TimeBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

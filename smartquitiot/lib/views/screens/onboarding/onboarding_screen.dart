@@ -851,7 +851,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   // Step 1: Analyzing (0-25%) - 45s
                                   _animateProgress(0, 0.25, _steps[0]);
                                   await Future.delayed(
-                                    const Duration(seconds: 10),
+                                    const Duration(seconds: 8),
                                   );
 
                                   // Step 2: Creating missions (25-50%) - 50s
@@ -863,7 +863,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 10),
+                                    const Duration(seconds: 8),
                                   );
 
                                   // Step 3: Building phases (50-75%) - 55s
@@ -875,7 +875,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 10),
+                                    const Duration(seconds: 8),
                                   );
 
                                   // Step 4: Finalizing (75-100%) - 50s
@@ -887,7 +887,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 10),
+                                    const Duration(seconds: 8),
                                   );
 
                                   // NOW await API call to ensure it completes
@@ -911,7 +911,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     );
                                   }
                                   await Future.delayed(
-                                    const Duration(seconds: 10),
+                                    const Duration(seconds: 8),
                                   );
 
                                   // Stop timers

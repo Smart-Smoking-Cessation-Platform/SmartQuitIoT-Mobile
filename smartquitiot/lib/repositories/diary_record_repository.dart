@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:SmartQuitIoT/models/diary_record.dart';
 import 'package:SmartQuitIoT/models/diary_history.dart';
 import 'package:SmartQuitIoT/models/diary_charts.dart';
+import 'package:SmartQuitIoT/models/diary_create_result.dart';
 import 'package:SmartQuitIoT/core/errors/failures.dart';
 import '../services/diary_service.dart';
 import '../repositories/auth_repository.dart';
@@ -13,17 +14,43 @@ class DiaryRecordRepository {
   DiaryRecordRepository(this._authRepository, this._diaryService);
 
   /// Create diary record
-  Future<DiaryRecord> createDiaryRecord(DiaryRecordRequest request) async {
+  Future<DiaryCreateResult> createDiaryRecord(DiaryRecordRequest request) async {
     try {
       print('📝 Creating diary record...');
       final response = await _diaryService.createDiaryRecord(request);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ Diary created successfully, parsing response...');
+        print('✅ Diary API call successful, checking response...');
         try {
-          final diaryRecord = DiaryRecord.fromJson(response.data);
+          // Parse response structure
+          final dataMap = response.data is Map ? response.data : {};
+          final recordData = dataMap['data'] ?? response.data;
+          final customCode = dataMap['code'] as int?; // Check custom code field
+          final message = dataMap['message'] as String?;
+          
+          print('📊 Response code field: $customCode');
+          print('📝 Response message: $message');
+          
+          // Check if custom code is 209 (smoked during quit plan)
+          if (customCode == 209) {
+            print('⚠️ User smoked during quit plan (code: 209)');
+            final diaryRecord = DiaryRecord.fromJson(recordData);
+            print('✅ Parsed diary record with ID: ${diaryRecord.id}');
+            return DiaryCreateResult(
+              diaryRecord: diaryRecord,
+              statusCode: 209,
+              message: message ?? 'Oh no you have smoked when you on quit plan!',
+            );
+          }
+          
+          // Normal success (code 200 or null)
+          final diaryRecord = DiaryRecord.fromJson(recordData);
           print('✅ Successfully parsed DiaryRecord with ID: ${diaryRecord.id}');
-          return diaryRecord;
+          return DiaryCreateResult(
+            diaryRecord: diaryRecord,
+            statusCode: customCode ?? response.statusCode ?? 200,
+            message: message,
+          );
         } catch (parseError) {
           print('❌ JSON Parsing Error: $parseError');
           print('❌ Response data: ${response.data}');
@@ -36,7 +63,33 @@ class DiaryRecordRepository {
       }
     } on DioException catch (e) {
       print('❌ DioException during create diary: ${e.message}');
-      print('❌ Status code: ${e.response?.statusCode}');
+      print('❌ HTTP Status code: ${e.response?.statusCode}');
+      
+      // Check if response has custom code 209 in body
+      if (e.response?.statusCode == 200 || e.response?.statusCode == 201) {
+        try {
+          final dataMap = e.response?.data is Map ? e.response!.data : {};
+          final customCode = dataMap['code'] as int?;
+          
+          if (customCode == 209) {
+            print('⚠️ DioException with code 209 - User smoked during quit plan');
+            final recordData = dataMap['data'];
+            final message = dataMap['message'] ?? 'Oh no you have smoked when you on quit plan!';
+            
+            if (recordData != null) {
+              final diaryRecord = DiaryRecord.fromJson(recordData);
+              return DiaryCreateResult(
+                diaryRecord: diaryRecord,
+                statusCode: 209,
+                message: message,
+              );
+            }
+          }
+        } catch (parseError) {
+          print('❌ Failed to parse response from DioException: $parseError');
+        }
+      }
+      
       throw ServerFailure(_handleDioError(e));
     } catch (e) {
       print('❌ Unexpected error during create diary: $e');

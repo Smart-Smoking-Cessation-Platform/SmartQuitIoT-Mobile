@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/membership_provider.dart';
+import '../../../models/membership_subscription.dart';
 
-class PaymentSuccessScreen extends ConsumerWidget {
+class PaymentSuccessScreen extends ConsumerStatefulWidget {
   final String? code;
   final String? id;
   final String? status;
@@ -29,23 +30,108 @@ class PaymentSuccessScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PaymentSuccessScreen> createState() =>
+      _PaymentSuccessScreenState();
+}
+
+class _PaymentSuccessScreenState extends ConsumerState<PaymentSuccessScreen> {
+  MembershipSubscription? _subscription;
+  bool _isProcessingApi = true;
+  String? _apiError;
+
+  @override
+  void initState() {
+    super.initState();
+    // Delay to ensure context is ready and avoid crash
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _processPaymentApi();
+      }
+    });
+  }
+
+  Future<void> _processPaymentApi() async {
+    try {
+      print('🔄 [PaymentSuccess] Payment already processed by backend webhook');
+      print(
+        '🔄 [PaymentSuccess] Fetching current membership to unlock features...',
+      );
+
+      // Backend webhook already processed payment and updated database
+      // We just need to fetch current subscription to get full details and unlock features
+      await Future.delayed(const Duration(seconds: 1)); // Small delay for UX
+
+      // Trigger fetch (returns void, updates provider state)
+      await ref
+          .read(currentSubscriptionProvider.notifier)
+          .fetchCurrentSubscription();
+
+      // Read subscription from provider state
+      final subscriptionAsync = ref.read(currentSubscriptionProvider);
+      final subscription = subscriptionAsync.value;
+
+      print('✅ [PaymentSuccess] Membership fetched successfully');
+      print(
+        '📊 [PaymentSuccess] Package: ${subscription?.membershipPackage?.name}',
+      );
+
+      if (mounted) {
+        setState(() {
+          _subscription = subscription;
+          _isProcessingApi = false;
+        });
+        print('✅ [PaymentSuccess] UI updated with success state');
+      }
+    } catch (e, stackTrace) {
+      print('❌ [PaymentSuccess] Error fetching membership: $e');
+      print('🧩 [PaymentSuccess] Stack trace: $stackTrace');
+
+      // Even if fetch fails, payment was successful (shown in UI)
+      // User can manually refresh or restart app
+      if (mounted) {
+        setState(() {
+          _apiError =
+              'Could not fetch membership details. Please restart the app to see your premium features.';
+          _isProcessingApi = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Get data from constructor or ModalRoute
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     // Get PayOS params
-    final displayCode = code ?? args?['code']?.toString() ?? '';
-    final displayId = id ?? args?['id']?.toString() ?? '';
-    final displayStatus = status ?? args?['status']?.toString() ?? '';
-    final displayOrderCode = orderCode ?? args?['orderCode']?.toString() ?? '';
+    final displayCode = widget.code ?? args?['code']?.toString() ?? '';
+    final displayId = widget.id ?? args?['id']?.toString() ?? '';
+    final displayStatus = widget.status ?? args?['status']?.toString() ?? '';
+    final displayOrderCode =
+        widget.orderCode ?? args?['orderCode']?.toString() ?? '';
 
-    // Optional fields (may not be available from PayOS)
+    // Optional fields - prefer API data from subscription, fallback to params
     final displayPackageName =
-        packageName ?? args?['packageName']?.toString() ?? 'Premium Membership';
-    final displayAmount = amount ?? args?['amount']?.toString() ?? '';
-    final displayStartDate = startDate ?? args?['startDate']?.toString() ?? '';
-    final displayEndDate = endDate ?? args?['endDate']?.toString() ?? '';
+        _subscription?.membershipPackage?.name ??
+        widget.packageName ??
+        args?['packageName']?.toString() ??
+        'Premium Membership';
+    final displayAmount =
+        _subscription?.totalAmount?.toString() ??
+        widget.amount ??
+        args?['amount']?.toString() ??
+        '';
+    final displayStartDate =
+        _subscription?.startDate?.toString() ??
+        widget.startDate ??
+        args?['startDate']?.toString() ??
+        '';
+    final displayEndDate =
+        _subscription?.endDate?.toString() ??
+        widget.endDate ??
+        args?['endDate']?.toString() ??
+        '';
 
     // Format amount if available
     String formattedAmount = '';
@@ -81,16 +167,19 @@ class PaymentSuccessScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF00D09E),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Success Icon
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                      // Success Icon or Loading
                       Container(
                         width: 120,
                         height: 120,
@@ -105,18 +194,35 @@ class PaymentSuccessScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          color: Color(0xFF4CAF50),
-                          size: 60,
-                        ),
+                        child: _isProcessingApi
+                            ? const Padding(
+                                padding: EdgeInsets.all(30),
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF00D09E),
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                _apiError != null
+                                    ? Icons.warning_rounded
+                                    : Icons.check_rounded,
+                                color: _apiError != null
+                                    ? Colors.orange
+                                    : const Color(0xFF4CAF50),
+                                size: 60,
+                              ),
                       ),
                       const SizedBox(height: 40),
 
                       // Title
-                      const Text(
-                        'Payment Successful!',
-                        style: TextStyle(
+                      Text(
+                        _isProcessingApi
+                            ? 'Processing Payment...'
+                            : _apiError != null
+                            ? 'Payment Received'
+                            : 'Payment Successful!',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -124,7 +230,11 @@ class PaymentSuccessScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Your premium membership has been activated successfully.',
+                        _isProcessingApi
+                            ? 'Please wait while we confirm your payment with the server...'
+                            : _apiError != null
+                            ? 'Payment received. Your membership will be activated shortly.'
+                            : 'Your premium membership has been activated successfully.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
@@ -132,6 +242,51 @@ class PaymentSuccessScreen extends ConsumerWidget {
                           height: 1.4,
                         ),
                       ),
+                      if (_apiError != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(0.5),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                '⚠️ API Connection Issue',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Your payment was successful, but we couldn\'t update your membership status. Please contact support or try refreshing.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 12,
+                                  height: 1.3,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Error: ${_apiError?.split(':').first ?? 'Unknown error'}',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 32),
 
                       // Payment Details Card
@@ -227,32 +382,38 @@ class PaymentSuccessScreen extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            print(
-                              '🔄 [PaymentSuccess] Refreshing membership to unlock features...',
-                            );
+                          onPressed: _isProcessingApi
+                              ? null
+                              : () async {
+                                  print(
+                                    '🔄 [PaymentSuccess] Final membership refresh before navigation...',
+                                  );
 
-                            try {
-                              // Await refresh to ensure features are unlocked before navigation
-                              await ref
-                                  .read(currentSubscriptionProvider.notifier)
-                                  .fetchCurrentSubscription();
-                              print(
-                                '✅ [PaymentSuccess] Membership refreshed successfully',
-                              );
-                            } catch (e) {
-                              print(
-                                '⚠️ [PaymentSuccess] Refresh error (ignoring): $e',
-                              );
-                              // Continue anyway - user can try again later
-                            }
+                                  try {
+                                    // Final refresh to ensure features are unlocked
+                                    await ref
+                                        .read(
+                                          currentSubscriptionProvider.notifier,
+                                        )
+                                        .fetchCurrentSubscription();
+                                    print(
+                                      '✅ [PaymentSuccess] Membership refreshed successfully',
+                                    );
+                                  } catch (e) {
+                                    print(
+                                      '⚠️ [PaymentSuccess] Refresh error (ignoring): $e',
+                                    );
+                                    // Continue anyway - user can try again later
+                                  }
 
-                            // Navigate to home with unlocked features
-                            if (context.mounted) {
-                              print('🏠 [PaymentSuccess] Navigating to home');
-                              context.go('/main');
-                            }
-                          },
+                                  // Navigate to home with unlocked features
+                                  if (context.mounted) {
+                                    print(
+                                      '🏠 [PaymentSuccess] Navigating to home',
+                                    );
+                                    context.go('/main');
+                                  }
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: Colors.black,
@@ -261,22 +422,34 @@ class PaymentSuccessScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 2,
-                          ),
-                          child: const Text(
-                            'Back to Home',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                            disabledBackgroundColor: Colors.white.withOpacity(
+                              0.5,
                             ),
                           ),
+                          child: _isProcessingApi
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.black54,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Back to Home',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

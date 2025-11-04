@@ -5,6 +5,7 @@ import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
 import 'package:SmartQuitIoT/providers/metrics_provider.dart';
 import 'package:SmartQuitIoT/providers/diary_refresh_provider.dart';
 import 'package:SmartQuitIoT/models/diary_record.dart';
+import 'package:SmartQuitIoT/views/widgets/dialogs/smoked_again_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:health/health.dart';
 
@@ -944,44 +945,74 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
 
     final state = ref.read(diaryRecordNotifierProvider);
     state.whenOrNull(
-      data: (_) {
-        // Trigger metrics refresh after successful diary creation
-        ref.read(metricsRefreshProvider.notifier).refreshMetrics();
+      data: (result) {
+        if (result == null) return;
 
-        // Trigger diary charts refresh to update analytics
-        ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
-
-        // Trigger diary history refresh to update history list
-        ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
-        print('✅ [CreateDiary] Triggered diary history refresh');
-
-        if (!mounted) return;
-
-        // Show success flushbar
-        Flushbar(
-          message: '🎉 Diary saved successfully!',
-          icon: const Icon(Icons.check_circle, size: 28, color: Colors.white),
-          margin: const EdgeInsets.all(16),
-          borderRadius: BorderRadius.circular(16),
-          backgroundColor: const Color(0xFF4CAF50),
-          duration: const Duration(seconds: 2),
-          flushbarPosition: FlushbarPosition.TOP,
-          forwardAnimationCurve: Curves.easeOutBack,
-          reverseAnimationCurve: Curves.easeIn,
-          boxShadows: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          onStatusChanged: (status) {
-            // Navigate back after flushbar is dismissed
-            if (status == FlushbarStatus.DISMISSED && mounted) {
+        // Check if user smoked during quit plan (HTTP 209)
+        if (result.isSmokedDuringQuitPlan) {
+          print('⚠️ [CreateDiary] User smoked during quit plan, showing dialog...');
+          
+          // Trigger refreshes even for 209 response
+          ref.read(metricsRefreshProvider.notifier).refreshMetrics();
+          ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+          ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+          
+          if (!mounted) return;
+          
+          // Show the "Smoked Again" dialog
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const SmokedAgainDialog(),
+          ).then((_) {
+            // After dialog is dismissed, navigate back
+            if (mounted) {
               Navigator.of(context).pop();
             }
-          },
-        ).show(context);
+          });
+          return;
+        }
+
+        // Normal success case (200/201)
+        if (result.isSuccess) {
+          // Trigger metrics refresh after successful diary creation
+          ref.read(metricsRefreshProvider.notifier).refreshMetrics();
+
+          // Trigger diary charts refresh to update analytics
+          ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+
+          // Trigger diary history refresh to update history list
+          ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+          print('✅ [CreateDiary] Triggered diary history refresh');
+
+          if (!mounted) return;
+
+          // Show success flushbar
+          Flushbar(
+            message: '🎉 Diary saved successfully!',
+            icon: const Icon(Icons.check_circle, size: 28, color: Colors.white),
+            margin: const EdgeInsets.all(16),
+            borderRadius: BorderRadius.circular(16),
+            backgroundColor: const Color(0xFF4CAF50),
+            duration: const Duration(seconds: 2),
+            flushbarPosition: FlushbarPosition.TOP,
+            forwardAnimationCurve: Curves.easeOutBack,
+            reverseAnimationCurve: Curves.easeIn,
+            boxShadows: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            onStatusChanged: (status) {
+              // Navigate back after flushbar is dismissed
+              if (status == FlushbarStatus.DISMISSED && mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+          ).show(context);
+        }
       },
       error: (error, _) {
         if (!mounted) return;
