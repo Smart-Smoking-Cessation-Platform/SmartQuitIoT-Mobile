@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/phase.dart';
@@ -13,10 +12,7 @@ class QuitPlanService {
 
   final TokenStorageService _tokenStorageService = TokenStorageService();
 
-  QuitPlanService({required this.token})
-    : baseUrl =
-          dotenv.env['API_QUIT_PLAN_URL'] ??
-          'http://localhost:8080/api/quit-plan';
+  QuitPlanService({required this.token, required this.baseUrl});
 
   Future<Phase> createQuitPlan(CreateQuitPlanRequest request) async {
     final response = await http.post(

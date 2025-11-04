@@ -9,7 +9,7 @@ class CoachRepository {
   final http.Client _client;
   final TokenStorageService _tokenService = TokenStorageService();
   final String _baseUrl =
-      dotenv.env['API_COACH_URL'] ?? 'http://10.0.2.2:8080/api/coaches';
+      '${dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080'}/coaches';
 
   CoachRepository({http.Client? client}) : _client = client ?? http.Client();
 

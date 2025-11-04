@@ -24,6 +24,8 @@ import 'package:SmartQuitIoT/views/screens/quitplans/quit_plan_screen.dart';
 import 'package:SmartQuitIoT/views/screens/achievements/achievement_screen.dart';
 import 'package:SmartQuitIoT/views/screens/leaderboard/leaderboard_screen.dart';
 import '../../../providers/membership_provider.dart';
+import '../../../providers/websocket_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../models/membership_subscription.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
@@ -36,6 +38,60 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _currentIndex = 0;
+  bool _websocketInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize WebSocket when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeWebSocket();
+    });
+  }
+
+  Future<void> _initializeWebSocket() async {
+    if (_websocketInitialized) return;
+
+    try {
+      // Get user profile to retrieve userId
+      final userProfile = await ref.read(userProfileProvider.future);
+
+      if (userProfile != null) {
+        final userId = userProfile.id;
+        debugPrint(
+          '🔌 [MainNavigation] Initializing WebSocket for user: $userId',
+        );
+
+        // Initialize WebSocket manager
+        final websocketManager = ref.read(websocketManagerProvider);
+        await websocketManager.initialize(userId);
+
+        _websocketInitialized = true;
+        debugPrint('✅ [MainNavigation] WebSocket initialized successfully');
+      } else {
+        debugPrint(
+          '⚠️ [MainNavigation] Cannot initialize WebSocket - no user profile',
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('❌ [MainNavigation] Failed to initialize WebSocket: $e');
+      debugPrint('📚 [MainNavigation] Stack trace: $stack');
+    }
+  }
+
+  @override
+  void dispose() {
+    // Disconnect WebSocket when screen is disposed
+    if (_websocketInitialized) {
+      try {
+        ref.read(websocketManagerProvider).disconnect();
+        debugPrint('🔴 [MainNavigation] WebSocket disconnected');
+      } catch (e) {
+        debugPrint('⚠️ [MainNavigation] Error disconnecting WebSocket: $e');
+      }
+    }
+    super.dispose();
+  }
 
   /// Danh sách các màn hình con
   List<Widget> _buildScreens(MembershipSubscription? subscription) {

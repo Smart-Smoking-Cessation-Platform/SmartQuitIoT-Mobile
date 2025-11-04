@@ -5,9 +5,9 @@ import 'token_storage_service.dart';
 
 class MembershipApiService {
   final TokenStorageService _tokenStorageService = TokenStorageService();
-  final String _baseUrl =
-      dotenv.env['API_MEMBERSHIP_URL'] ??
-      'http://10.0.2.2:8080/api/membership-packages';
+  final String _apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+  late final String _baseUrl = '$_apiBaseUrl/membership-packages';
+  
   Future<http.Response> getMembershipPackages() async {
     final uri = Uri.parse(_baseUrl);
     try {
@@ -84,8 +84,7 @@ class MembershipApiService {
   }
 
   Future<http.Response> getCurrentSubscription() async {
-    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8080';
-    final uri = Uri.parse('$baseUrl/membership-subscriptions/current');
+    final uri = Uri.parse('$_apiBaseUrl/membership-subscriptions/current');
 
     try {
       final accessToken = await _tokenStorageService.getAccessToken();

@@ -76,7 +76,9 @@ class ChatbotService {
       return;
     }
 
-    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+    // Get base URL - keep /api if present, backend might need /api/ws
+    var baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+
     final wsUrl = baseUrl
         .replaceFirst('http://', 'ws://')
         .replaceFirst('https://', 'wss://');
@@ -96,12 +98,16 @@ class ChatbotService {
 
             // Subscribe to chatbot topic
             final subscribeDestination = '/topic/chatbot/$_memberId';
-            debugPrint('🔔 [ChatbotService] Subscribing to: $subscribeDestination');
-            
+            debugPrint(
+              '🔔 [ChatbotService] Subscribing to: $subscribeDestination',
+            );
+
             _stompClient!.subscribe(
               destination: subscribeDestination,
               callback: (StompFrame frame) {
-                debugPrint('📬 [ChatbotService] Frame received! Body is null: ${frame.body == null}');
+                debugPrint(
+                  '📬 [ChatbotService] Frame received! Body is null: ${frame.body == null}',
+                );
                 if (frame.body != null) {
                   try {
                     debugPrint(
@@ -113,10 +119,14 @@ class ChatbotService {
                     debugPrint('✅ [ChatbotService] Message added to stream');
                   } catch (e) {
                     debugPrint('❌ [ChatbotService] Error parsing message: $e');
-                    debugPrint('🧩 [ChatbotService] Stack: ${StackTrace.current}');
+                    debugPrint(
+                      '🧩 [ChatbotService] Stack: ${StackTrace.current}',
+                    );
                   }
                 } else {
-                  debugPrint('⚠️ [ChatbotService] Received frame with null body');
+                  debugPrint(
+                    '⚠️ [ChatbotService] Received frame with null body',
+                  );
                 }
               },
             );
@@ -171,19 +181,20 @@ class ChatbotService {
 
     final payload = {
       'memberId': _memberId,
-      'message': text,  // ← Changed from 'text' to 'message' to match backend DTO
-      if (media != null && media.isNotEmpty) 'media': media.map((m) => m.toJson()).toList(),
+      'message':
+          text, // ← Changed from 'text' to 'message' to match backend DTO
+      if (media != null && media.isNotEmpty)
+        'media': media.map((m) => m.toJson()).toList(),
     };
 
     debugPrint('📦 [ChatbotService] Full payload: ${jsonEncode(payload)}');
 
-    _stompClient!.send(
-      destination: '/app/chatbot',
-      body: jsonEncode(payload),
-    );
+    _stompClient!.send(destination: '/app/chatbot', body: jsonEncode(payload));
 
     debugPrint('✅ [ChatbotService] Message sent successfully to backend');
-    debugPrint('⏳ [ChatbotService] Waiting for response on /topic/chatbot/$_memberId...');
+    debugPrint(
+      '⏳ [ChatbotService] Waiting for response on /topic/chatbot/$_memberId...',
+    );
   }
 
   void _scheduleReconnect() {

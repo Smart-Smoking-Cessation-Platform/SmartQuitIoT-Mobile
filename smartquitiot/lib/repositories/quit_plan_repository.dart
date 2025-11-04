@@ -21,7 +21,9 @@ class QuitPlanRepository {
         throw Exception('Access token not found. Please login again.');
       }
 
-      final serviceWithToken = QuitPlanService(token: token);
+      final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+      final baseUrl = '$apiBaseUrl/quit-plan';
+      final serviceWithToken = QuitPlanService(token: token, baseUrl: baseUrl);
       return await serviceWithToken.createQuitPlan(request);
     } catch (e) {
       throw Exception('Failed to create quit plan: ${e.toString()}');
@@ -30,9 +32,8 @@ class QuitPlanRepository {
 
   Future<Map<String, dynamic>> getQuitPlan() async {
     // Direct API call from repository (skip service as requested)
-    final baseUrl =
-        dotenv.env['API_QUIT_PLAN_URL'] ??
-        'http://localhost:8080/api/quit-plan';
+    final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+    final baseUrl = '$apiBaseUrl/quit-plan';
 
     // Try include token if available, but don't block if none (support local dev)
     String? token;

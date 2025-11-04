@@ -22,16 +22,26 @@ class AchievementNotification {
   });
 
   factory AchievementNotification.fromJson(Map<String, dynamic> json) {
+    // Support both 'type' and 'notificationType' from backend
+    final typeValue = json['type'] as String? ?? 
+                      json['notificationType'] as String? ?? 
+                      'ACHIEVEMENT';
+    
+    // Parse createdAt with fallback to current time
+    final createdAtValue = json['createdAt'] != null 
+        ? DateTime.parse(json['createdAt'] as String)
+        : DateTime.now();
+    
     return AchievementNotification(
       id: json['id'] as int,
-      type: json['type'] as String,
+      type: typeValue,
       title: json['title'] as String,
       content: json['content'] as String,
       icon: json['icon'] as String?,
       url: json['url'] as String?,
       deepLink: json['deepLink'] as String?,
       isRead: json['isRead'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: createdAtValue,
     );
   }
 

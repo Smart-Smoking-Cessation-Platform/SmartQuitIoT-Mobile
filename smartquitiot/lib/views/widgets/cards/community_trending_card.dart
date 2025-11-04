@@ -40,9 +40,9 @@ class _CommunityTrendingCardState extends State<CommunityTrendingCard> {
         throw Exception('Access token not found. Please login again.');
       }
 
-      final baseUrl = dotenv.env['API_POSTS_URL'] ?? 'http://10.0.2.2:8080/api';
+      final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
       final res = await http.get(
-        Uri.parse('$baseUrl/latest?limit=5'),
+        Uri.parse('$apiBaseUrl/posts/latest?limit=5'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
