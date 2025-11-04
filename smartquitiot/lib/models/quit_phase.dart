@@ -49,6 +49,10 @@ class QuitPhaseDetail {
   final String? startDate;
   final String? endDate;
   final int? durationDay;
+  final double? avgCravingLevel;
+  final double? avgCigarettes;
+  final double? fmCigarettesTotal;
+  final PhaseCondition? condition;
 
   QuitPhaseDetail({
     this.id,
@@ -61,6 +65,10 @@ class QuitPhaseDetail {
     this.startDate,
     this.endDate,
     this.durationDay,
+    this.avgCravingLevel,
+    this.avgCigarettes,
+    this.fmCigarettesTotal,
+    this.condition,
   });
 
   factory QuitPhaseDetail.fromJson(Map<String, dynamic> json) {
@@ -77,6 +85,12 @@ class QuitPhaseDetail {
       startDate: json['startDate'] as String?,
       endDate: json['endDate'] as String?,
       durationDay: json['durationDay'] as int?,
+      avgCravingLevel: (json['avg_craving_level'] as num?)?.toDouble(),
+      avgCigarettes: (json['avg_cigarettes'] as num?)?.toDouble(),
+      fmCigarettesTotal: (json['fm_cigarettes_total'] as num?)?.toDouble(),
+      condition: json['condition'] != null
+          ? PhaseCondition.fromJson(json['condition'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
@@ -126,5 +140,73 @@ class QuitMissionItem {
       description: json['description'] as String?,
       status: json['status'] as String?,
     );
+  }
+}
+
+class PhaseCondition {
+  final String? logic;
+  final List<PhaseRule>? rules;
+
+  PhaseCondition({
+    this.logic,
+    this.rules,
+  });
+
+  factory PhaseCondition.fromJson(Map<String, dynamic> json) {
+    return PhaseCondition(
+      logic: json['logic'] as String?,
+      rules: (json['rules'] as List<dynamic>?)
+          ?.map((rule) => PhaseRule.fromJson(rule as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'logic': logic,
+      'rules': rules?.map((rule) => rule.toJson()).toList(),
+    };
+  }
+}
+
+class PhaseRule {
+  final String? field;
+  final dynamic value;
+  final String? operator;
+  final String? logic; // for nested rules
+  final List<PhaseRule>? rules; // for nested rules
+  final Map<String, dynamic>? formula; // for formula-based rules
+
+  PhaseRule({
+    this.field,
+    this.value,
+    this.operator,
+    this.logic,
+    this.rules,
+    this.formula,
+  });
+
+  factory PhaseRule.fromJson(Map<String, dynamic> json) {
+    return PhaseRule(
+      field: json['field'] as String?,
+      value: json['value'],
+      operator: json['operator'] as String?,
+      logic: json['logic'] as String?,
+      rules: (json['rules'] as List<dynamic>?)
+          ?.map((rule) => PhaseRule.fromJson(rule as Map<String, dynamic>))
+          .toList(),
+      formula: json['formula'] as Map<String, dynamic>?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (field != null) 'field': field,
+      if (value != null) 'value': value,
+      if (operator != null) 'operator': operator,
+      if (logic != null) 'logic': logic,
+      if (rules != null) 'rules': rules?.map((rule) => rule.toJson()).toList(),
+      if (formula != null) 'formula': formula,
+    };
   }
 }
