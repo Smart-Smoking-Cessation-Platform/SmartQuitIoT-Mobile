@@ -1,9 +1,11 @@
+// models/coach.dart
 class Coach {
   final int id;
   final String firstName;
   final String lastName;
   final String avatarUrl;
   final double ratingAvg;
+  final int? accountId; // NEW: id của account (dùng để tạo conversation / gửi message)
 
   Coach({
     required this.id,
@@ -11,17 +13,21 @@ class Coach {
     required this.lastName,
     required this.avatarUrl,
     required this.ratingAvg,
+    this.accountId,
   });
 
   String get fullName => '$firstName $lastName';
 
   factory Coach.fromJson(Map<String, dynamic> json) {
     return Coach(
-      id: json['id'] as int,
-      firstName: json['firstName'] as String,
-      lastName: json['lastName'] as String,
-      avatarUrl: json['avatarUrl'] as String,
-      ratingAvg: (json['ratingAvg'] as num).toDouble(),
+      id: json['id'] is int ? json['id'] as int : int.parse(json['id'].toString()),
+      firstName: (json['firstName'] ?? '') as String,
+      lastName: (json['lastName'] ?? '') as String,
+      avatarUrl: (json['avatarUrl'] ?? '') as String,
+      ratingAvg: (json['ratingAvg'] ?? 0).toDouble(),
+      accountId: json.containsKey('accountId') && json['accountId'] != null
+          ? (json['accountId'] is int ? json['accountId'] as int : int.parse(json['accountId'].toString()))
+          : null,
     );
   }
 
@@ -32,12 +38,13 @@ class Coach {
       'lastName': lastName,
       'avatarUrl': avatarUrl,
       'ratingAvg': ratingAvg,
+      if (accountId != null) 'accountId': accountId,
     };
   }
 
   @override
   String toString() {
-    return 'Coach(id: $id, name: $fullName, rating: $ratingAvg)';
+    return 'Coach(id: $id, name: $fullName, rating: $ratingAvg, accountId: $accountId)';
   }
 
   @override
