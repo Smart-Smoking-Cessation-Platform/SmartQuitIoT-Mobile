@@ -1,4 +1,3 @@
-import 'package:SmartQuitIoT/views/screens/achievements/achievement_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/_relaunch_screen.dart';
 import 'package:SmartQuitIoT/views/screens/diary/create_diary_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/success_payment_screen.dart';
@@ -27,11 +26,11 @@ import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
 import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
+import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_screen.dart';
 // import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
-import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
-import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -48,7 +47,6 @@ final GoRouter appRouter = GoRouter(
   // },
   routes: [
     GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
-    GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
     GoRoute(path: '/auth', builder: (_, __) => const AuthWrapper()),
     GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
     GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
@@ -58,7 +56,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/main', builder: (_, __) => const MainNavigationScreen()),
     GoRoute(path: '/relaunch', builder: (_, __) => const RelaunchScreen()),
     GoRoute(path: '/debug-home', builder: (_, __) => const DebugHomeScreen()),
-    GoRoute(path: '/achivement', builder: (_, __) => const AchievementScreen()),
     GoRoute(
       path: '/create-post',
       builder: (context, state) => const CreatePostScreen(),
@@ -152,29 +149,20 @@ final GoRouter appRouter = GoRouter(
         }
       },
     ),
-    GoRoute(
-      path: '/payment/cancel',
-      builder: (_, __) => const PaymentCancelScreen(),
-    ),
+    GoRoute(path: '/payment/cancel', builder: (_, __) => const PaymentCancelScreen()),
     GoRoute(
       path: '/meeting',
       name: 'meeting',
       builder: (context, state) {
-        final extra = state.extra is Map<String, dynamic>
-            ? state.extra as Map<String, dynamic>
-            : <String, dynamic>{};
+        final extra = state.extra is Map<String, dynamic> ? state.extra as Map<String, dynamic> : <String,dynamic>{};
         final appointmentId = extra['appointmentId'] is int
             ? extra['appointmentId'] as int
             : int.tryParse((extra['appointmentId'] ?? '').toString()) ?? 0;
         // pass prefilled token data if provided (may be null)
         final preChannel = extra['channel'] as String?;
         final preToken = extra['token'] as String?;
-        final preUid = extra['uid'] is int
-            ? extra['uid'] as int
-            : int.tryParse((extra['uid'] ?? '').toString());
-        final preExpiresAt = extra['expiresAt'] is int
-            ? extra['expiresAt'] as int
-            : int.tryParse((extra['expiresAt'] ?? '').toString());
+        final preUid = extra['uid'] is int ? extra['uid'] as int : int.tryParse((extra['uid'] ?? '').toString());
+        final preExpiresAt = extra['expiresAt'] is int ? extra['expiresAt'] as int : int.tryParse((extra['expiresAt'] ?? '').toString());
 
         return MeetingScreen(
           appointmentId: appointmentId,

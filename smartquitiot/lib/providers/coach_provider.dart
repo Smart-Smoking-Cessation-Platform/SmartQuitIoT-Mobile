@@ -1,3 +1,4 @@
+// providers/coach_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/coach_repository.dart';
 import '../models/coach.dart';
@@ -7,29 +8,11 @@ final coachRepositoryProvider = Provider<CoachRepository>((ref) {
   return CoachRepository();
 });
 
-// Coaches list provider
-final coachesProvider = FutureProvider<List<Coach>>((ref) async {
-  final repository = ref.read(coachRepositoryProvider);
-  final response = await repository.getCoaches();
-
-  if (response.success) {
-    return response.data;
-  } else {
-    throw Exception(response.message);
-  }
-});
-
-// Individual coach provider
-final coachProvider = FutureProvider.family<Coach, int>((ref, coachId) async {
-  final repository = ref.read(coachRepositoryProvider);
-  return await repository.getCoachById(coachId);
-});
-
-// Coach list state provider for manual refresh
+// Coach list state provider for manual refresh (keep this as-is, but add helper methods)
 final coachListStateProvider =
-    StateNotifierProvider<CoachListNotifier, AsyncValue<List<Coach>>>((ref) {
-      return CoachListNotifier(ref.read(coachRepositoryProvider));
-    });
+StateNotifierProvider<CoachListNotifier, AsyncValue<List<Coach>>>((ref) {
+  return CoachListNotifier(ref.read(coachRepositoryProvider));
+});
 
 class CoachListNotifier extends StateNotifier<AsyncValue<List<Coach>>> {
   final CoachRepository _repository;
@@ -56,7 +39,24 @@ class CoachListNotifier extends StateNotifier<AsyncValue<List<Coach>>> {
     }
   }
 
-  Future<void> refresh() async {
-    await loadCoaches();
+  Future<void> refresh() async => loadCoaches();
+
+  /// For future realtime: add or update a single coach into current list (avoid duplicates)
+  void addOrUpdateCoach(Coach c) {
+    state = state.whenData((list) {
+      final idx = list.indexWhere((e) => e.id == c.id);
+      if (idx >= 0) {
+        final newList = [...list];
+        newList[idx] = c;
+        return newList;
+      } else {
+        return [...list, c];
+      }
+    });
   }
 }
+
+// --- NEW: coachesProvider wrapper so existing UI (watching coachesProvider) keeps working ---
+final coachesProvider = Provider<AsyncValue<List<Coach>>>((ref) {
+  return ref.watch(coachListStateProvider);
+});
