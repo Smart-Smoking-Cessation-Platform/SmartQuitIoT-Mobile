@@ -94,6 +94,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
           .toList();
 
+      for (var a in parsed) {
+        if (a.hasRated != null) {
+          _ratedMap[a.appointmentId] = a.hasRated!;
+        }
+      }
       setState(() {
         _appointments = parsed;
         _loading = false;
@@ -507,8 +512,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 // determine if this appointment is in Completed state
                 final isCompleted = (a.runtimeStatus ?? '').toUpperCase() == 'COMPLETED';
 
-                // check rated status from local map (fallback false)
-                final hasRated = _ratedMap[a.appointmentId] ?? false;
+                // prefer server-provided flag if available, else fall back to client-side _ratedMap
+                final hasRated = (a.hasRated != null) ? a.hasRated! : (_ratedMap[a.appointmentId] ?? false);
                 final bool isSubmittingThis = _isSubmitting && _submittingRatingAppointmentId == a.appointmentId;
                 return Container(
                   decoration: BoxDecoration(
