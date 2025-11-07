@@ -209,7 +209,37 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   }
 
   Widget _conversationTile(ConversationSummary conv) {
-    final title = conv.title ?? (conv.lastMessage ?? 'Cuộc trò chuyện');
+    // compute display title (prefer explicit title -> known name fields -> fallback)
+    String _computeTitle(ConversationSummary conv) {
+      // 1) server-provided title
+      try {
+        if (conv.title != null && conv.title!.trim().isNotEmpty) return conv.title!;
+      } catch (_) {}
+
+      // 2) try common alternative fields via dynamic (defensive)
+      try {
+        final dynamic c = conv as dynamic;
+        final List<dynamic> candidates = [
+          c.coachName,
+          c.participantName,
+          c.displayName,
+          c.counterpartyName,
+          c.name,
+          c.title, // just in case different shape
+        ];
+        for (var cand in candidates) {
+          if (cand != null) {
+            final s = cand.toString().trim();
+            if (s.isNotEmpty) return s;
+          }
+        }
+      } catch (_) {}
+
+      // 3) final fallback
+      return 'Cuộc trò chuyện';
+    }
+
+    final title = _computeTitle(conv);
     final subtitle = conv.lastMessage ?? '';
     final timeStr = conv.lastUpdatedAt != null ? DateFormat('HH:mm').format(conv.lastUpdatedAt!) : '';
     final avatar = conv.avatarUrl ?? '';
@@ -236,8 +266,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         ),
         child: Row(
           children: [
-            CircleAvatar(radius: 24, backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
-                child: avatar.isEmpty ? Text((title.isNotEmpty ? title[0] : '?')) : null),
+            CircleAvatar(
+              radius: 24,
+              backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+              child: avatar.isEmpty ? Text((title.isNotEmpty ? title[0] : '?')) : null,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -265,6 +298,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -6,19 +6,18 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 import 'package:stomp_dart_client/src/stomp_config.dart';
 import 'package:stomp_dart_client/src/stomp_frame.dart';
 
-/// Simple robust STOMP wrapper for Flutter (mobile).
+/// Robust STOMP wrapper for Flutter (mobile).
 /// - Singleton: StompService.instance
 /// - Init with wsUrl + optional async tokenProvider
 /// - subscribeConversation(convId, callback)
-/// - unsubscribeConversation(convId, [callback]) -> if callback null removes all callbacks
+/// - unsubscribeConversation(convId, [callback]) -> removes local callbacks and bookkeeping
 /// - sendAppMessage(payload)
 /// - isConnected, disconnect()
 ///
 /// Notes:
-/// - This uses raw WebSocket (no SockJS). Make sure server does NOT require SockJS.
-/// - Token provider should return access token string (without "Bearer " prefix or with — service normalizes).
-/// - We attempt auto-resubscribe after reconnect.
-/// - Basic dedupe by message id to reduce duplicates on reconnects or accidental double-publishes.
+/// - This implementation intentionally avoids calling a non-public `unsubscribe` on StompClient.
+///   If your stomp_dart_client version later exposes a public unsubscribe, you can wire it here.
+/// - `frame.body` is parsed robustly (handles String or Map).
 class StompService {
   StompService._internal();
 
@@ -30,34 +29,31 @@ class StompService {
   bool _autoActivate = true;
 
   // destination -> list of callbacks
-  final Map<String, List<void Function(Map<String, dynamic>)>> _callbacks =
-  {};
+  final Map<String, List<void Function(Map<String, dynamic>)>> _callbacks = {};
 
-  // destinations we've already requested subscribe for (to avoid double subscribe)
+  // destinations we've intended to subscribe to
   final Set<String> _subscribedDestinations = {};
 
   // small dedupe store: dest -> set of recent ids
   final Map<String, Set<String>> _recentIds = {};
-  final int _recentIdsMax = 300; // per dest; prune when exceed
+  final int _recentIdsMax = 300;
 
-  // simple connection state stream for UI to listen if needed
-  final StreamController<bool> _connectedController =
-  StreamController<bool>.broadcast();
+  // connection state stream for listeners
+  final StreamController<bool> _connectedController = StreamController<bool>.broadcast();
 
   Stream<bool> get connectionStream => _connectedController.stream;
 
-  /// Initialize (call once, e.g. app start or when entering chat area)
+  /// Initialize (call once)
   Future<void> init({
     required String wsUrl,
     Future<String?> Function()? tokenProvider,
     bool activateImmediately = true,
   }) async {
-    // if same config and already active -> just return
+    // if same config and active -> no-op
     if (_client != null && _wsUrl == wsUrl && _tokenProvider == tokenProvider) {
       return;
     }
 
-    // tear down previous client (if any)
     await disconnect();
 
     _wsUrl = wsUrl;
@@ -74,7 +70,6 @@ class StompService {
       throw Exception('StompService: wsUrl not set. Call init() first.');
     }
 
-    // get token (if provider supplied)
     String? token;
     try {
       token = _tokenProvider != null ? await _tokenProvider!() : null;
@@ -84,7 +79,6 @@ class StompService {
 
     final Map<String, String> stompHeaders = {};
     if (token != null && token.isNotEmpty) {
-      // normalize: allow provider to return "Bearer xyz" or just "xyz"
       if (token.toLowerCase().startsWith('bearer ')) {
         stompHeaders['Authorization'] = token;
       } else {
@@ -92,19 +86,15 @@ class StompService {
       }
     }
 
-    // create stomp client config
     final config = StompConfig(
       url: _wsUrl!,
-      // beforeConnect: helpful to wait a bit or refresh token if needed
       beforeConnect: () async {
-        // small delay to avoid race on hot reload
+        // small delay to avoid races on hot reload
         await Future.delayed(const Duration(milliseconds: 200));
-        // attempt to refresh token by calling provider once more (optional)
         if (_tokenProvider != null) {
           try {
             final maybe = await _tokenProvider!();
             if (maybe != null && maybe.isNotEmpty) {
-              // update headers for initial CONNECT
               if (maybe.toLowerCase().startsWith('bearer ')) {
                 stompHeaders['Authorization'] = maybe;
               } else {
@@ -116,7 +106,6 @@ class StompService {
       },
       onConnect: _onConnect,
       onStompError: (StompFrame frame) {
-        // server-level error
         print('[StompService] STOMP Error: ${frame.body}');
       },
       onWebSocketError: (dynamic error) {
@@ -126,16 +115,11 @@ class StompService {
         print('[StompService] disconnected (stomp onDisconnect)');
         _connectedController.add(false);
       },
-      // initial headers for STOMP CONNECT
       stompConnectHeaders: stompHeaders,
-      // also pass WS-level headers; some server setups expect auth at WS handshake level
       webSocketConnectHeaders: stompHeaders,
-      // heartbeats (Duration)
       heartbeatOutgoing: const Duration(milliseconds: 4000),
       heartbeatIncoming: const Duration(milliseconds: 4000),
-      // set reconnect delay so client will try reconnect automatically (Duration)
       reconnectDelay: const Duration(seconds: 5),
-      // NOTE: no `debug:` named param here for this package version — use onWebSocketError/onStompError or print in callbacks
     );
 
     _client = StompClient(config: config);
@@ -151,12 +135,11 @@ class StompService {
     print('[StompService] connected (server=${frame.headers?['server']})');
     _connectedController.add(true);
 
-    // on connect -> (re)subscribe to previously requested destinations
-    // update stompConnectHeaders if tokenProvider has fresh token
+    // refresh headers if token rotated (applies on next reconnect)
     _maybeRefreshHeaders();
 
-    // perform subscribe for each destination that we intended
-    for (final dest in _subscribedDestinations) {
+    // (re)subscribe to all intended destinations
+    for (final dest in _subscribedDestinations.toList()) {
       _doSubscribe(dest);
     }
   }
@@ -174,19 +157,34 @@ class StompService {
       if (current != normalized) {
         _client?.config?.stompConnectHeaders?['Authorization'] = normalized;
         _client?.config?.webSocketConnectHeaders?['Authorization'] = normalized;
-        // NOTE: stomp_dart_client doesn't expose updating CONNECT headers for an already connected session,
-        // but on next reconnect it will use config headers. Good enough for token rotation.
       }
     } catch (e) {
       // ignore
     }
   }
 
+  /// Wait until connected (useful before subscribing)
+  Future<void> waitUntilConnected({Duration timeout = const Duration(seconds: 8)}) {
+    if (isConnected) return Future.value();
+    final completer = Completer<void>();
+    late StreamSubscription sub;
+    sub = connectionStream.listen((connected) {
+      if (connected && !completer.isCompleted) {
+        completer.complete();
+        sub.cancel();
+      }
+    });
+    Future.delayed(timeout).then((_) {
+      if (!completer.isCompleted) {
+        completer.completeError('Timeout waiting for STOMP connect');
+        sub.cancel();
+      }
+    });
+    return completer.future;
+  }
+
   /// Subscribe to conversation topic `/topic/conversations/{convId}`.
-  /// Callback gets parsed Map<String,dynamic> (body JSON).
-  /// Multiple callbacks per conv allowed (they will all be invoked).
-  void subscribeConversation(
-      String convId, void Function(Map<String, dynamic>) callback) {
+  void subscribeConversation(String convId, void Function(Map<String, dynamic>) callback) {
     final dest = '/topic/conversations/$convId';
     final list = _callbacks.putIfAbsent(dest, () => []);
     list.add(callback);
@@ -197,15 +195,15 @@ class StompService {
     // subscribe immediately if connected
     if (_client != null && _client!.connected) {
       _doSubscribe(dest);
+    } else {
+      print('[StompService] subscribe queued (not connected) -> $dest');
     }
   }
 
-  /// Unsubscribe: if callback == null -> remove all callbacks for convId.
-  /// If callback provided -> remove that single callback.
-  /// Note: we don't force-unsubscribe at server-level (stomp_dart_client may not expose unsubscribe id reliably).
-  /// We avoid calling client's subscribe again for same dest once all callbacks removed.
-  void unsubscribeConversation(String convId,
-      [void Function(Map<String, dynamic>)? callback]) {
+  /// Unsubscribe conversation (remove callback or all). We only clear local bookkeeping here.
+  /// Note: stomp_dart_client used may not expose a public unsubscribe API; if you upgrade and get a handle
+  /// from subscribe(), call unsubscribe on that handle here.
+  void unsubscribeConversation(String convId, [void Function(Map<String, dynamic>)? callback]) {
     final dest = '/topic/conversations/$convId';
     if (!_callbacks.containsKey(dest)) return;
     if (callback == null) {
@@ -215,36 +213,67 @@ class StompService {
       if (_callbacks[dest]!.isEmpty) _callbacks.remove(dest);
     }
 
-    // if no callbacks left, mark as not subscribed (so on reconnect we won't resubscribe)
     if (!_callbacks.containsKey(dest)) {
       _subscribedDestinations.remove(dest);
       _recentIds.remove(dest);
-      // try to call client.unsubscribe if API available (best-effort)
+      // NOTE: do not call _client.unsubscribe(...) because stomp_dart_client version used here
+      // may not expose a public unsubscribe API. We simply stop resubscribing on reconnect.
     }
   }
 
-  // internal subscribe wrapper
+  // internal subscribe wrapper: robust parse + logging + dedupe
   void _doSubscribe(String dest) {
-    if (_client == null) return;
+    if (_client == null) {
+      print('[StompService] _doSubscribe: client null for $dest');
+      return;
+    }
     if (!_subscribedDestinations.contains(dest)) return;
-    if (_subscribedDestinations.contains(dest) && _callbacks[dest] == null) return;
+    if (_callbacks[dest] == null || _callbacks[dest]!.isEmpty) return;
 
-    // avoid double subscribe for same destination
-    if (_recentIds.containsKey(dest) && _recentIds[dest]!.contains('__subscribed_marker__')) {
-      // already subscribed marker exists
+    // avoid double subscribe marker
+    final markerSet = _recentIds.putIfAbsent(dest, () => <String>{});
+    if (markerSet.contains('__subscribed_marker__')) {
+      // already subscribed
       return;
     }
 
     try {
+      print('[StompService] subscribing to $dest');
       _client!.subscribe(
         destination: dest,
         callback: (StompFrame frame) {
           try {
-            final payloadStr = frame.body ?? '';
-            if (payloadStr.isEmpty) return;
-            final Map<String, dynamic> parsed = jsonDecode(payloadStr);
+            final dynamic body = frame.body;
 
-            // normalize id (server may send id/messageId/clientMessageId)
+            if (body == null) {
+              return;
+            }
+
+            // parse body robustly: accept String or Map
+            Map<String, dynamic> parsed;
+            if (body is String) {
+              if (body.trim().isEmpty) return;
+              final decoded = jsonDecode(body);
+              if (decoded is Map) {
+                parsed = Map<String, dynamic>.from(decoded);
+              } else {
+                return;
+              }
+            } else if (body is Map) {
+              parsed = Map<String, dynamic>.from(body);
+            } else {
+              // fallback: try decode body.toString()
+              final s = body.toString();
+              if (s.trim().isEmpty) return;
+              final decoded = jsonDecode(s);
+              if (decoded is Map) {
+                parsed = Map<String, dynamic>.from(decoded);
+              } else {
+                return;
+              }
+            }
+
+            // normalize id for dedupe
             final rawId = parsed['id'] ??
                 parsed['messageId'] ??
                 parsed['clientMessageId'] ??
@@ -253,48 +282,46 @@ class StompService {
                 null;
             final idStr = rawId == null ? null : rawId.toString();
 
-            // dedupe
             if (idStr != null) {
               final ids = _recentIds.putIfAbsent(dest, () => <String>{});
               if (ids.contains(idStr)) {
-                // duplicate → skip
+                // duplicate -> skip
                 return;
               }
               ids.add(idStr);
-              // keep set size bounded
+              // bound size
               if (ids.length > _recentIdsMax) {
-                // naive prune: keep first half
                 final toKeep = ids.take(_recentIdsMax ~/ 2).toSet();
                 _recentIds[dest] = toKeep;
               }
             }
 
-            // dispatch to callbacks (if any)
+            // dispatch to callbacks
             final cbs = _callbacks[dest];
             if (cbs != null && cbs.isNotEmpty) {
               for (final cb in List.of(cbs)) {
                 try {
                   cb(parsed);
                 } catch (e) {
-                  // swallow per-callback errors
+                  print('[StompService] callback error: $e');
                 }
               }
             }
-          } catch (e) {
-            print('[StompService] _doSubscribe callback parse error: $e');
+          } catch (e, st) {
+            print('[StompService] _doSubscribe callback parse error: $e\n$st');
           }
         },
       );
 
-      // mark subscribed (we use recentIds set as a simple marker store too)
-      final markerSet = _recentIds.putIfAbsent(dest, () => <String>{});
+      // mark subscribed
       markerSet.add('__subscribed_marker__');
-    } catch (e) {
-      print('[StompService] subscribe error for $dest: $e');
+      print('[StompService] subscribed ok -> $dest');
+    } catch (e, st) {
+      print('[StompService] subscribe error for $dest: $e\n$st');
     }
   }
 
-  /// Send application message to backend (example dest: /app/conversations/messages)
+  /// Send application message to backend
   void sendAppMessage(Map<String, dynamic> payload) {
     if (_client == null || !_client!.connected) {
       print('[StompService] sendAppMessage: not connected');
@@ -308,7 +335,6 @@ class StompService {
     }
   }
 
-  /// Disconnect and cleanup. Safe to call multiple times.
   Future<void> disconnect() async {
     try {
       _connectedController.add(false);
@@ -329,7 +355,6 @@ class StompService {
 
   bool get isConnected => _client?.connected ?? false;
 
-  /// Useful for debugging
   @override
   String toString() {
     return 'StompService(wsUrl=$_wsUrl, connected=${isConnected}, subs=${_subscribedDestinations.length})';
