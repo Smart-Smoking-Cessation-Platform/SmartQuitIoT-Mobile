@@ -22,6 +22,9 @@ class Appointment {
   final DateTime? joinWindowStart;
   final DateTime? joinWindowEnd;
 
+  // Rating
+  final bool? hasRated;
+
   Appointment({
     required this.appointmentId,
     required this.coachId,
@@ -38,6 +41,7 @@ class Appointment {
     this.meetingUrl,
     this.joinWindowStart,
     this.joinWindowEnd,
+    this.hasRated,
   });
 
   factory Appointment.fromJson(Map<String, dynamic> j) {
@@ -93,6 +97,27 @@ class Appointment {
       meetingUrl: j['meetingUrl'] as String?,
       joinWindowStart: parseInstant(j['joinWindowStart']),
       joinWindowEnd: parseInstant(j['joinWindowEnd']),
+      hasRated: (() {
+        try {
+          final keys = ['hasRated','member_rated','rated','memberRating','rating','userRating'];
+          for (var k in keys) {
+            if (j.containsKey(k) && j[k] != null) {
+              final v = j[k];
+              if (v is bool) return v;
+              if (v is num) return v > 0;
+              if (v is String) {
+                final s = v.trim();
+                if (s == 'true' || s == '1') return true;
+                if (s == 'false' || s == '0' || s.isEmpty) return false;
+                // try parse int
+                final n = int.tryParse(s);
+                if (n != null) return n > 0;
+              }
+            }
+          }
+        } catch (_) {}
+        return null;
+      })(),
     );
   }
 
@@ -119,6 +144,7 @@ class Appointment {
     String? meetingUrl,
     DateTime? joinWindowStart,
     DateTime? joinWindowEnd,
+    bool? hasRated,
   }) {
     return Appointment(
       appointmentId: appointmentId ?? this.appointmentId,
@@ -136,6 +162,7 @@ class Appointment {
       meetingUrl: meetingUrl ?? this.meetingUrl,
       joinWindowStart: joinWindowStart ?? this.joinWindowStart,
       joinWindowEnd: joinWindowEnd ?? this.joinWindowEnd,
+      hasRated: hasRated ?? this.hasRated
     );
   }
 }
