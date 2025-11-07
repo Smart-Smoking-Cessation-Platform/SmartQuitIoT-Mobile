@@ -1,10 +1,9 @@
 // lib/models/conversation_summary.dart
 // Model cho item trong Inbox (GET /conversations)
 
-
 class ConversationSummary {
   final int id;
-  final String? title; // nullable: group có title, direct có thể null
+  final String? title; // nullable: group có title, direct có thể null -> we auto-fill if possible
   final String? lastMessage; // nội dung message cuối
   final DateTime? lastUpdatedAt; // thời điểm update cuối (used for sort/display)
   final String? avatarUrl; // avatar của bên kia (optional)
@@ -22,10 +21,7 @@ class ConversationSummary {
   /// Robust parsing: backend có thể trả timestamp (millis) hoặc ISO string,
   /// lastMessage có thể là string hoặc object { content, sentAt }
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
-    // Accept either direct fields or nested ones:
-    // - lastMessage might be: "lastMessage": "Hi" OR "lastMessage": {"content":"Hi","sentAt":"..."}
-    // - lastUpdatedAt might be epoch millis or ISO string under keys lastUpdatedAt / lastUpdatedAtEpoch / updatedAt
-    // - avatarUrl might be top-level or under participants/participant
+    // helpers
     int parseInt(dynamic v, [int fallback = 0]) {
       if (v == null) return fallback;
       if (v is int) return v;
@@ -39,7 +35,6 @@ class ConversationSummary {
     DateTime? parseDate(dynamic v) {
       if (v == null) return null;
       if (v is int) {
-        // assume epoch millis
         try {
           return DateTime.fromMillisecondsSinceEpoch(v);
         } catch (_) {
@@ -47,7 +42,6 @@ class ConversationSummary {
         }
       }
       if (v is String) {
-        // try parse ISO or numeric string
         final asInt = int.tryParse(v);
         if (asInt != null) {
           return DateTime.fromMillisecondsSinceEpoch(asInt);
@@ -64,7 +58,6 @@ class ConversationSummary {
     String? extractLastMessage(Map<String, dynamic> j) {
       final lm = j['lastMessage'];
       if (lm == null) {
-        // maybe server returned lastMessageContent or last_message
         final alt = j['lastMessageContent'] ?? j['last_message'] ?? j['last_message_content'];
         if (alt is String) return alt;
         return null;
@@ -77,44 +70,91 @@ class ConversationSummary {
       return null;
     }
 
-    String? extractAvatar(Map<String, dynamic> j) {
-      // common places
-      final a1 = j['avatarUrl'] ?? j['avatar'] ?? j['image'] ?? j['avatar_url'];
-      if (a1 is String && a1.trim().isNotEmpty) return a1.trim();
-      // participants array: try first participant that isn't current user
-      final participants = j['participants'] ?? j['participant'] ?? j['members'];
-      if (participants is List && participants.isNotEmpty) {
-        for (final p in participants) {
-          if (p is Map && (p['avatarUrl'] ?? p['avatar'] ?? p['image']) != null) {
-            final s = (p['avatarUrl'] ?? p['avatar'] ?? p['image']).toString().trim();
-            if (s.isNotEmpty) return s;
+    // Try to pick the "counterparty" participant name (useful for DIRECT conv)
+    String? extractCounterpartyName(Map<String, dynamic> j) {
+      final participants = j['participants'] ?? j['participant'] ?? j['members'] ?? j['participantsList'];
+      try {
+        if (participants is List && participants.isNotEmpty) {
+          // common case: 2 participants (you + other). Pick the last as "other" (best-effort).
+          if (participants.length >= 2) {
+            final cand = participants.last;
+            if (cand is Map) {
+              final n = cand['fullName'] ?? cand['name'] ?? cand['displayName'] ?? cand['full_name'];
+              if (n is String && n.trim().isNotEmpty) return n.trim();
+            }
           }
+          // fallback: scan for any participant with a name field
+          for (final p in participants) {
+            if (p is Map) {
+              final n = p['fullName'] ?? p['name'] ?? p['displayName'] ?? p['full_name'];
+              if (n is String && n.trim().isNotEmpty) return n.trim();
+            }
+          }
+        } else if (participants is Map) {
+          final n = participants['fullName'] ?? participants['name'] ?? participants['displayName'];
+          if (n is String && n.trim().isNotEmpty) return n.trim();
         }
-      }
-      if (participants is Map) {
-        final s = (participants['avatarUrl'] ?? participants['avatar'] ?? participants['image']);
-        if (s is String && s.trim().isNotEmpty) return s.trim();
-      }
+      } catch (_) {}
       return null;
     }
 
-    final rawId = json['id'] ?? json['conversationId'] ?? json['conversation_id'];
+    // Pick avatar corresponding to counterparty if possible, else try top-level avatars
+    String? extractCounterpartyAvatar(Map<String, dynamic> j) {
+      final top = j['avatarUrl'] ?? j['avatar'] ?? j['image'] ?? j['avatar_url'];
+      if (top is String && top.trim().isNotEmpty) {
+        // don't return yet because maybe participant-based avatar is more accurate
+      }
+
+      final participants = j['participants'] ?? j['participant'] ?? j['members'] ?? j['participantsList'];
+      try {
+        if (participants is List && participants.isNotEmpty) {
+          if (participants.length >= 2) {
+            final cand = participants.last;
+            if (cand is Map) {
+              final a = cand['avatarUrl'] ?? cand['avatar'] ?? cand['image'] ?? cand['avatar_url'];
+              if (a is String && a.trim().isNotEmpty) return a.trim();
+            }
+          }
+          // fallback: first participant with avatar
+          for (final p in participants) {
+            if (p is Map) {
+              final a = p['avatarUrl'] ?? p['avatar'] ?? p['image'] ?? p['avatar_url'];
+              if (a is String && a.trim().isNotEmpty) return a.trim();
+            }
+          }
+        } else if (participants is Map) {
+          final a = participants['avatarUrl'] ?? participants['avatar'] ?? participants['image'];
+          if (a is String && a.trim().isNotEmpty) return a.trim();
+        }
+      } catch (_) {}
+      // final fallback: top-level
+      if (top is String && top.trim().isNotEmpty) return top.trim();
+      return null;
+    }
+
+    final rawId = json['id'] ?? json['conversationId'] ?? json['conversation_id'] ?? json['convId'];
     final id = parseInt(rawId, 0);
 
-    final title = (json['title'] ?? json['name'] ?? json['conversationTitle'])?.toString();
-
+    String? title = (json['title'] ?? json['name'] ?? json['conversationTitle'])?.toString();
     final lastMessage = extractLastMessage(json);
 
     final dynamic lm = json['lastMessage'];
     final lastUpdatedAt = parseDate(
-        json['lastUpdatedAt']
-            ?? json['last_updated_at']
-            ?? json['updatedAt']
-            ?? (lm is Map ? lm['sentAt'] : null)
+      json['lastUpdatedAt'] ??
+          json['last_updated_at'] ??
+          json['updatedAt'] ??
+          (lm is Map ? lm['sentAt'] : null),
     );
 
+    // If title null -> try to extract counterparty's fullName
+    if ((title == null || title.trim().isEmpty)) {
+      final cp = extractCounterpartyName(json);
+      if (cp != null && cp.isNotEmpty) {
+        title = cp;
+      }
+    }
 
-    final avatarUrl = extractAvatar(json);
+    final avatarUrl = extractCounterpartyAvatar(json);
 
     final unreadRaw = json['unreadCount'] ?? json['unread_count'] ?? json['unread'];
     final unreadCount = parseInt(unreadRaw, 0);
