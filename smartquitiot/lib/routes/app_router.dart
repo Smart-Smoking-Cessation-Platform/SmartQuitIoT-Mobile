@@ -31,6 +31,7 @@ import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_screen.dart';
 // import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
+import 'package:SmartQuitIoT/views/screens/form_metric/form_metric_detail_screen.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -55,6 +56,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/onboarding', builder: (_, __) => OnboardingScreen()),
     GoRoute(path: '/main', builder: (_, __) => const MainNavigationScreen()),
     GoRoute(path: '/relaunch', builder: (_, __) => const RelaunchScreen()),
+    GoRoute(
+      path: '/notifications',
+      builder: (_, __) => const NotificationsScreen(),
+    ),
     GoRoute(path: '/debug-home', builder: (_, __) => const DebugHomeScreen()),
     GoRoute(
       path: '/create-post',
@@ -149,20 +154,29 @@ final GoRouter appRouter = GoRouter(
         }
       },
     ),
-    GoRoute(path: '/payment/cancel', builder: (_, __) => const PaymentCancelScreen()),
+    GoRoute(
+      path: '/payment/cancel',
+      builder: (_, __) => const PaymentCancelScreen(),
+    ),
     GoRoute(
       path: '/meeting',
       name: 'meeting',
       builder: (context, state) {
-        final extra = state.extra is Map<String, dynamic> ? state.extra as Map<String, dynamic> : <String,dynamic>{};
+        final extra = state.extra is Map<String, dynamic>
+            ? state.extra as Map<String, dynamic>
+            : <String, dynamic>{};
         final appointmentId = extra['appointmentId'] is int
             ? extra['appointmentId'] as int
             : int.tryParse((extra['appointmentId'] ?? '').toString()) ?? 0;
         // pass prefilled token data if provided (may be null)
         final preChannel = extra['channel'] as String?;
         final preToken = extra['token'] as String?;
-        final preUid = extra['uid'] is int ? extra['uid'] as int : int.tryParse((extra['uid'] ?? '').toString());
-        final preExpiresAt = extra['expiresAt'] is int ? extra['expiresAt'] as int : int.tryParse((extra['expiresAt'] ?? '').toString());
+        final preUid = extra['uid'] is int
+            ? extra['uid'] as int
+            : int.tryParse((extra['uid'] ?? '').toString());
+        final preExpiresAt = extra['expiresAt'] is int
+            ? extra['expiresAt'] as int
+            : int.tryParse((extra['expiresAt'] ?? '').toString());
 
         return MeetingScreen(
           appointmentId: appointmentId,
@@ -204,6 +218,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/ai-chat',
       builder: (context, state) => const AiChatScreen(),
+    ),
+    GoRoute(
+      path: '/form-metric-detail',
+      builder: (context, state) => const FormMetricDetailScreen(),
     ),
   ],
 );

@@ -4,6 +4,8 @@ import 'package:SmartQuitIoT/services/websocket_service.dart';
 import 'package:SmartQuitIoT/services/local_notification_service.dart';
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
 import 'package:SmartQuitIoT/providers/achievement_refresh_provider.dart';
+import 'package:SmartQuitIoT/providers/notification_refresh_provider.dart';
+import 'package:SmartQuitIoT/providers/mission_refresh_provider.dart';
 import 'package:SmartQuitIoT/models/achievement_notification.dart';
 
 // WebSocket Service Provider
@@ -19,7 +21,8 @@ final localNotificationServiceProvider = Provider<LocalNotificationService>((
   return LocalNotificationService();
 });
 
-// Achievement Notifications State Provider
+// Achievement Notifications State Provider (deprecated - use notification_provider instead)
+// This is kept for backward compatibility with WebSocket
 final achievementNotificationsProvider =
     StateNotifierProvider<
       AchievementNotificationsNotifier,
@@ -62,12 +65,18 @@ final websocketManagerProvider = Provider<WebSocketManager>((ref) {
   final achievementRefreshNotifier = ref.watch(
     achievementRefreshProvider.notifier,
   );
+  final notificationRefreshNotifier = ref.watch(
+    notificationRefreshProvider.notifier,
+  );
+  final missionRefreshNotifier = ref.watch(missionRefreshProvider.notifier);
 
   return WebSocketManager(
     websocketService,
     localNotificationService,
     notificationsNotifier,
     achievementRefreshNotifier,
+    notificationRefreshNotifier,
+    missionRefreshNotifier,
   );
 });
 
@@ -76,6 +85,8 @@ class WebSocketManager {
   final LocalNotificationService _localNotificationService;
   final AchievementNotificationsNotifier _notificationsNotifier;
   final AchievementRefreshNotifier _achievementRefreshNotifier;
+  final NotificationRefreshNotifier _notificationRefreshNotifier;
+  final MissionRefreshNotifier _missionRefreshNotifier;
   StreamSubscription<AchievementNotification>? _subscription;
 
   WebSocketManager(
@@ -83,6 +94,8 @@ class WebSocketManager {
     this._localNotificationService,
     this._notificationsNotifier,
     this._achievementRefreshNotifier,
+    this._notificationRefreshNotifier,
+    this._missionRefreshNotifier,
   );
 
   Future<void> initialize(int userId) async {
@@ -91,20 +104,63 @@ class WebSocketManager {
 
     // Listen to notification stream
     _subscription = _websocketService.notificationStream.listen((notification) {
-      // Add to state
+      // Add to state (legacy support)
       _notificationsNotifier.addNotification(notification);
 
       // Show local notification
       _localNotificationService.showAchievementNotification(notification);
 
-      // Trigger achievement refresh when notification is received
-      if (notification.type == 'ACHIEVEMENT') {
-        print('🏆 [WebSocketManager] Achievement notification received, triggering refresh...');
-        _achievementRefreshNotifier.refreshOnAchievementUnlocked();
-      } else {
-        // For other types (MISSION, HEALTH, etc.) that might affect achievements
-        print('📊 [WebSocketManager] ${notification.type} notification received, triggering achievement refresh...');
-        _achievementRefreshNotifier.refreshOnProgressUpdate();
+      // Trigger notification refresh (NEW: API-based notifications)
+      print(
+        '🔔 [WebSocketManager] Notification received via WebSocket, triggering API refresh...',
+      );
+      _notificationRefreshNotifier.refreshNotifications();
+
+      // Trigger specific refreshes based on notification type
+      switch (notification.type.toUpperCase()) {
+        case 'ACHIEVEMENT':
+          print(
+            '🏆 [WebSocketManager] ACHIEVEMENT notification → Refreshing achievements',
+          );
+          _achievementRefreshNotifier.refreshOnAchievementUnlocked();
+          break;
+
+        case 'MISSION':
+          print(
+            '✅ [WebSocketManager] MISSION notification → Refreshing missions & achievements',
+          );
+          _achievementRefreshNotifier.refreshOnAchievementUnlocked();
+          _missionRefreshNotifier.refreshTodayMissions();
+          _achievementRefreshNotifier.refreshOnProgressUpdate();
+          break;
+
+        case 'PHASE':
+          print(
+            '📅 [WebSocketManager] PHASE notification → Refreshing quit plan & missions',
+          );
+          _achievementRefreshNotifier.refreshOnAchievementUnlocked();
+          _missionRefreshNotifier.refreshQuitPlan();
+          break;
+
+        case 'QUIT_PLAN':
+          print(
+            '🗓️ [WebSocketManager] QUIT_PLAN notification → Refreshing quit plan',
+          );
+          _achievementRefreshNotifier.refreshOnAchievementUnlocked();
+          _missionRefreshNotifier.refreshQuitPlan();
+          break;
+
+        case 'SYSTEM':
+          print(
+            '🔔 [WebSocketManager] SYSTEM notification → No specific refresh needed',
+          );
+          _achievementRefreshNotifier.refreshOnAchievementUnlocked();
+          break;
+
+        default:
+          print(
+            '⚠️ [WebSocketManager] Unknown notification type: ${notification.type}',
+          );
       }
     });
 

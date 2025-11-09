@@ -1,298 +1,922 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:SmartQuitIoT/views/screens/notifications/notification_item.dart';
-// import 'package:SmartQuitIoT/views/screens/notifications/notification_detail_screen.dart';
-// import 'package:SmartQuitIoT/providers/websocket_provider.dart';
-// import 'package:SmartQuitIoT/models/achievement_notification.dart';
-// import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:SmartQuitIoT/views/screens/notifications/notification_item.dart';
+import 'package:SmartQuitIoT/providers/notification_provider.dart';
+import 'package:SmartQuitIoT/providers/notification_refresh_provider.dart';
+import 'package:SmartQuitIoT/models/achievement_notification.dart';
+import 'package:intl/intl.dart';
 
-// class NotificationsScreen extends ConsumerStatefulWidget {
-//   const NotificationsScreen({super.key});
+class NotificationsScreen extends ConsumerStatefulWidget {
+  const NotificationsScreen({super.key});
 
-//   @override
-//   ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
-// }
+  @override
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
+}
 
-// class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  bool _isMarkingAllAsRead = false;
 
-//   void _navigateToDetail(AchievementNotification notification) {
-//     // Mark as read when opening
-//     ref.read(achievementNotificationsProvider.notifier).markAsRead(notification.id);
-    
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(
-//         builder: (context) => NotificationDetailScreen(
-//           title: notification.title,
-//           subtitle: notification.content,
-//           icon: _getNotificationIcon(notification.type),
-//           iconColor: _getNotificationColor(notification.type),
-//         ),
-//       ),
-//     );
-//   }
+  @override
+  void initState() {
+    super.initState();
+    // Load notifications on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationViewModelProvider.notifier).getAllNotifications();
+    });
+  }
 
-//   IconData _getNotificationIcon(String type) {
-//     switch (type.toUpperCase()) {
-//       case 'ACHIEVEMENT':
-//         return Icons.emoji_events;
-//       case 'MISSION':
-//         return Icons.check_circle;
-//       case 'HEALTH':
-//         return Icons.favorite;
-//       case 'SOCIAL':
-//         return Icons.people;
-//       case 'REMINDER':
-//         return Icons.notifications_active;
-//       default:
-//         return Icons.notifications;
-//     }
-//   }
+  void _onTapNotification(AchievementNotification notification) async {
+    // Mark as read when tapping with visual feedback
+    if (!notification.isRead) {
+      await ref
+          .read(notificationViewModelProvider.notifier)
+          .markAsRead(notification.id);
 
-//   Color _getNotificationColor(String type) {
-//     switch (type.toUpperCase()) {
-//       case 'ACHIEVEMENT':
-//         return Colors.amber;
-//       case 'MISSION':
-//         return Colors.green;
-//       case 'HEALTH':
-//         return Colors.red;
-//       case 'SOCIAL':
-//         return Colors.blue;
-//       case 'REMINDER':
-//         return Colors.purple;
-//       default:
-//         return const Color(0xFF00D09E);
-//     }
-//   }
+      // Refresh notification list to sync UI with API state
+      if (mounted) {
+        await ref
+            .read(notificationViewModelProvider.notifier)
+            .getAllNotifications();
 
-//   String _formatNotificationTime(DateTime dateTime) {
-//     final now = DateTime.now();
-//     final difference = now.difference(dateTime);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Marked as read'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF00D09E),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
 
-//     if (difference.inMinutes < 1) {
-//       return 'Just now';
-//     } else if (difference.inMinutes < 60) {
-//       return '${difference.inMinutes}m ago';
-//     } else if (difference.inHours < 24) {
-//       return '${difference.inHours}h ago';
-//     } else if (difference.inDays < 7) {
-//       return '${difference.inDays}d ago';
-//     } else {
-//       return DateFormat('MMM d, y').format(dateTime);
-//     }
-//   }
+    // Show modern dialog with notification details
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with icon
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _getNotificationColor(
+                          notification.type,
+                        ).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _getNotificationIcon(notification.type),
+                        color: _getNotificationColor(notification.type),
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            notification.type.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _getNotificationColor(notification.type),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            notification.title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Content
+                Text(
+                  notification.content,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Time
+                Row(
+                  children: [
+                    Icon(Icons.access_time, size: 16, color: Colors.grey[500]),
+                    const SizedBox(width: 6),
+                    Text(
+                      _formatNotificationTime(notification.createdAt),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Close button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00D09E),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Got it',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     final notifications = ref.watch(achievementNotificationsProvider);
-    
-//     // Separate notifications by date
-//     final today = DateTime.now();
-//     final todayNotifications = notifications.where((n) => 
-//       n.createdAt.year == today.year &&
-//       n.createdAt.month == today.month &&
-//       n.createdAt.day == today.day
-//     ).toList();
-    
-//     final olderNotifications = notifications.where((n) => 
-//       !(n.createdAt.year == today.year &&
-//         n.createdAt.month == today.month &&
-//         n.createdAt.day == today.day)
-//     ).toList();
-    
-//     return Scaffold(
-//       backgroundColor: const Color(0xFFF1FFF3),
-//       appBar: AppBar(
-//         backgroundColor: const Color(0xFF00D09E),
-//         elevation: 0,
-//         leading: IconButton(
-//           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         title: const Text(
-//           'Notifications',
-//           style: TextStyle(
-//             color: Colors.white,
-//             fontSize: 18,
-//             fontWeight: FontWeight.w600,
-//           ),
-//         ),
-//         actions: [
-//           if (notifications.isNotEmpty)
-//             PopupMenuButton<String>(
-//               icon: const Icon(Icons.more_vert, color: Colors.white),
-//               onSelected: (value) {
-//                 if (value == 'clear_all') {
-//                   _showClearAllDialog();
-//                 }
-//               },
-//               itemBuilder: (context) => [
-//                 const PopupMenuItem(
-//                   value: 'clear_all',
-//                   child: Row(
-//                     children: [
-//                       Icon(Icons.delete_outline, color: Colors.red),
-//                       SizedBox(width: 8),
-//                       Text('Clear All'),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//         ],
-//       ),
-//       body: notifications.isEmpty
-//           ? _buildEmptyState()
-//           : RefreshIndicator(
-//               onRefresh: () async {
-//                 await ref.read(achievementNotificationsProvider.notifier).refresh();
-//               },
-//               child: SingleChildScrollView(
-//                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     if (todayNotifications.isNotEmpty) ...[
-//                       const SizedBox(height: 16),
-//                       Container(
-//                         padding: const EdgeInsets.symmetric(vertical: 8),
-//                         child: Row(
-//                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                           children: [
-//                             Text(
-//                               'Today',
-//                               style: TextStyle(
-//                                 fontSize: 16,
-//                                 fontWeight: FontWeight.w600,
-//                                 color: Colors.grey[800],
-//                               ),
-//                             ),
-//                             Text(
-//                               '${todayNotifications.length} notification${todayNotifications.length != 1 ? "s" : ""}',
-//                               style: TextStyle(
-//                                 fontSize: 12,
-//                                 color: Colors.grey[500],
-//                               ),
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                       const SizedBox(height: 16),
-//                       ...todayNotifications.map((notification) => 
-//                         _buildNotificationItem(notification)
-//                       ),
-//                     ],
-//                     if (olderNotifications.isNotEmpty) ...[
-//                       const SizedBox(height: 32),
-//                       Container(
-//                         padding: const EdgeInsets.symmetric(vertical: 8),
-//                         child: Row(
-//                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                           children: [
-//                             Text(
-//                               'Earlier',
-//                               style: TextStyle(
-//                                 fontSize: 16,
-//                                 fontWeight: FontWeight.w600,
-//                                 color: Colors.grey[800],
-//                               ),
-//                             ),
-//                             Text(
-//                               '${olderNotifications.length} notification${olderNotifications.length != 1 ? "s" : ""}',
-//                               style: TextStyle(
-//                                 fontSize: 12,
-//                                 color: Colors.grey[500],
-//                               ),
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                       const SizedBox(height: 16),
-//                       ...olderNotifications.map((notification) => 
-//                         _buildNotificationItem(notification)
-//                       ),
-//                     ],
-//                     const SizedBox(height: 32),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//     );
-//   }
+  IconData _getNotificationIcon(String type) {
+    switch (type.toUpperCase()) {
+      case 'ACHIEVEMENT':
+        return Icons.emoji_events;
+      case 'MISSION':
+        return Icons.check_circle;
+      case 'PHASE':
+        return Icons.timeline;
+      case 'QUIT_PLAN':
+        return Icons.calendar_today;
+      case 'SYSTEM':
+        return Icons.notifications_active;
+      default:
+        return Icons.notifications;
+    }
+  }
 
-//   Widget _buildNotificationItem(AchievementNotification notification) {
-//     return NotificationItem(
-//       icon: _getNotificationIcon(notification.type),
-//       iconColor: _getNotificationColor(notification.type),
-//       title: notification.title,
-//       subtitle: '${notification.content} • ${_formatNotificationTime(notification.createdAt)}',
-//       isUnread: !notification.isRead,
-//       onTap: () => _navigateToDetail(notification),
-//     );
-//   }
+  Color _getNotificationColor(String type) {
+    switch (type.toUpperCase()) {
+      case 'ACHIEVEMENT':
+        return Colors.amber;
+      case 'MISSION':
+        return Colors.green;
+      case 'PHASE':
+        return Colors.blue;
+      case 'QUIT_PLAN':
+        return Colors.orange;
+      case 'SYSTEM':
+        return Colors.purple;
+      default:
+        return const Color(0xFF00D09E);
+    }
+  }
 
-//   Widget _buildEmptyState() {
-//     return Center(
-//       child: Padding(
-//         padding: const EdgeInsets.all(40.0),
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             Icon(
-//               Icons.notifications_none,
-//               size: 80,
-//               color: Colors.grey[400],
-//             ),
-//             const SizedBox(height: 16),
-//             Text(
-//               'No Notifications Yet',
-//               style: TextStyle(
-//                 fontSize: 20,
-//                 fontWeight: FontWeight.w600,
-//                 color: Colors.grey[800],
-//               ),
-//             ),
-//             const SizedBox(height: 8),
-//             Text(
-//               'You\'ll receive notifications about achievements,\nmissions, and health updates here.',
-//               textAlign: TextAlign.center,
-//               style: TextStyle(
-//                 fontSize: 14,
-//                 color: Colors.grey[600],
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
+  String _formatNotificationTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
 
-//   void _showClearAllDialog() {
-//     showDialog(
-//       context: context,
-//       builder: (context) => AlertDialog(
-//         title: const Text('Clear All Notifications'),
-//         content: const Text(
-//           'Are you sure you want to clear all notifications? This action cannot be undone.',
-//         ),
-//         actions: [
-//           TextButton(
-//             onPressed: () => Navigator.pop(context),
-//             child: const Text('Cancel'),
-//           ),
-//           TextButton(
-//             onPressed: () {
-//               ref.read(achievementNotificationsProvider.notifier).clearAll();
-//               Navigator.pop(context);
-//             },
-//             style: TextButton.styleFrom(
-//               foregroundColor: Colors.red,
-//             ),
-//             child: const Text('Clear All'),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return DateFormat('MMM d, y').format(dateTime);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen for refresh trigger
+    ref.listen(notificationRefreshProvider, (previous, next) {
+      if (previous != next) {
+        print('🔄 [NotificationScreen] Refresh triggered, reloading...');
+        ref.read(notificationViewModelProvider.notifier).getAllNotifications();
+      }
+    });
+
+    final notificationState = ref.watch(notificationViewModelProvider);
+    final notifications = notificationState.notifications;
+    final isLoading = notificationState.isLoading;
+
+    // Separate notifications by date
+    final today = DateTime.now();
+    final todayNotifications = notifications
+        .where(
+          (n) =>
+              n.createdAt.year == today.year &&
+              n.createdAt.month == today.month &&
+              n.createdAt.day == today.day,
+        )
+        .toList();
+
+    final olderNotifications = notifications
+        .where(
+          (n) =>
+              !(n.createdAt.year == today.year &&
+                  n.createdAt.month == today.month &&
+                  n.createdAt.day == today.day),
+        )
+        .toList();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF00D09E), Color(0xFF00B887)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Notifications',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (notifications.isNotEmpty)
+              Text(
+                '${notifications.where((n) => !n.isRead).length} unread',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          if (notifications.isNotEmpty) ...[
+            _isMarkingAllAsRead
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  )
+                : IconButton(
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(
+                          Icons.done_all,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        if (notifications.any((n) => !n.isRead))
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                '${notifications.where((n) => !n.isRead).length}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    onPressed: () async {
+                      if (_isMarkingAllAsRead) return;
+
+                      setState(() => _isMarkingAllAsRead = true);
+
+                      await ref
+                          .read(notificationViewModelProvider.notifier)
+                          .markAllAsRead();
+
+                      // Refresh notification list to sync UI with API state
+                      if (mounted) {
+                        await ref
+                            .read(notificationViewModelProvider.notifier)
+                            .getAllNotifications();
+
+                        setState(() => _isMarkingAllAsRead = false);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'All notifications marked as read',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFF00D09E),
+                            duration: const Duration(seconds: 3),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            margin: const EdgeInsets.all(16),
+                          ),
+                        );
+                      }
+                    },
+                    tooltip: 'Mark all as read',
+                  ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onSelected: (value) {
+                if (value == 'clear_all') {
+                  _showClearAllDialog();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'clear_all',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_sweep, color: Colors.red, size: 20),
+                      SizedBox(width: 12),
+                      Text(
+                        'Clear All',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+      body: isLoading && notifications.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : notifications.isEmpty
+          ? _buildEmptyState()
+          : RefreshIndicator(
+              onRefresh: () async {
+                await ref
+                    .read(notificationViewModelProvider.notifier)
+                    .refresh();
+              },
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (todayNotifications.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00D09E),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Today',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00D09E).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${todayNotifications.length}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF00D09E),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...todayNotifications.map(
+                        (notification) => _buildNotificationItem(notification),
+                      ),
+                    ],
+                    if (olderNotifications.isNotEmpty) ...[
+                      const SizedBox(height: 32),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[400],
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Earlier',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${olderNotifications.length}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...olderNotifications.map(
+                        (notification) => _buildNotificationItem(notification),
+                      ),
+                    ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildNotificationItem(AchievementNotification notification) {
+    return Dismissible(
+      key: Key('notification_${notification.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (direction) async {
+        await ref
+            .read(notificationViewModelProvider.notifier)
+            .deleteNotification(notification.id);
+
+        // Refresh notification list
+        if (mounted) {
+          await ref
+              .read(notificationViewModelProvider.notifier)
+              .getAllNotifications();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Text('Notification deleted'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      },
+      child: NotificationItem(
+        icon: _getNotificationIcon(notification.type),
+        iconColor: _getNotificationColor(notification.type),
+        title: notification.title,
+        subtitle:
+            '${notification.content} • ${_formatNotificationTime(notification.createdAt)}',
+        isUnread: !notification.isRead,
+        onTap: () => _onTapNotification(notification),
+        onDelete: () => _showDeleteConfirmDialog(notification),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00D09E).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.notifications_none_rounded,
+                size: 80,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Notifications Yet',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You\'ll receive notifications about achievements,\nmissions, phases, quit plans, and system updates here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(AchievementNotification notification) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_rounded,
+                  color: Colors.red,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Delete Notification?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to delete this notification?',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        // Close dialog first
+                        Navigator.pop(context);
+
+                        // Delete notification
+                        await ref
+                            .read(notificationViewModelProvider.notifier)
+                            .deleteNotification(notification.id);
+
+                        // Refresh notification list
+                        if (mounted) {
+                          await ref
+                              .read(notificationViewModelProvider.notifier)
+                              .getAllNotifications();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    'Notification deleted',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              margin: const EdgeInsets.all(16),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showClearAllDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_sweep,
+                  color: Colors.red,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Clear All Notifications?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to delete all notifications? This action cannot be undone.',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await ref
+                            .read(notificationViewModelProvider.notifier)
+                            .deleteAllNotifications();
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    'All notifications deleted',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              margin: const EdgeInsets.all(16),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Clear All',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
