@@ -71,6 +71,7 @@ dependencies:
   stomp_dart_client: ^2.0.0
   web_socket_channel: ^3.0.1
   flutter_local_notifications: ^18.0.1
+  logger: ^2.6.2
 
   intl: any
 dev_dependencies:

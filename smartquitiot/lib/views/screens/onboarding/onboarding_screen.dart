@@ -62,26 +62,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Tips rotation
   final List<String> _quitTips = [
-    '💡 Tip: Drinking water helps reduce cravings',
-    '💡 Did you know? Your sense of taste improves within 48 hours',
-    '💡 Tip: Deep breathing exercises can help manage stress',
-    '💡 After 2 weeks, your circulation begins to improve',
-    '💡 Tip: Keep your hands busy to avoid reaching for cigarettes',
-    '💡 Your risk of heart attack begins to drop after 24 hours',
-    '💡 Tip: Exercise releases endorphins that reduce cravings',
-    '💡 Within 3 months, your lung function improves by 30%',
+    'Tip: Drinking water helps reduce cravings',
+    'Did you know? Your sense of taste improves within 48 hours',
+    'Tip: Deep breathing exercises can help manage stress',
+    'After 2 weeks, your circulation begins to improve',
+    'Tip: Keep your hands busy to avoid reaching for cigarettes',
+    'Your risk of heart attack begins to drop after 24 hours',
+    'Tip: Exercise releases endorphins that reduce cravings',
+    'Within 3 months, your lung function improves by 30%',
   ];
   int _currentTipIndex = 0;
   Timer? _tipTimer;
 
   // Motivational messages
   final List<String> _motivationalMessages = [
-    '🌟 Every journey begins with a single step',
-    '💪 You\'re stronger than your cravings',
-    '🎯 Building your personalized roadmap to freedom',
-    '✨ Your healthier life starts here',
-    '🌈 Creating a smoke-free future for you',
-    '🔥 Igniting your path to wellness',
+    'Every journey begins with a single step',
+    'You\'re stronger than your cravings',
+    'Building your personalized roadmap to freedom',
+    'Your healthier life starts here',
+    'Creating a smoke-free future for you',
+    'Igniting your path to wellness',
   ];
   int _currentMotivationalIndex = 0;
   Timer? _motivationalTimer;
@@ -904,7 +904,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     setState(() {
                                       _creationProgress = 1.0;
                                       _loadingMessage =
-                                          '✨ Quit plan ready!\nLoading your dashboard...';
+                                          'Quit plan ready!\nLoading your dashboard...';
                                     });
                                     print(
                                       '✨ [OnboardingScreen] Quit plan ready!',
