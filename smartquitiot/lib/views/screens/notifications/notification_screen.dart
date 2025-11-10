@@ -14,16 +14,27 @@ class NotificationsScreen extends ConsumerStatefulWidget {
       _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   bool _isMarkingAllAsRead = false;
 
   @override
   void initState() {
     super.initState();
-    // Load notifications on init
+    _tabController = TabController(length: 2, vsync: this);
+
+    // Load both tabs on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationViewModelProvider.notifier).getAllNotifications();
+      ref.read(notificationViewModelProvider.notifier).getUnreadNotifications();
+      ref.read(notificationViewModelProvider.notifier).getReadNotifications();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void _onTapNotification(AchievementNotification notification) async {
@@ -33,11 +44,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           .read(notificationViewModelProvider.notifier)
           .markAsRead(notification.id);
 
-      // Refresh notification list to sync UI with API state
+      // Refresh both tabs to sync UI with API state
       if (mounted) {
-        await ref
-            .read(notificationViewModelProvider.notifier)
-            .getAllNotifications();
+        await ref.read(notificationViewModelProvider.notifier).refreshTabs();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -229,33 +238,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     ref.listen(notificationRefreshProvider, (previous, next) {
       if (previous != next) {
         print('🔄 [NotificationScreen] Refresh triggered, reloading...');
-        ref.read(notificationViewModelProvider.notifier).getAllNotifications();
+        ref.read(notificationViewModelProvider.notifier).refreshTabs();
       }
     });
 
     final notificationState = ref.watch(notificationViewModelProvider);
-    final notifications = notificationState.notifications;
-    final isLoading = notificationState.isLoading;
-
-    // Separate notifications by date
-    final today = DateTime.now();
-    final todayNotifications = notifications
-        .where(
-          (n) =>
-              n.createdAt.year == today.year &&
-              n.createdAt.month == today.month &&
-              n.createdAt.day == today.day,
-        )
-        .toList();
-
-    final olderNotifications = notifications
-        .where(
-          (n) =>
-              !(n.createdAt.year == today.year &&
-                  n.createdAt.month == today.month &&
-                  n.createdAt.day == today.day),
-        )
-        .toList();
+    final readNotifications = notificationState.readNotifications;
+    final unreadNotifications = notificationState.unreadNotifications;
+    final isLoadingRead = notificationState.isLoadingRead;
+    final isLoadingUnread = notificationState.isLoadingUnread;
+    final unreadCount = notificationState.unreadCount;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -285,9 +277,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (notifications.isNotEmpty)
+            if (unreadCount > 0)
               Text(
-                '${notifications.where((n) => !n.isRead).length} unread',
+                '$unreadCount unread',
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 12,
@@ -296,8 +288,84 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               ),
           ],
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          labelStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.normal,
+          ),
+          tabs: [
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Unread'),
+                  if (unreadCount > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$unreadCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Read'),
+                  if (readNotifications.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${readNotifications.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
-          if (notifications.isNotEmpty) ...[
+          if (unreadNotifications.isNotEmpty ||
+              readNotifications.isNotEmpty) ...[
             _isMarkingAllAsRead
                 ? const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -319,7 +387,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           color: Colors.white,
                           size: 24,
                         ),
-                        if (notifications.any((n) => !n.isRead))
+                        if (unreadCount > 0)
                           Positioned(
                             right: -2,
                             top: -2,
@@ -334,7 +402,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                 minHeight: 16,
                               ),
                               child: Text(
-                                '${notifications.where((n) => !n.isRead).length}',
+                                '$unreadCount',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 9,
@@ -355,11 +423,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           .read(notificationViewModelProvider.notifier)
                           .markAllAsRead();
 
-                      // Refresh notification list to sync UI with API state
+                      // Refresh both tabs to sync UI with API state
                       if (mounted) {
                         await ref
                             .read(notificationViewModelProvider.notifier)
-                            .getAllNotifications();
+                            .refreshTabs();
 
                         setState(() => _isMarkingAllAsRead = false);
 
@@ -421,136 +489,75 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           ],
         ],
       ),
-      body: isLoading && notifications.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : notifications.isEmpty
-          ? _buildEmptyState()
-          : RefreshIndicator(
-              onRefresh: () async {
-                await ref
-                    .read(notificationViewModelProvider.notifier)
-                    .refresh();
-              },
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (todayNotifications.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF00D09E),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Today',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF00D09E).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${todayNotifications.length}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF00D09E),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...todayNotifications.map(
-                        (notification) => _buildNotificationItem(notification),
-                      ),
-                    ],
-                    if (olderNotifications.isNotEmpty) ...[
-                      const SizedBox(height: 32),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[400],
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Earlier',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${olderNotifications.length}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...olderNotifications.map(
-                        (notification) => _buildNotificationItem(notification),
-                      ),
-                    ],
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
-            ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Unread Tab
+          _buildNotificationTab(
+            notifications: unreadNotifications,
+            isLoading: isLoadingUnread,
+            emptyMessage: 'No unread notifications',
+            emptySubtitle: 'You\'re all caught up! 🎉',
+            onRefresh: () async {
+              await ref
+                  .read(notificationViewModelProvider.notifier)
+                  .getUnreadNotifications();
+            },
+            forceHideBadge: false, // Show badge in Unread tab
+          ),
+          // Read Tab
+          _buildNotificationTab(
+            notifications: readNotifications,
+            isLoading: isLoadingRead,
+            emptyMessage: 'No read notifications',
+            emptySubtitle: 'Read notifications will appear here',
+            onRefresh: () async {
+              await ref
+                  .read(notificationViewModelProvider.notifier)
+                  .getReadNotifications();
+            },
+            forceHideBadge: true, // HIDE badge in Read tab
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildNotificationItem(AchievementNotification notification) {
+  Widget _buildNotificationTab({
+    required List<AchievementNotification> notifications,
+    required bool isLoading,
+    required String emptyMessage,
+    required String emptySubtitle,
+    required Future<void> Function() onRefresh,
+    bool forceHideBadge = false,
+  }) {
+    if (isLoading && notifications.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (notifications.isEmpty) {
+      return _buildEmptyState(message: emptyMessage, subtitle: emptySubtitle);
+    }
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: notifications.length,
+        itemBuilder: (context, index) {
+          return _buildNotificationItem(
+            notifications[index],
+            forceHideBadge: forceHideBadge,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNotificationItem(
+    AchievementNotification notification, {
+    bool forceHideBadge = false,
+  }) {
     return Dismissible(
       key: Key('notification_${notification.id}'),
       direction: DismissDirection.endToStart,
@@ -569,11 +576,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             .read(notificationViewModelProvider.notifier)
             .deleteNotification(notification.id);
 
-        // Refresh notification list
+        // Refresh both tabs
         if (mounted) {
-          await ref
-              .read(notificationViewModelProvider.notifier)
-              .getAllNotifications();
+          await ref.read(notificationViewModelProvider.notifier).refreshTabs();
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -581,10 +586,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.white, size: 20),
                   SizedBox(width: 12),
-                  Text('Notification deleted'),
+                  Text('Notification deleted successfully'),
                 ],
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFF00D09E),
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -601,13 +606,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         subtitle:
             '${notification.content} • ${_formatNotificationTime(notification.createdAt)}',
         isUnread: !notification.isRead,
+        forceHideBadge: forceHideBadge,
         onTap: () => _onTapNotification(notification),
         onDelete: () => _showDeleteConfirmDialog(notification),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState({required String message, required String subtitle}) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40.0),
@@ -628,7 +634,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'No Notifications Yet',
+              message,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -637,7 +643,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'You\'ll receive notifications about achievements,\nmissions, phases, quit plans, and system updates here.',
+              subtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -728,11 +734,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             .read(notificationViewModelProvider.notifier)
                             .deleteNotification(notification.id);
 
-                        // Refresh notification list
+                        // Refresh both tabs
                         if (mounted) {
                           await ref
                               .read(notificationViewModelProvider.notifier)
-                              .getAllNotifications();
+                              .refreshTabs();
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -745,14 +751,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                   ),
                                   SizedBox(width: 12),
                                   Text(
-                                    'Notification deleted',
+                                    'Notification deleted successfully',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ],
                               ),
-                              backgroundColor: Colors.red,
+                              backgroundColor: const Color(0xFF00D09E),
                               duration: const Duration(seconds: 2),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
@@ -862,7 +868,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         await ref
                             .read(notificationViewModelProvider.notifier)
                             .deleteAllNotifications();
+
+                        // Refresh both tabs to show empty state
                         if (context.mounted) {
+                          await ref
+                              .read(notificationViewModelProvider.notifier)
+                              .refreshTabs();
+
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

@@ -20,26 +20,42 @@ final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
 // Notification State
 class NotificationState {
   final List<AchievementNotification> notifications;
+  final List<AchievementNotification> readNotifications;
+  final List<AchievementNotification> unreadNotifications;
   final bool isLoading;
+  final bool isLoadingRead;
+  final bool isLoadingUnread;
   final String? error;
   final int unreadCount;
 
   NotificationState({
     this.notifications = const [],
+    this.readNotifications = const [],
+    this.unreadNotifications = const [],
     this.isLoading = false,
+    this.isLoadingRead = false,
+    this.isLoadingUnread = false,
     this.error,
     this.unreadCount = 0,
   });
 
   NotificationState copyWith({
     List<AchievementNotification>? notifications,
+    List<AchievementNotification>? readNotifications,
+    List<AchievementNotification>? unreadNotifications,
     bool? isLoading,
+    bool? isLoadingRead,
+    bool? isLoadingUnread,
     String? error,
     int? unreadCount,
   }) {
     return NotificationState(
       notifications: notifications ?? this.notifications,
+      readNotifications: readNotifications ?? this.readNotifications,
+      unreadNotifications: unreadNotifications ?? this.unreadNotifications,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingRead: isLoadingRead ?? this.isLoadingRead,
+      isLoadingUnread: isLoadingUnread ?? this.isLoadingUnread,
       error: error,
       unreadCount: unreadCount ?? this.unreadCount,
     );
@@ -253,10 +269,86 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
     }
   }
 
+  /// Get read notifications only
+  Future<void> getReadNotifications({int page = 0, int size = 200}) async {
+    try {
+      state = state.copyWith(isLoadingRead: true, error: null);
+      print('🔔 [NotificationViewModel] Loading read notifications...');
+
+      final token = await _ref.read(authRepositoryProvider).getAccessToken();
+      if (token == null) {
+        throw Exception('No access token found');
+      }
+
+      final notifications = await _repository.getAllNotificationsAllTypes(
+        accessToken: token,
+        isRead: true,
+        page: page,
+        size: size,
+      );
+
+      state = state.copyWith(
+        readNotifications: notifications,
+        isLoadingRead: false,
+      );
+
+      print('✅ [NotificationViewModel] Loaded ${notifications.length} read notifications');
+    } catch (e) {
+      print('❌ [NotificationViewModel] Error loading read notifications: $e');
+      state = state.copyWith(
+        isLoadingRead: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  /// Get unread notifications only
+  Future<void> getUnreadNotifications({int page = 0, int size = 200}) async {
+    try {
+      state = state.copyWith(isLoadingUnread: true, error: null);
+      print('🔔 [NotificationViewModel] Loading unread notifications...');
+
+      final token = await _ref.read(authRepositoryProvider).getAccessToken();
+      if (token == null) {
+        throw Exception('No access token found');
+      }
+
+      final notifications = await _repository.getAllNotificationsAllTypes(
+        accessToken: token,
+        isRead: false,
+        page: page,
+        size: size,
+      );
+
+      state = state.copyWith(
+        unreadNotifications: notifications,
+        isLoadingUnread: false,
+        unreadCount: notifications.length,
+      );
+
+      print('✅ [NotificationViewModel] Loaded ${notifications.length} unread notifications');
+    } catch (e) {
+      print('❌ [NotificationViewModel] Error loading unread notifications: $e');
+      state = state.copyWith(
+        isLoadingUnread: false,
+        error: e.toString(),
+      );
+    }
+  }
+
   /// Refresh notifications
   Future<void> refresh() async {
     print('🔄 [NotificationViewModel] Refreshing notifications...');
     await getAllNotifications();
+  }
+
+  /// Refresh both read and unread tabs
+  Future<void> refreshTabs() async {
+    print('🔄 [NotificationViewModel] Refreshing both tabs...');
+    await Future.wait([
+      getReadNotifications(),
+      getUnreadNotifications(),
+    ]);
   }
 }
 

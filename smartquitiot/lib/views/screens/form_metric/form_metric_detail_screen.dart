@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:another_flushbar/flushbar.dart';
 import '../../../viewmodels/form_metric_view_model.dart';
+import '../../../models/request/update_form_metric_request.dart';
+import '../../../models/response/form_metric_response.dart';
 
 class FormMetricDetailScreen extends ConsumerStatefulWidget {
   const FormMetricDetailScreen({super.key});
@@ -37,7 +40,7 @@ class _FormMetricDetailScreenState
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
               title: const Text(
-                'Your Metrics',
+                'Form Metric Detail',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -49,8 +52,8 @@ class _FormMetricDetailScreenState
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFF6A11CB),
-                      Color(0xFF2575FC),
+                      Color(0xFF00D09E),
+                      Color(0xFF00B386),
                     ],
                   ),
                 ),
@@ -125,28 +128,28 @@ class _FormMetricDetailScreenState
                       icon: Icons.smoking_rooms,
                       title: 'Average Cigarettes Per Day',
                       value: '${formMetric.formMetricDTO.smokeAvgPerDay}',
-                      color: Colors.orange,
+                      color: const Color(0xFF00D09E),
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
                       icon: Icons.calendar_today,
                       title: 'Years of Smoking',
                       value: '${formMetric.formMetricDTO.numberOfYearsOfSmoking}',
-                      color: Colors.blue,
+                      color: const Color(0xFF00B386),
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
                       icon: Icons.access_time,
                       title: 'Minutes After Waking to Smoke',
                       value: '${formMetric.formMetricDTO.minutesAfterWakingToSmoke}',
-                      color: Colors.purple,
+                      color: const Color(0xFF00D09E),
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
                       icon: Icons.inventory_2,
                       title: 'Cigarettes Per Package',
                       value: '${formMetric.formMetricDTO.cigarettesPerPackage}',
-                      color: Colors.teal,
+                      color: const Color(0xFF00B386),
                     ),
 
                     const SizedBox(height: 24),
@@ -158,14 +161,14 @@ class _FormMetricDetailScreenState
                       icon: Icons.water_drop,
                       title: 'Nicotine Per Cigarette',
                       value: '${formMetric.formMetricDTO.amountOfNicotinePerCigarettes} mg',
-                      color: Colors.red,
+                      color: const Color(0xFF00D09E),
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
                       icon: Icons.science,
                       title: 'Estimated Daily Nicotine Intake',
                       value: '${formMetric.formMetricDTO.estimatedNicotineIntakePerDay} mg',
-                      color: Colors.deepOrange,
+                      color: const Color(0xFF00B386),
                     ),
 
                     const SizedBox(height: 24),
@@ -178,7 +181,7 @@ class _FormMetricDetailScreenState
                       title: 'Money Per Package',
                       value: NumberFormat('#,###', 'vi_VN')
                           .format(formMetric.formMetricDTO.moneyPerPackage),
-                      color: Colors.green,
+                      color: const Color(0xFF00B386),
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
@@ -186,7 +189,7 @@ class _FormMetricDetailScreenState
                       title: 'Estimated Money Saved on Plan',
                       value: NumberFormat('#,###', 'vi_VN').format(
                           formMetric.formMetricDTO.estimatedMoneySavedOnPlan),
-                      color: Colors.lightGreen,
+                      color: const Color(0xFF00D09E),
                       isHighlight: true,
                     ),
 
@@ -227,7 +230,7 @@ class _FormMetricDetailScreenState
                       const SizedBox(height: 12),
                       _buildChipList(
                         formMetric.formMetricDTO.interests,
-                        Colors.purple,
+                        const Color(0xFF00B386),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -238,10 +241,56 @@ class _FormMetricDetailScreenState
                       const SizedBox(height: 12),
                       _buildChipList(
                         formMetric.formMetricDTO.triggered,
-                        Colors.red,
+                        const Color(0xFFFF6B6B),
                       ),
                       const SizedBox(height: 24),
                     ],
+
+                    // Update Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: state.isLoading
+                            ? null
+                            : () => _showUpdateDialog(formMetric.formMetricDTO),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00D09E),
+                          foregroundColor: Colors.white,
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          disabledBackgroundColor: Colors.grey,
+                        ),
+                        child: state.isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.edit, size: 24),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Update Form Metric',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -520,6 +569,226 @@ class _FormMetricDetailScreenState
           ),
         );
       }).toList(),
+    );
+  }
+
+  void _showUpdateDialog(FormMetricDTO currentData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Update Form Metric',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF00D09E),
+          ),
+        ),
+        content: const Text(
+          'Do you want to update your form metric data? This will use the current values.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleUpdate(currentData);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00D09E),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleUpdate(FormMetricDTO currentData) async {
+    final request = UpdateFormMetricRequest(
+      smokeAvgPerDay: currentData.smokeAvgPerDay,
+      numberOfYearsOfSmoking: currentData.numberOfYearsOfSmoking,
+      cigarettesPerPackage: currentData.cigarettesPerPackage,
+      minutesAfterWakingToSmoke: currentData.minutesAfterWakingToSmoke,
+      smokingInForbiddenPlaces: currentData.smokingInForbiddenPlaces,
+      cigaretteHateToGiveUp: currentData.cigaretteHateToGiveUp,
+      morningSmokingFrequency: currentData.morningSmokingFrequency,
+      smokeWhenSick: currentData.smokeWhenSick,
+      moneyPerPackage: currentData.moneyPerPackage,
+      estimatedMoneySavedOnPlan: currentData.estimatedMoneySavedOnPlan,
+      amountOfNicotinePerCigarettes: currentData.amountOfNicotinePerCigarettes,
+      estimatedNicotineIntakePerDay: currentData.estimatedNicotineIntakePerDay,
+      interests: currentData.interests,
+      triggered: currentData.triggered,
+    );
+
+    final response = await ref
+        .read(formMetricViewModelProvider.notifier)
+        .updateFormMetric(request: request);
+
+    if (!mounted) return;
+
+    if (response != null) {
+      // Show success message
+      Flushbar(
+        message: 'Form metric updated successfully!',
+        icon: const Icon(
+          Icons.check_circle,
+          color: Colors.white,
+        ),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(12),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
+
+      // Check if alert is true -> show warning dialog
+      if (response.alert) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
+        _showAlertDialog(response.ftndScore);
+      }
+    } else {
+      // Show error message
+      final state = ref.read(formMetricViewModelProvider);
+      Flushbar(
+        message: state.error ?? 'Failed to update form metric',
+        icon: const Icon(
+          Icons.error_outline,
+          color: Colors.white,
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(12),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
+    }
+  }
+
+  void _showAlertDialog(int newFtndScore) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.orange,
+              size: 32,
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Important Notice',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'You have updated fields that affect your FTND score.',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Text(
+                    'New FTND Score:',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$newFtndScore',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'This may affect your quit plan, phases, and missions.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Would you like to create a new quit plan based on your updated information?',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Keep Current Plan',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to create new quit plan screen
+              // context.go('/create-quit-plan');
+              Flushbar(
+                message: 'Create new quit plan feature coming soon!',
+                icon: const Icon(
+                  Icons.info_outline,
+                  color: Colors.white,
+                ),
+                backgroundColor: const Color(0xFF00D09E),
+                duration: const Duration(seconds: 2),
+                margin: const EdgeInsets.all(8),
+                borderRadius: BorderRadius.circular(12),
+                flushbarPosition: FlushbarPosition.TOP,
+              ).show(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Create New Plan'),
+          ),
+        ],
+      ),
     );
   }
 }
