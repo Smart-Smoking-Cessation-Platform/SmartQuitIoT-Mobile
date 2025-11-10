@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/quit_plan_history.dart';
 import '../../../providers/quit_plan_history_provider.dart';
+import 'quit_plan_detail_screen.dart';
 
 class QuitPlanHistoryScreen extends ConsumerStatefulWidget {
   const QuitPlanHistoryScreen({super.key});
 
   @override
-  ConsumerState<QuitPlanHistoryScreen> createState() => _QuitPlanHistoryScreenState();
+  ConsumerState<QuitPlanHistoryScreen> createState() =>
+      _QuitPlanHistoryScreenState();
 }
 
 class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
@@ -46,7 +48,11 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -59,7 +65,9 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+                        ref
+                            .read(quitPlanHistoryViewModelProvider.notifier)
+                            .refresh();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF00D09E),
@@ -84,7 +92,9 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    await ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+                    await ref
+                        .read(quitPlanHistoryViewModelProvider.notifier)
+                        .refresh();
                   },
                   color: const Color(0xFF00D09E),
                   child: ListView.builder(
@@ -167,33 +177,65 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
   Widget _buildQuitPlanCard(QuitPlanHistory quitPlan) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
+      elevation: 2,
+      shadowColor: Color(quitPlan.statusColor).withOpacity(0.2),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[200]!),
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: Color(quitPlan.statusColor).withOpacity(0.3),
+          width: 1.5,
+        ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         onTap: () {
-          _showQuitPlanDetails(quitPlan);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => QuitPlanDetailScreen(quitPlanId: quitPlan.id),
+            ),
+          );
         },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.white,
+                Color(quitPlan.statusColor).withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Color(quitPlan.statusColor).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(quitPlan.statusColor),
+                          Color(quitPlan.statusColor).withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(quitPlan.statusColor).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Icon(
                       _getStatusIcon(quitPlan.status),
-                      color: Color(quitPlan.statusColor),
-                      size: 24,
+                      color: Colors.white,
+                      size: 26,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -204,8 +246,9 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                         Text(
                           quitPlan.name,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.3,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -215,19 +258,35 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                                horizontal: 10,
+                                vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: Color(quitPlan.statusColor).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(quitPlan.statusColor),
+                                    Color(
+                                      quitPlan.statusColor,
+                                    ).withOpacity(0.8),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(
+                                      quitPlan.statusColor,
+                                    ).withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Text(
                                 quitPlan.statusDisplayText,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(quitPlan.statusColor),
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
@@ -235,19 +294,33 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                                  horizontal: 10,
+                                  vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF00D09E).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF00D09E),
+                                      Color(0xFF00B87C),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFF00D09E,
+                                      ).withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                                 child: const Row(
                                   children: [
                                     Icon(
                                       Icons.check_circle,
-                                      size: 12,
-                                      color: Color(0xFF00D09E),
+                                      size: 14,
+                                      color: Colors.white,
                                     ),
                                     SizedBox(width: 4),
                                     Text(
@@ -255,7 +328,7 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF00D09E),
+                                        color: Colors.white,
                                       ),
                                     ),
                                   ],
@@ -269,9 +342,13 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Divider(color: Colors.grey[200], height: 1),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
+              Divider(
+                color: Color(quitPlan.statusColor).withOpacity(0.2),
+                height: 1,
+                thickness: 1,
+              ),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
@@ -299,11 +376,7 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.assessment,
-                        size: 14,
-                        color: Colors.grey[600],
-                      ),
+                      Icon(Icons.assessment, size: 14, color: Colors.grey[600]),
                       const SizedBox(width: 6),
                       Text(
                         'FTND Score: ${quitPlan.ftndScore}',
@@ -318,20 +391,40 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                   if (quitPlan.useNRT)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: 10,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00D09E).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'NRT',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF00D09E),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00D09E), Color(0xFF00B87C)],
                         ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00D09E).withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.medical_services,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'NRT',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -348,11 +441,7 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.history,
-            size: 80,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.history, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No Quit Plans Yet',
@@ -365,10 +454,7 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
           const SizedBox(height: 8),
           Text(
             'Your quit plan history will appear here',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -380,11 +466,7 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.search_off,
-            size: 80,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No Results Found',
@@ -397,10 +479,7 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
           const SizedBox(height: 8),
           Text(
             'Try changing the filter',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -420,10 +499,7 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                quitPlan.name,
-                style: const TextStyle(fontSize: 18),
-              ),
+              child: Text(quitPlan.name, style: const TextStyle(fontSize: 18)),
             ),
           ],
         ),
@@ -432,13 +508,41 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow('Status', quitPlan.statusDisplayText, Colors.black87),
-              _buildDetailRow('Start Date', _formatDate(quitPlan.startDate), Colors.black87),
-              _buildDetailRow('End Date', _formatDate(quitPlan.endDate), Colors.black87),
-              _buildDetailRow('Created', _formatDateTime(quitPlan.createdAt), Colors.black87),
-              _buildDetailRow('FTND Score', '${quitPlan.ftndScore}', Colors.black87),
-              _buildDetailRow('Use NRT', quitPlan.useNRT ? 'Yes' : 'No', Colors.black87),
-              _buildDetailRow('Active', quitPlan.active ? 'Yes' : 'No', Colors.black87),
+              _buildDetailRow(
+                'Status',
+                quitPlan.statusDisplayText,
+                Colors.black87,
+              ),
+              _buildDetailRow(
+                'Start Date',
+                _formatDate(quitPlan.startDate),
+                Colors.black87,
+              ),
+              _buildDetailRow(
+                'End Date',
+                _formatDate(quitPlan.endDate),
+                Colors.black87,
+              ),
+              _buildDetailRow(
+                'Created',
+                _formatDateTime(quitPlan.createdAt),
+                Colors.black87,
+              ),
+              _buildDetailRow(
+                'FTND Score',
+                '${quitPlan.ftndScore}',
+                Colors.black87,
+              ),
+              _buildDetailRow(
+                'Use NRT',
+                quitPlan.useNRT ? 'Yes' : 'No',
+                Colors.black87,
+              ),
+              _buildDetailRow(
+                'Active',
+                quitPlan.active ? 'Yes' : 'No',
+                Colors.black87,
+              ),
             ],
           ),
         ),
@@ -469,10 +573,7 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: color),
-            ),
+            child: Text(value, style: TextStyle(color: color)),
           ),
         ],
       ),
