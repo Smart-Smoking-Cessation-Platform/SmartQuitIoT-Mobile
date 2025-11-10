@@ -1,5 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../../models/response/form_metric_response.dart';
+
+// Custom formatter for money input
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  final NumberFormat _formatter = NumberFormat('#,###', 'vi_VN');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Allow empty
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digit characters (including commas)
+    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    // If no digits, return empty
+    if (digitsOnly.isEmpty) {
+      return const TextEditingValue(text: '');
+    }
+
+    // Parse and format with commas
+    final number = int.tryParse(digitsOnly);
+    if (number == null) {
+      return oldValue;
+    }
+
+    final formatted = _formatter.format(number);
+
+    // Keep cursor at the end
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class EditFormMetricDialog extends StatefulWidget {
   final FormMetricDTO currentData;
@@ -72,9 +112,11 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
     _cigarettesPerPackageController = TextEditingController(
       text: widget.currentData.cigarettesPerPackage.toString(),
     );
-    _moneyPerPackageController = TextEditingController(
-      text: widget.currentData.moneyPerPackage.toString(),
-    );
+    
+    // Format money with comma separator
+    final formattedMoney = NumberFormat('#,###', 'vi_VN').format(widget.currentData.moneyPerPackage);
+    _moneyPerPackageController = TextEditingController(text: formattedMoney);
+    
     _nicotineAmountController = TextEditingController(
       text: widget.currentData.amountOfNicotinePerCigarettes.toString(),
     );
@@ -99,14 +141,70 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
     super.dispose();
   }
 
+  bool _validateFields() {
+    // Validate all required fields
+    if (_smokeAvgController.text.trim().isEmpty) {
+      _showError('Please enter average cigarettes per day');
+      return false;
+    }
+    if (_yearsSmokingController.text.trim().isEmpty) {
+      _showError('Please enter years of smoking');
+      return false;
+    }
+    if (_minutesAfterWakingController.text.trim().isEmpty) {
+      _showError('Please enter minutes after waking');
+      return false;
+    }
+    if (_cigarettesPerPackageController.text.trim().isEmpty) {
+      _showError('Please enter cigarettes per package');
+      return false;
+    }
+    if (_moneyPerPackageController.text.trim().isEmpty) {
+      _showError('Please enter money per package');
+      return false;
+    }
+    if (_nicotineAmountController.text.trim().isEmpty) {
+      _showError('Please enter nicotine amount');
+      return false;
+    }
+    if (_selectedInterests.isEmpty) {
+      _showError('Please select at least one interest');
+      return false;
+    }
+    if (_selectedTriggers.isEmpty) {
+      _showError('Please select at least one trigger');
+      return false;
+    }
+    return true;
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _handleSave() {
+    // Validate first
+    if (!_validateFields()) {
+      return;
+    }
+
+    // Parse money - remove commas before parsing
+    final moneyText = _moneyPerPackageController.text.replaceAll(',', '');
+    
     final updatedData = FormMetricDTO(
       id: widget.currentData.id,
       smokeAvgPerDay: int.tryParse(_smokeAvgController.text) ?? widget.currentData.smokeAvgPerDay,
       numberOfYearsOfSmoking: int.tryParse(_yearsSmokingController.text) ?? widget.currentData.numberOfYearsOfSmoking,
       minutesAfterWakingToSmoke: int.tryParse(_minutesAfterWakingController.text) ?? widget.currentData.minutesAfterWakingToSmoke,
       cigarettesPerPackage: int.tryParse(_cigarettesPerPackageController.text) ?? widget.currentData.cigarettesPerPackage,
-      moneyPerPackage: double.tryParse(_moneyPerPackageController.text) ?? widget.currentData.moneyPerPackage,
+      moneyPerPackage: double.tryParse(moneyText) ?? widget.currentData.moneyPerPackage,
       amountOfNicotinePerCigarettes: double.tryParse(_nicotineAmountController.text) ?? widget.currentData.amountOfNicotinePerCigarettes,
       smokingInForbiddenPlaces: _smokingInForbiddenPlaces,
       cigaretteHateToGiveUp: _cigaretteHateToGiveUp,
@@ -191,7 +289,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
             // Financial Section
             _buildSectionTitle('Financial Information', Icons.money),
             const SizedBox(height: 16),
-            _buildTextField(
+            _buildMoneyTextField(
               'Money Per Package',
               _moneyPerPackageController,
               Icons.money,
@@ -219,10 +317,9 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
               (value) => setState(() => _smokingInForbiddenPlaces = value),
               Icons.location_off,
             ),
-            _buildSwitchTile(
+            _buildRadioSelection(
               'Cigarette Hate to Give Up',
               _cigaretteHateToGiveUp,
-              (value) => setState(() => _cigaretteHateToGiveUp = value),
               Icons.favorite,
             ),
             _buildSwitchTile(
@@ -333,6 +430,48 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
     );
   }
 
+  Widget _buildMoneyTextField(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          ThousandsSeparatorInputFormatter(),
+        ],
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: const Color(0xFF00D09E)),
+          hintText: 'e.g., 20,000',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSwitchTile(
     String title,
     bool value,
@@ -364,6 +503,99 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
         value: value,
         onChanged: onChanged,
         activeColor: const Color(0xFF00D09E),
+      ),
+    );
+  }
+
+  Widget _buildRadioSelection(
+    String title,
+    bool currentValue,
+    IconData icon,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(icon, color: const Color(0xFF00D09E)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Radio Options
+          RadioListTile<bool>(
+            title: const Row(
+              children: [
+                Icon(Icons.wb_sunny, size: 20, color: Color(0xFF00D09E)),
+                SizedBox(width: 8),
+                Text(
+                  'The first in the morning',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            value: true,
+            groupValue: currentValue,
+            activeColor: const Color(0xFF00D09E),
+            onChanged: (value) {
+              setState(() {
+                _cigaretteHateToGiveUp = value!;
+              });
+            },
+          ),
+          RadioListTile<bool>(
+            title: const Row(
+              children: [
+                Icon(Icons.schedule, size: 20, color: Colors.orange),
+                SizedBox(width: 8),
+                Text(
+                  'Any other',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            value: false,
+            groupValue: currentValue,
+            activeColor: Colors.orange,
+            onChanged: (value) {
+              setState(() {
+                _cigaretteHateToGiveUp = value!;
+              });
+            },
+          ),
+        ],
       ),
     );
   }
