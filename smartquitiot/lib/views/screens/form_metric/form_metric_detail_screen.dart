@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'package:logger/logger.dart';
 import '../../../viewmodels/form_metric_view_model.dart';
 import '../../../models/request/update_form_metric_request.dart';
 import '../../../models/response/form_metric_response.dart';
+import '_edit_form_metric_dialog.dart';
+
+final logger = Logger();
 
 class FormMetricDetailScreen extends ConsumerStatefulWidget {
   const FormMetricDetailScreen({super.key});
@@ -35,15 +39,22 @@ class _FormMetricDetailScreenState
         slivers: [
           // App Bar
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 80,
             floating: false,
             pinned: true,
+            backgroundColor: const Color(0xFF00D09E),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
               title: const Text(
                 'Form Metric Detail',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  fontSize: 16,
                 ),
               ),
               background: Container(
@@ -55,13 +66,6 @@ class _FormMetricDetailScreenState
                       Color(0xFF00D09E),
                       Color(0xFF00B386),
                     ],
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.assessment_rounded,
-                    size: 80,
-                    color: Colors.white.withOpacity(0.3),
                   ),
                 ),
               ),
@@ -117,7 +121,9 @@ class _FormMetricDetailScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // FTND Score Card
-                    _buildFTNDScoreCard(formMetric.ftndScore),
+                    Center(
+                      child: _buildFTNDScoreCard(formMetric.ftndScore),
+                    ),
                     
                     const SizedBox(height: 24),
 
@@ -324,7 +330,7 @@ class _FormMetricDetailScreenState
     Color getScoreColor() {
       if (score <= 2) return Colors.green;
       if (score <= 4) return Colors.lightGreen;
-      if (score <= 6) return Colors.orange;
+      if (score <= 6) return const Color(0xFF00D09E);
       if (score <= 8) return Colors.deepOrange;
       return Colors.red;
     }
@@ -332,38 +338,35 @@ class _FormMetricDetailScreenState
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            getScoreColor(),
-            getScoreColor().withOpacity(0.7),
-          ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: getScoreColor().withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'FTND Score',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
+              color: Colors.grey.shade600,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             '$score',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: getScoreColor(),
               fontSize: 64,
               fontWeight: FontWeight.bold,
             ),
@@ -372,13 +375,17 @@ class _FormMetricDetailScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: getScoreColor().withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: getScoreColor().withOpacity(0.3),
+                width: 1,
+              ),
             ),
             child: Text(
               '${getDependencyLevel()} Dependency',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: getScoreColor(),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -573,45 +580,26 @@ class _FormMetricDetailScreenState
   }
 
   void _showUpdateDialog(FormMetricDTO currentData) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Update Form Metric',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF00D09E),
-          ),
-        ),
-        content: const Text(
-          'Do you want to update your form metric data? This will use the current values.',
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _handleUpdate(currentData);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D09E),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Update'),
-          ),
-        ],
+    logger.i('📝 [FormMetricDetail] Opening edit dialog');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditFormMetricDialog(currentData: currentData),
+        fullscreenDialog: true,
       ),
-    );
+    ).then((updatedData) {
+      if (updatedData != null && mounted) {
+        logger.i('✅ [FormMetricDetail] Edit dialog returned updated data');
+        _handleUpdate(updatedData as FormMetricDTO);
+      } else {
+        logger.w('⚠️ [FormMetricDetail] Edit dialog cancelled');
+      }
+    });
   }
 
   Future<void> _handleUpdate(FormMetricDTO currentData) async {
+    logger.i('🔄 [FormMetricDetail] Starting update process');
+    
     final request = UpdateFormMetricRequest(
       smokeAvgPerDay: currentData.smokeAvgPerDay,
       numberOfYearsOfSmoking: currentData.numberOfYearsOfSmoking,
@@ -629,13 +617,20 @@ class _FormMetricDetailScreenState
       triggered: currentData.triggered,
     );
 
+    logger.d('📦 [FormMetricDetail] Request data: ${request.toJson()}');
+
     final response = await ref
         .read(formMetricViewModelProvider.notifier)
         .updateFormMetric(request: request);
 
-    if (!mounted) return;
+    if (!mounted) {
+      logger.w('⚠️ [FormMetricDetail] Widget unmounted, aborting');
+      return;
+    }
 
     if (response != null) {
+      logger.i('✅ [FormMetricDetail] Update successful - FTND Score: ${response.ftndScore}, Alert: ${response.alert}');
+      
       // Show success message
       Flushbar(
         message: 'Form metric updated successfully!',
@@ -652,13 +647,16 @@ class _FormMetricDetailScreenState
 
       // Check if alert is true -> show warning dialog
       if (response.alert) {
+        logger.w('⚠️ [FormMetricDetail] Alert triggered - showing quit plan warning dialog');
         await Future.delayed(const Duration(milliseconds: 500));
         if (!mounted) return;
         _showAlertDialog(response.ftndScore);
       }
     } else {
-      // Show error message
       final state = ref.read(formMetricViewModelProvider);
+      logger.e('❌ [FormMetricDetail] Update failed: ${state.error}');
+      
+      // Show error message
       Flushbar(
         message: state.error ?? 'Failed to update form metric',
         icon: const Icon(
@@ -675,6 +673,8 @@ class _FormMetricDetailScreenState
   }
 
   void _showAlertDialog(int newFtndScore) {
+    logger.w('⚠️ [FormMetricDetail] Showing alert dialog for new FTND score: $newFtndScore');
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -757,7 +757,10 @@ class _FormMetricDetailScreenState
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              logger.i('✅ [FormMetricDetail] User chose to keep current plan');
+              Navigator.pop(context);
+            },
             child: const Text(
               'Keep Current Plan',
               style: TextStyle(color: Colors.grey),
@@ -765,6 +768,7 @@ class _FormMetricDetailScreenState
           ),
           ElevatedButton(
             onPressed: () {
+              logger.i('🔄 [FormMetricDetail] User chose to create new quit plan');
               Navigator.pop(context);
               // TODO: Navigate to create new quit plan screen
               // context.go('/create-quit-plan');

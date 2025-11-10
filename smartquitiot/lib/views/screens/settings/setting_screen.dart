@@ -112,7 +112,9 @@ class SettingsScreen extends ConsumerWidget {
                       _buildSettingItem(
                         icon: Icons.analytics_outlined,
                         title: 'Change smoking data',
-                        onTap: () {},
+                        onTap: () {
+                          context.go('/form-metric-detail');
+                        },
                       ),
                       // _buildSettingItem(
                       //   icon: Icons.notifications_outlined,
