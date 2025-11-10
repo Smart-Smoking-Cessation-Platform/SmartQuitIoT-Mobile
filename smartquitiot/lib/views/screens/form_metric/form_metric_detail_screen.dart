@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'package:logger/logger.dart';
 import '../../../viewmodels/form_metric_view_model.dart';
 import '../../../models/request/update_form_metric_request.dart';
 import '../../../models/response/form_metric_response.dart';
+import '_edit_form_metric_dialog.dart';
+
+final logger = Logger();
 
 class FormMetricDetailScreen extends ConsumerStatefulWidget {
   const FormMetricDetailScreen({super.key});
@@ -35,15 +39,22 @@ class _FormMetricDetailScreenState
         slivers: [
           // App Bar
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 80,
             floating: false,
             pinned: true,
+            backgroundColor: const Color(0xFF00D09E),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
               title: const Text(
                 'Form Metric Detail',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  fontSize: 16,
                 ),
               ),
               background: Container(
@@ -55,13 +66,6 @@ class _FormMetricDetailScreenState
                       Color(0xFF00D09E),
                       Color(0xFF00B386),
                     ],
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.assessment_rounded,
-                    size: 80,
-                    color: Colors.white.withOpacity(0.3),
                   ),
                 ),
               ),
@@ -117,7 +121,9 @@ class _FormMetricDetailScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // FTND Score Card
-                    _buildFTNDScoreCard(formMetric.ftndScore),
+                    Center(
+                      child: _buildFTNDScoreCard(formMetric.ftndScore),
+                    ),
                     
                     const SizedBox(height: 24),
 
@@ -204,7 +210,7 @@ class _FormMetricDetailScreenState
                       value: formMetric.formMetricDTO.smokingInForbiddenPlaces,
                     ),
                     const SizedBox(height: 12),
-                    _buildBehaviorCard(
+                    _buildSpecialBehaviorCard(
                       icon: Icons.favorite,
                       title: 'Cigarette Hate to Give Up',
                       value: formMetric.formMetricDTO.cigaretteHateToGiveUp,
@@ -324,7 +330,7 @@ class _FormMetricDetailScreenState
     Color getScoreColor() {
       if (score <= 2) return Colors.green;
       if (score <= 4) return Colors.lightGreen;
-      if (score <= 6) return Colors.orange;
+      if (score <= 6) return const Color(0xFF00D09E);
       if (score <= 8) return Colors.deepOrange;
       return Colors.red;
     }
@@ -332,38 +338,35 @@ class _FormMetricDetailScreenState
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            getScoreColor(),
-            getScoreColor().withOpacity(0.7),
-          ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
         ),
-        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: getScoreColor().withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'FTND Score',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
+              color: Colors.grey.shade600,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             '$score',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: getScoreColor(),
               fontSize: 64,
               fontWeight: FontWeight.bold,
             ),
@@ -372,13 +375,17 @@ class _FormMetricDetailScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: getScoreColor().withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: getScoreColor().withOpacity(0.3),
+                width: 1,
+              ),
             ),
             child: Text(
               '${getDependencyLevel()} Dependency',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: getScoreColor(),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -534,6 +541,86 @@ class _FormMetricDetailScreenState
     );
   }
 
+  Widget _buildSpecialBehaviorCard({
+    required IconData icon,
+    required String title,
+    required bool value,
+  }) {
+    final displayText = value ? 'The first in the morning' : 'Any other';
+    final displayColor = value ? const Color(0xFF00D09E) : Colors.orange;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: displayColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: displayColor,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  displayText,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: displayColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: displayColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              value ? Icons.wb_sunny : Icons.schedule,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildChipList(List<String> items, Color color) {
     return Wrap(
       spacing: 8,
@@ -573,45 +660,26 @@ class _FormMetricDetailScreenState
   }
 
   void _showUpdateDialog(FormMetricDTO currentData) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Update Form Metric',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF00D09E),
-          ),
-        ),
-        content: const Text(
-          'Do you want to update your form metric data? This will use the current values.',
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _handleUpdate(currentData);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00D09E),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Update'),
-          ),
-        ],
+    logger.i('📝 [FormMetricDetail] Opening edit dialog');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditFormMetricDialog(currentData: currentData),
+        fullscreenDialog: true,
       ),
-    );
+    ).then((updatedData) {
+      if (updatedData != null && mounted) {
+        logger.i('✅ [FormMetricDetail] Edit dialog returned updated data');
+        _handleUpdate(updatedData as FormMetricDTO);
+      } else {
+        logger.w('⚠️ [FormMetricDetail] Edit dialog cancelled');
+      }
+    });
   }
 
   Future<void> _handleUpdate(FormMetricDTO currentData) async {
+    logger.i('🔄 [FormMetricDetail] Starting update process');
+    
     final request = UpdateFormMetricRequest(
       smokeAvgPerDay: currentData.smokeAvgPerDay,
       numberOfYearsOfSmoking: currentData.numberOfYearsOfSmoking,
@@ -629,13 +697,20 @@ class _FormMetricDetailScreenState
       triggered: currentData.triggered,
     );
 
+    logger.d('📦 [FormMetricDetail] Request data: ${request.toJson()}');
+
     final response = await ref
         .read(formMetricViewModelProvider.notifier)
         .updateFormMetric(request: request);
 
-    if (!mounted) return;
+    if (!mounted) {
+      logger.w('⚠️ [FormMetricDetail] Widget unmounted, aborting');
+      return;
+    }
 
     if (response != null) {
+      logger.i('✅ [FormMetricDetail] Update successful - FTND Score: ${response.ftndScore}, Alert: ${response.alert}');
+      
       // Show success message
       Flushbar(
         message: 'Form metric updated successfully!',
@@ -652,13 +727,16 @@ class _FormMetricDetailScreenState
 
       // Check if alert is true -> show warning dialog
       if (response.alert) {
+        logger.w('⚠️ [FormMetricDetail] Alert triggered - showing quit plan warning dialog');
         await Future.delayed(const Duration(milliseconds: 500));
         if (!mounted) return;
         _showAlertDialog(response.ftndScore);
       }
     } else {
-      // Show error message
       final state = ref.read(formMetricViewModelProvider);
+      logger.e('❌ [FormMetricDetail] Update failed: ${state.error}');
+      
+      // Show error message
       Flushbar(
         message: state.error ?? 'Failed to update form metric',
         icon: const Icon(
@@ -675,119 +753,219 @@ class _FormMetricDetailScreenState
   }
 
   void _showAlertDialog(int newFtndScore) {
+    logger.w('⚠️ [FormMetricDetail] Showing alert dialog for new FTND score: $newFtndScore');
+    
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange,
-              size: 32,
-            ),
-            SizedBox(width: 12),
-            Text(
-              'Important Notice',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
-            ),
-          ],
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'You have updated fields that affect your FTND score.',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.orange.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
+        elevation: 8,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title with icon
+              Row(
                 children: [
-                  const Text(
-                    'New FTND Score:',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.black87,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange,
+                      size: 28,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$newFtndScore',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Important Notice',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'This may affect your quit plan, phases, and missions.',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Would you like to create a new quit plan based on your updated information?',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Keep Current Plan',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Navigate to create new quit plan screen
-              // context.go('/create-quit-plan');
-              Flushbar(
-                message: 'Create new quit plan feature coming soon!',
-                icon: const Icon(
-                  Icons.info_outline,
-                  color: Colors.white,
+              const SizedBox(height: 20),
+              
+              // Description
+              const Text(
+                'You have updated fields that affect your FTND score.',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black87,
                 ),
-                backgroundColor: const Color(0xFF00D09E),
-                duration: const Duration(seconds: 2),
-                margin: const EdgeInsets.all(8),
-                borderRadius: BorderRadius.circular(12),
-                flushbarPosition: FlushbarPosition.TOP,
-              ).show(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Create New Plan'),
+              ),
+              const SizedBox(height: 16),
+              
+              // FTND Score Box
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.orange.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'New FTND Score:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$newFtndScore',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Impact message
+              const Text(
+                'This may affect your quit plan, phases, and missions.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Question
+              const Text(
+                'Would you like to create a new quit plan based on your updated information?',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Buttons - Vertical Stack
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    logger.i('🔄 [FormMetricDetail] User chose to create new quit plan');
+                    Navigator.pop(context);
+                    // TODO: Navigate to create new quit plan screen
+                    // context.go('/create-quit-plan');
+                    Flushbar(
+                      message: 'Create new quit plan feature coming soon!',
+                      icon: const Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                      ),
+                      backgroundColor: const Color(0xFF00D09E),
+                      duration: const Duration(seconds: 2),
+                      margin: const EdgeInsets.all(8),
+                      borderRadius: BorderRadius.circular(12),
+                      flushbarPosition: FlushbarPosition.TOP,
+                    ).show(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.auto_awesome, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Create New Plan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton(
+                  onPressed: () {
+                    logger.i('✅ [FormMetricDetail] User chose to keep current plan');
+                    Navigator.pop(context);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                    side: BorderSide(
+                      color: Colors.grey.shade300,
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_outline, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Keep Current Plan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
