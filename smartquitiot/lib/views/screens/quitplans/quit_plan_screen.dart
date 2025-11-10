@@ -4,6 +4,7 @@ import '../../../providers/quit_plan_provider.dart';
 import '../../../models/quit_phase.dart';
 import '../../widgets/mission_complete_dialog.dart';
 import '../diary/diary_screen.dart';
+import 'quit_plan_history_screen.dart';
 
 class QuitPlanScreen extends ConsumerStatefulWidget {
   const QuitPlanScreen({super.key});
@@ -66,6 +67,20 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
         backgroundColor: const Color(0xFF00D09E),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const QuitPlanHistoryScreen(),
+                ),
+              );
+            },
+            tooltip: 'Quit Plan History',
+          ),
+        ],
       ),
       body: state.when(
         loading: () => const Center(
