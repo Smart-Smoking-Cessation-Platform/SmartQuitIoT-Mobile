@@ -11,6 +11,7 @@ class NotificationItem extends StatelessWidget {
   final bool hasProgress;
   final String? progress;
   final bool isUnread;
+  final bool forceHideBadge; // Hide badge even if isUnread (for Read tab)
 
   const NotificationItem({
     super.key,
@@ -24,6 +25,7 @@ class NotificationItem extends StatelessWidget {
     this.hasProgress = false,
     this.progress,
     this.isUnread = false,
+    this.forceHideBadge = false,
   });
 
   @override
@@ -36,14 +38,16 @@ class NotificationItem extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isUnread ? const Color(0xFFF1FFF3) : Colors.white,
+          color: isUnread 
+              ? const Color(0xFFF1FFF3)  // Light green for unread
+              : const Color(0xFFF5F5F5), // Light gray for read
           borderRadius: BorderRadius.circular(16),
           border: isUnread
               ? Border.all(
                   color: const Color(0xFF00D09E).withOpacity(0.3),
                   width: 2,
                 )
-              : Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+              : Border.all(color: Colors.grey.withOpacity(0.15), width: 1),
           boxShadow: [
             BoxShadow(
               color: isUnread
@@ -120,8 +124,8 @@ class NotificationItem extends StatelessWidget {
                             fontSize: 15,
                             fontWeight: isUnread
                                 ? FontWeight.bold
-                                : FontWeight.w600,
-                            color: Colors.black87,
+                                : FontWeight.w500,
+                            color: isUnread ? Colors.black87 : Colors.grey[700],
                             height: 1.3,
                           ),
                           maxLines: 2,
@@ -152,14 +156,15 @@ class NotificationItem extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey[600],
+                      color: isUnread ? Colors.grey[600] : Colors.grey[500],
                       height: 1.4,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   // "Tap to mark as read" hint for unread notifications
-                  if (isUnread) ...[
+                  // Hidden in Read tab via forceHideBadge
+                  if (isUnread && !forceHideBadge) ...[
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(

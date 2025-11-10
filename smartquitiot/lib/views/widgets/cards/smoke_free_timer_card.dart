@@ -261,19 +261,19 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
                   children: [
                     _TimeBox(
                       value: days.toString().padLeft(2, '0'),
-                      label: 'days'.tr(),
+                      label: "DAYS",
                     ),
                     _TimeBox(
                       value: hours.toString().padLeft(2, '0'),
-                      label: 'hours'.tr(),
+                      label: "HOURS",
                     ),
                     _TimeBox(
                       value: minutes.toString().padLeft(2, '0'),
-                      label: 'mins'.tr(),
+                      label: "MINS",
                     ),
                     _TimeBox(
                       value: seconds.toString().padLeft(2, '0'),
-                      label: 'secs'.tr(),
+                      label: "SECS",
                     ),
                   ],
                 ),

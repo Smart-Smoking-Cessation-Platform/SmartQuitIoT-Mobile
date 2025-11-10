@@ -1,84 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../providers/quit_plan_provider.dart';
+import 'package:intl/intl.dart';
+import '../../../providers/quit_plan_detail_provider.dart';
+import '../../../models/quit_plan_detail.dart';
 import '../../../models/quit_phase.dart';
-import '../../widgets/mission_complete_dialog.dart';
-import '../diary/diary_screen.dart';
-import 'quit_plan_history_screen.dart';
 
-class QuitPlanScreen extends ConsumerStatefulWidget {
-  const QuitPlanScreen({super.key});
+class QuitPlanDetailScreen extends ConsumerStatefulWidget {
+  final int quitPlanId;
+
+  const QuitPlanDetailScreen({super.key, required this.quitPlanId});
 
   @override
-  ConsumerState<QuitPlanScreen> createState() => _QuitPlanScreenState();
+  ConsumerState<QuitPlanDetailScreen> createState() =>
+      _QuitPlanDetailScreenState();
 }
 
-class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
+class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
   int selectedPhaseIndex = 0;
   int selectedDayIndex = 0;
-  final Set<int> locallyCompletedMissionIds = <int>{};
-
-  void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => MissionCompleteDialog(
-        phaseId: phaseId,
-        phaseDetailMissionId: mission.id ?? 0,
-        missionCode: mission.code ?? '',
-        missionName: mission.name ?? '',
-        missionDescription: mission.description ?? '',
-        onCompleted: () {
-          // Refresh the quit plan data after mission completion
-          ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
-          // Also add to local completed set for immediate UI update
-          setState(() {
-            locallyCompletedMissionIds.add(mission.id ?? 0);
-          });
-        },
-      ),
-    );
-  }
 
   final phaseColors = [
     const Color(0xFF00D09E),
     const Color(0xFF3B82F6),
-    const Color(0xFFF59E0B),
     const Color(0xFF8B5CF6),
     const Color(0xFF10B981),
+    const Color(0xFF06B6D4),
   ];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+      ref
+          .read(quitPlanDetailViewModelProvider.notifier)
+          .loadQuitPlanDetail(widget.quitPlanId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(quitPlanViewModelApiProvider);
+    final state = ref.watch(quitPlanDetailViewModelProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Quit Plan'),
+        title: const Text('Quit Plan Details'),
         backgroundColor: const Color(0xFF00D09E),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.history, color: Colors.white),
+            icon: const Icon(Icons.refresh),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const QuitPlanHistoryScreen(),
-                ),
-              );
+              ref
+                  .read(quitPlanDetailViewModelProvider.notifier)
+                  .loadQuitPlanDetail(widget.quitPlanId);
             },
-            tooltip: 'Quit Plan History',
           ),
         ],
       ),
@@ -96,47 +73,41 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref
-                    .read(quitPlanViewModelApiProvider.notifier)
-                    .loadQuitPlan(),
+                    .read(quitPlanDetailViewModelProvider.notifier)
+                    .loadQuitPlanDetail(widget.quitPlanId),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D09E),
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Retry'),
               ),
             ],
           ),
         ),
         data: (data) {
-          if (data == null || (data.phases?.isEmpty ?? true)) {
-            return const Center(child: Text('No quit plan found'));
+          if (data == null) {
+            return const Center(child: Text('No data found'));
           }
 
-          final phases = data.phases!;
           return SingleChildScrollView(
             child: Column(
               children: [
                 _buildHeader(data),
-                _buildStats(phases),
-                _buildPhasesList(phases),
+                if (data.formMetricDTO != null)
+                  _buildFormMetrics(data.formMetricDTO!),
+                _buildStats(data),
+                if (data.phases != null && data.phases!.isNotEmpty)
+                  _buildPhasesList(data.phases!),
                 const SizedBox(height: 20),
               ],
             ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DiaryScreen()),
-          );
-        },
-        backgroundColor: const Color(0xFF00D09E),
-        foregroundColor: Colors.white, // ✅ thêm dòng này
-        icon: const Icon(Icons.book), // icon giờ sẽ tự trắng
-        label: const Text('Diary'),
-      ),
     );
   }
 
-  Widget _buildHeader(QuitPhase data) {
+  Widget _buildHeader(QuitPlanDetail data) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.all(16),
@@ -215,7 +186,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
               Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
               const SizedBox(width: 6),
               Text(
-               '${_formatDate(data.startDate)} → ${_formatDate(data.endDate)}',
+                '${_formatDate(data.startDate)} → ${_formatDate(data.endDate)}',
 
                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
@@ -226,15 +197,114 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
-  Widget _buildStats(List<QuitPhaseDetail> phases) {
-    final totalMissions = phases.fold<int>(
-      0,
-      (sum, p) => sum + (p.totalMissions ?? 0),
+  Widget _buildFormMetrics(FormMetricDTO metrics) {
+    final formatter = NumberFormat('#,###', 'vi_VN');
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00D09E).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.analytics,
+                  color: Color(0xFF00D09E),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Smoking Metrics',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildMetricChip(
+                '${metrics.smokeAvgPerDay} cigs/day',
+                Icons.smoke_free,
+                const Color(0xFFEF4444),
+              ),
+              _buildMetricChip(
+                '${metrics.numberOfYearsOfSmoking} years',
+                Icons.calendar_today,
+                const Color(0xFF3B82F6),
+              ),
+              _buildMetricChip(
+                '${formatter.format(metrics.estimatedMoneySavedOnPlan)} đ saved',
+                Icons.savings,
+                const Color(0xFF00D09E),
+              ),
+              _buildMetricChip(
+                '${metrics.estimatedNicotineIntakePerDay.toStringAsFixed(0)} mg nicotine/day',
+                Icons.science,
+                const Color(0xFF8B5CF6),
+              ),
+            ],
+          ),
+          if (metrics.triggered.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Triggers:',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: metrics.triggered
+                  .map(
+                    (t) => Chip(
+                      label: Text(t, style: const TextStyle(fontSize: 11)),
+                      backgroundColor: const Color(0xFFEF4444).withOpacity(0.1),
+                      side: BorderSide(
+                        color: const Color(0xFFEF4444).withOpacity(0.3),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
     );
-    final completedMissions = phases.fold<int>(
-      0,
-      (sum, p) => sum + (p.completedMissions ?? 0),
+  }
+
+  Widget _buildMetricChip(String label, IconData icon, Color color) {
+    return Chip(
+      avatar: Icon(icon, size: 16, color: color),
+      label: Text(label, style: TextStyle(fontSize: 12, color: color)),
+      backgroundColor: color.withOpacity(0.1),
+      side: BorderSide(color: color.withOpacity(0.3)),
     );
+  }
+
+  Widget _buildStats(QuitPlanDetail data) {
+    final totalMissions = data.totalMissions;
+    final completedMissions = data.completedMissions;
     final progress = totalMissions > 0
         ? completedMissions / totalMissions
         : 0.0;
@@ -260,7 +330,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
             children: [
               _buildStatItem(
                 'Phases',
-                '${phases.length}',
+                '${data.phases?.length ?? 0}',
                 Icons.flag,
                 const Color(0xFF3B82F6),
               ),
@@ -386,7 +456,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                 '${_formatDate(phase.startDate)} → ${_formatDate(phase.endDate)}',
+                                  '${_formatDate(phase.startDate)} → ${_formatDate(phase.endDate)}',
 
                                   style: TextStyle(
                                     fontSize: 12,
@@ -468,8 +538,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
             ),
             const SizedBox(height: 12),
           ],
-          if (phase.avgCravingLevel != null || 
-              phase.avgCigarettes != null || 
+          if (phase.avgCravingLevel != null ||
+              phase.avgCigarettes != null ||
               phase.fmCigarettesTotal != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -483,9 +553,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.analytics_outlined, 
-                        size: 16, 
-                        color: color),
+                      Icon(Icons.analytics_outlined, size: 16, color: color),
                       const SizedBox(width: 6),
                       Text(
                         'Phase Statistics',
@@ -533,7 +601,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
             ),
             const SizedBox(height: 8),
           ],
-          if (phase.condition != null && 
+          if (phase.condition != null &&
               (phase.condition!.rules?.isNotEmpty ?? false)) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -547,9 +615,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.verified_outlined, 
-                        size: 16, 
-                        color: color),
+                      Icon(Icons.verified_outlined, size: 16, color: color),
                       const SizedBox(width: 6),
                       Text(
                         'Conditions to Pass',
@@ -594,11 +660,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                   final isSelected = selectedDayIndex == dayIdx;
                   final missions = day.missions ?? [];
                   final completed = missions
-                      .where(
-                        (m) =>
-                            m.status == 'COMPLETED' ||
-                            locallyCompletedMissionIds.contains(m.id),
-                      )
+                      .where((m) => m.status == 'COMPLETED')
                       .length;
 
                   return GestureDetector(
@@ -636,7 +698,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                          _formatDate(day.date),
+                            _formatDate(day.date),
 
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -676,30 +738,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
-  /// Check if a given date is today
-  bool _isToday(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return false;
-    try {
-      final date = DateTime.parse(dateString);
-      final today = DateTime.now();
-      return date.year == today.year &&
-          date.month == today.month &&
-          date.day == today.day;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /// Check if all missions for a day are completed
-  bool _areAllMissionsCompleted(List<QuitMissionItem> missions) {
-    if (missions.isEmpty) return false;
-    return missions.every((mission) {
-      final missionId = mission.id ?? -1;
-      return mission.status == 'COMPLETED' ||
-          locallyCompletedMissionIds.contains(missionId);
-    });
-  }
-
   Widget _buildMissionsList(List<QuitMissionItem> missions, Color color) {
     if (missions.isEmpty) {
       return const Padding(
@@ -708,96 +746,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       );
     }
 
-    // Get the current selected day to check if it's today and if all missions are completed
-    final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
-    String? selectedDayDate;
-    quitPhaseState.when(
-      data: (quitPhase) {
-        if (quitPhase != null &&
-            quitPhase.phases != null &&
-            selectedPhaseIndex < quitPhase.phases!.length) {
-          final currentPhase = quitPhase.phases![selectedPhaseIndex];
-          final days = currentPhase.details ?? [];
-          if (selectedDayIndex < days.length) {
-            selectedDayDate = days[selectedDayIndex].date;
-          }
-        }
-      },
-      loading: () {},
-      error: (error, stack) {},
-    );
-
-    final isSelectedDayToday = _isToday(selectedDayDate);
-    final allMissionsCompleted = _areAllMissionsCompleted(missions);
-    final showCongratulations = isSelectedDayToday && allMissionsCompleted;
-
     return Column(
-      children: [
-        // Congratulations message for completed daily missions
-        if (showCongratulations)
-          Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.green.withOpacity(0.1),
-                  Colors.green.withOpacity(0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.withOpacity(0.3)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      '🎉',
-                      style: TextStyle(fontSize: 24),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      '🎆',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      '✨',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Congratulations!',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'You have completed all missions for today!\nCome back tomorrow for new challenges.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        // Missions list
-        ...missions.map((mission) {
-        final missionId = mission.id ?? -1;
-        final completed =
-            mission.status == 'COMPLETED' ||
-            locallyCompletedMissionIds.contains(missionId);
+      children: missions.map((mission) {
+        final completed = mission.status == 'COMPLETED';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -809,21 +760,20 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
               color: completed ? Colors.green : Colors.grey[300]!,
             ),
           ),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    completed
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    color: completed ? Colors.green : color,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
+              Icon(
+                completed ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: completed ? Colors.green : color,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       mission.name ?? '',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -833,62 +783,20 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                         color: completed ? Colors.green : Colors.black87,
                       ),
                     ),
-                  ),
-                ],
+                    if ((mission.description ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        mission.description ?? '',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              if ((mission.description ?? '').isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.only(left: 28),
-                  child: Text(
-                    mission.description ?? '',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ),
-              ],
-              if (!completed && missionId != -1) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: isSelectedDayToday
-                        ? () {
-                            // Get current phase ID from the selected phase
-                            final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
-                            quitPhaseState.when(
-                              data: (quitPhase) {
-                                if (quitPhase != null && quitPhase.phases != null && selectedPhaseIndex < quitPhase.phases!.length) {
-                                  final currentPhase = quitPhase.phases![selectedPhaseIndex];
-                                  _showMissionCompleteDialog(mission, currentPhase.id ?? 0);
-                                }
-                              },
-                              loading: () {},
-                              error: (error, stack) {},
-                            );
-                          }
-                        : null, // Disable button for future days
-                    style: TextButton.styleFrom(
-                      backgroundColor: isSelectedDayToday ? color : Colors.grey,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      isSelectedDayToday ? 'Complete Mission' : 'Not Available Yet',
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         );
-        }).toList(),
-      ],
+      }).toList(),
     );
   }
 
@@ -930,10 +838,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
             ),
             Text(
               value,
@@ -951,7 +856,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
 
   Widget _buildPhaseConditions(PhaseCondition condition, Color color) {
     final rules = condition.rules ?? [];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1005,13 +910,20 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
               ],
             ),
             const SizedBox(height: 6),
-            ...rule.rules!.map<Widget>((nestedRule) => 
-              _buildPhaseRule(nestedRule, color, indent: indent + 1)
-            ).toList(),
+            ...rule.rules!
+                .map<Widget>(
+                  (nestedRule) =>
+                      _buildPhaseRule(nestedRule, color, indent: indent + 1),
+                )
+                .toList(),
           ] else ...[
             Row(
               children: [
-                Icon(Icons.check_circle_outline, size: 12, color: Colors.green[700]),
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 12,
+                  color: Colors.green[700],
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Column(
@@ -1028,10 +940,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                       const SizedBox(height: 1),
                       Text(
                         _formatPhaseRuleCondition(rule),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey[700],
-                        ),
+                        style: TextStyle(fontSize: 10, color: Colors.grey[700]),
                       ),
                     ],
                   ),
@@ -1060,7 +969,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
 
   String _formatPhaseRuleCondition(PhaseRule rule) {
     final operator = rule.operator ?? '';
-    
+
     if (rule.formula != null) {
       final formula = rule.formula!;
       final base = formula['base'] ?? '';
@@ -1068,7 +977,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       final op = formula['operator'] ?? '';
       return 'Must be $operator ${(percent * 100).toInt()}% $op $base';
     }
-    
+
     final value = rule.value;
     return 'Must be $operator $value';
   }

@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/widgets/cards/form_metric_card.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -316,6 +317,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 'Missions',
               ),
 
+              // const FormMetricCard(),
               // Always show these
               const CommunityTrendingCard(),
               const RecentNewsCard(),
