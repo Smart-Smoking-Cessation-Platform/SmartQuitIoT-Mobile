@@ -1,4 +1,3 @@
-// providers/coach_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/coach_repository.dart';
 import '../models/coach.dart';
@@ -18,16 +17,31 @@ class CoachListNotifier extends StateNotifier<AsyncValue<List<Coach>>> {
   final CoachRepository _repository;
 
   CoachListNotifier(this._repository) : super(const AsyncValue.loading()) {
-    loadCoaches();
+    loadCoaches(); // initial
   }
 
-  Future<void> loadCoaches() async {
+  Future<void> loadCoaches({bool force = false}) async {
     try {
+      // debug print
+      // ignore: avoid_print
+      print('[CoachListNotifier] loadCoaches force=$force');
+
       state = const AsyncValue.loading();
-      final response = await _repository.getCoaches();
+      final response = await _repository.getCoaches(force: force);
 
       if (response.success) {
-        state = AsyncValue.data(response.data);
+        // ensure we have List<Coach> (response.data might be List<Map> or List<Coach>)
+        final List<dynamic> rawList = response.data ?? [];
+        final List<Coach> coaches = rawList.map<Coach>((e) {
+          if (e is Coach) return e;
+          try {
+            return Coach.fromJson(e as Map<String, dynamic>);
+          } catch (_) {
+            // fallback: try to construct minimally
+            return Coach.fromJson(Map<String, dynamic>.from(e as Map));
+          }
+        }).toList();
+        state = AsyncValue.data(coaches);
       } else {
         state = AsyncValue.error(
           Exception(response.message),
@@ -39,7 +53,7 @@ class CoachListNotifier extends StateNotifier<AsyncValue<List<Coach>>> {
     }
   }
 
-  Future<void> refresh() async => loadCoaches();
+  Future<void> refresh() async => loadCoaches(force: true);
 
   /// For future realtime: add or update a single coach into current list (avoid duplicates)
   void addOrUpdateCoach(Coach c) {
