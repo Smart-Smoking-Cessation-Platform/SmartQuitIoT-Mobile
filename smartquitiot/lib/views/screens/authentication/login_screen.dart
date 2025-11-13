@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:SmartQuitIoT/views/screens/authentication/enhanced_auth_header.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/token_storage_service.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
@@ -95,12 +95,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
 
         // Clear cached data from previous user
-        debugPrint('🔄 [LoginScreen] Clearing cached data from previous user...');
+        debugPrint(
+          '🔄 [LoginScreen] Clearing cached data from previous user...',
+        );
         ref.invalidate(allAchievementsProvider);
         ref.invalidate(homeAchievementsProvider);
 
         // WebSocket will be initialized by MainNavigationScreen
-        debugPrint('ℹ️ [LoginScreen] WebSocket will be initialized after navigation');
+        debugPrint(
+          'ℹ️ [LoginScreen] WebSocket will be initialized after navigation',
+        );
 
         // Wait 2 seconds with spinner visible
         await Future.delayed(const Duration(seconds: 2));
@@ -129,7 +133,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AuthHeader(title: 'hello'.tr(), height: 120),
+              ProfessionalAuthHeader(title: 'hello'.tr(), height: 200),
               const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
