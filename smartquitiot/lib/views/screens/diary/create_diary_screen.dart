@@ -56,6 +56,9 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   int heartRate = 0;
   int spo2 = 0;
   double sleepDuration = 0.0;
+  double deepSleepDuration = 0.0;
+  double remSleepDuration = 0.0;
+  double lightSleepDuration = 0.0;
   final TextEditingController notesController = TextEditingController();
   final TextEditingController moneyController = TextEditingController();
 
@@ -64,6 +67,9 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   final TextEditingController heartRateController = TextEditingController();
   final TextEditingController spo2Controller = TextEditingController();
   final TextEditingController sleepDurationController = TextEditingController();
+  final TextEditingController deepSleepController = TextEditingController();
+  final TextEditingController remSleepController = TextEditingController();
+  final TextEditingController lightSleepController = TextEditingController();
 
   @override
   void dispose() {
@@ -73,6 +79,9 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
     heartRateController.dispose();
     spo2Controller.dispose();
     sleepDurationController.dispose();
+    deepSleepController.dispose();
+    remSleepController.dispose();
+    lightSleepController.dispose();
     super.dispose();
   }
 
@@ -431,10 +440,6 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   }
 
   Widget _buildNrtSection() {
-    final localMoneyController = TextEditingController(
-      text: moneySpentOnNrt > 0 ? moneyFormatter.format(moneySpentOnNrt) : '',
-    );
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -635,9 +640,42 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
                 sleepDurationController,
                 Icons.bedtime,
                 (value) => sleepDuration = double.tryParse(value) ?? 0.0,
+                readOnly: true,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildHealthField(
+                'Sleep Deep (h)',
+                deepSleepController,
+                Icons.nights_stay,
+                (value) => deepSleepDuration = double.tryParse(value) ?? 0.0,
+                readOnly: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildHealthField(
+                'Sleep REM (h)',
+                remSleepController,
+                Icons.dark_mode,
+                (value) => remSleepDuration = double.tryParse(value) ?? 0.0,
+                readOnly: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildHealthField(
+          'Sleep Light (h)',
+          lightSleepController,
+          Icons.light_mode,
+          (value) => lightSleepDuration = double.tryParse(value) ?? 0.0,
+          readOnly: true,
         ),
       ],
     );
@@ -772,7 +810,9 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         HealthDataType.STEPS,
         HealthDataType.HEART_RATE,
         HealthDataType.BLOOD_OXYGEN, // SpO2
-        HealthDataType.SLEEP_DEEP, // Sleep Duration lấy từ Deep Sleep
+        HealthDataType.SLEEP_DEEP, // Deep Sleep
+        HealthDataType.SLEEP_REM, // REM Sleep
+        HealthDataType.SLEEP_LIGHT, // Light Sleep
       ];
 
       final permissions = types.map((e) => HealthDataAccess.READ).toList();
@@ -806,14 +846,17 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
       // Process and update health data
       int fetchedSteps = 0;
       int fetchedHeartRate = 0;
-      double deepSleepMinutes = 0; // Sleep Duration từ Deep Sleep
+      double deepSleepMinutes = 0;
+      double remSleepMinutes = 0;
+      double lightSleepMinutes = 0;
       double fetchedSpo2 = 0;
       int spo2Count = 0;
 
       for (var data in healthData) {
-        final value = (data.value is NumericHealthValue)
-            ? ((data.value as NumericHealthValue).numericValue ?? 0.0)
-            : 0.0;
+        double value = 0.0;
+        if (data.value is NumericHealthValue) {
+          value = (data.value as NumericHealthValue).numericValue.toDouble();
+        }
 
         switch (data.type) {
           case HealthDataType.STEPS:
@@ -831,8 +874,19 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
             break;
 
           case HealthDataType.SLEEP_DEEP:
-            // Sleep Duration lấy từ Deep Sleep
             deepSleepMinutes += data.dateTo
+                .difference(data.dateFrom)
+                .inMinutes
+                .toDouble();
+            break;
+          case HealthDataType.SLEEP_REM:
+            remSleepMinutes += data.dateTo
+                .difference(data.dateFrom)
+                .inMinutes
+                .toDouble();
+            break;
+          case HealthDataType.SLEEP_LIGHT:
+            lightSleepMinutes += data.dateTo
                 .difference(data.dateFrom)
                 .inMinutes
                 .toDouble();
@@ -850,10 +904,15 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         }
       }
 
-      // ✅ Tính toán sleep duration từ Deep Sleep (giờ)
-      double calculatedSleepDuration = deepSleepMinutes > 0
+      final deepSleepHours = deepSleepMinutes > 0
           ? deepSleepMinutes / 60.0
           : 0.0;
+      final remSleepHours = remSleepMinutes > 0 ? remSleepMinutes / 60.0 : 0.0;
+      final lightSleepHours = lightSleepMinutes > 0
+          ? lightSleepMinutes / 60.0
+          : 0.0;
+      final calculatedSleepDuration =
+          deepSleepHours + remSleepHours + lightSleepHours;
 
       // Cập nhật UI
       setState(() {
@@ -861,6 +920,9 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         heartRate = fetchedHeartRate;
         spo2 = spo2Count > 0 ? (fetchedSpo2 / spo2Count).round() : 0;
         sleepDuration = calculatedSleepDuration;
+        deepSleepDuration = deepSleepHours;
+        remSleepDuration = remSleepHours;
+        lightSleepDuration = lightSleepHours;
         isConnectIoTDevice = true;
 
         // Update text controllers
@@ -868,13 +930,18 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         heartRateController.text = heartRate.toString();
         spo2Controller.text = spo2.toString();
         sleepDurationController.text = sleepDuration.toStringAsFixed(1);
+        deepSleepController.text = deepSleepDuration.toStringAsFixed(1);
+        remSleepController.text = remSleepDuration.toStringAsFixed(1);
+        lightSleepController.text = lightSleepDuration.toStringAsFixed(1);
       });
 
       // Debug logging
       print('✅ [IoT] Steps: $steps');
       print('✅ [IoT] Heart Rate: $heartRate bpm');
       print('✅ [IoT] SpO2: $spo2%');
-      print('✅ [IoT] Sleep Duration (Deep Sleep): ${sleepDuration.toStringAsFixed(1)}h');
+      print(
+        '✅ [IoT] Sleep Duration (Deep Sleep): ${sleepDuration.toStringAsFixed(1)}h',
+      );
 
       _showFlushBar(
         message: 'Health data synced successfully!',
@@ -950,15 +1017,17 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
 
         // Check if user smoked during quit plan (HTTP 209)
         if (result.isSmokedDuringQuitPlan) {
-          print('⚠️ [CreateDiary] User smoked during quit plan, showing dialog...');
-          
+          print(
+            '⚠️ [CreateDiary] User smoked during quit plan, showing dialog...',
+          );
+
           // Trigger refreshes even for 209 response
           ref.read(metricsRefreshProvider.notifier).refreshMetrics();
           ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
           ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
-          
+
           if (!mounted) return;
-          
+
           // Show the "Smoked Again" dialog
           showDialog(
             context: context,

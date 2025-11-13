@@ -42,6 +42,10 @@ class QuitPhaseDetail {
   final int? id;
   final String? name;
   final String? reason;
+  final String? status;
+  final String? createdAt;
+  final bool? keepPhase;
+  final bool? redo;
   final List<QuitDay>? details; // days in this phase
   final double? progress;
   final int? totalMissions;
@@ -58,6 +62,10 @@ class QuitPhaseDetail {
     this.id,
     this.name,
     this.reason,
+    this.status,
+    this.createdAt,
+    this.keepPhase,
+    this.redo,
     this.details,
     this.progress,
     this.totalMissions,
@@ -76,6 +84,10 @@ class QuitPhaseDetail {
       id: json['id'] as int?,
       name: json['name'] as String?,
       reason: json['reason'] as String?,
+      status: json['status'] as String?,
+      createdAt: json['createAt'] as String?,
+      keepPhase: json['keepPhase'] as bool?,
+      redo: json['redo'] as bool?,
       progress: (json['progress'] as num?)?.toDouble(),
       totalMissions: json['totalMissions'] as int?,
       completedMissions: json['completedMissions'] as int?,
@@ -147,10 +159,7 @@ class PhaseCondition {
   final String? logic;
   final List<PhaseRule>? rules;
 
-  PhaseCondition({
-    this.logic,
-    this.rules,
-  });
+  PhaseCondition({this.logic, this.rules});
 
   factory PhaseCondition.fromJson(Map<String, dynamic> json) {
     return PhaseCondition(

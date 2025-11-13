@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../providers/quit_plan_detail_provider.dart';
 import '../../../models/quit_plan_detail.dart';
 import '../../../models/quit_phase.dart';
+import '../../../utils/phase_theme.dart';
 
 class QuitPlanDetailScreen extends ConsumerStatefulWidget {
   final int quitPlanId;
@@ -18,14 +19,6 @@ class QuitPlanDetailScreen extends ConsumerStatefulWidget {
 class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
   int selectedPhaseIndex = 0;
   int selectedDayIndex = 0;
-
-  final phaseColors = [
-    const Color(0xFF00D09E),
-    const Color(0xFF3B82F6),
-    const Color(0xFF8B5CF6),
-    const Color(0xFF10B981),
-    const Color(0xFF06B6D4),
-  ];
 
   @override
   void initState() {
@@ -97,7 +90,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                   _buildFormMetrics(data.formMetricDTO!),
                 _buildStats(data),
                 if (data.phases != null && data.phases!.isNotEmpty)
-                  _buildPhasesList(data.phases!),
+                  _buildPhasesList(data.phases!, data),
                 const SizedBox(height: 20),
               ],
             ),
@@ -108,6 +101,11 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
   }
 
   Widget _buildHeader(QuitPlanDetail data) {
+    final planName = data.name.trim().isEmpty ? 'Quit Plan' : data.name.trim();
+    final ftndScoreLabel = data.ftndScore > 0
+        ? data.ftndScore.toString()
+        : 'N/A';
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.all(16),
@@ -146,7 +144,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.name ?? 'Quit Plan',
+                      planName,
                       style: const TextStyle(
                         color: Colors.black87,
                         fontSize: 20,
@@ -154,7 +152,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                       ),
                     ),
                     Text(
-                      'FTND Score: ${data.ftndScore ?? 'N/A'}',
+                      'FTND Score: $ftndScoreLabel',
                       style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
                   ],
@@ -386,7 +384,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     );
   }
 
-  Widget _buildPhasesList(List<QuitPhaseDetail> phases) {
+  Widget _buildPhasesList(List<QuitPhaseDetail> phases, QuitPlanDetail plan) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -394,7 +392,12 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
       itemCount: phases.length,
       itemBuilder: (context, index) {
         final phase = phases[index];
-        final color = phaseColors[index % phaseColors.length];
+        final phaseName = (phase.name ?? '').trim();
+        final fallbackName = plan.name.trim();
+        final themeKey = phaseName.isNotEmpty
+            ? phaseName
+            : (fallbackName.isNotEmpty ? fallbackName : 'Quit Plan');
+        final phaseTheme = resolvePhaseTheme(themeKey);
         final isExpanded = selectedPhaseIndex == index;
 
         // Xử lý progress an toàn
@@ -410,7 +413,10 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
           color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey[200]!, width: 1),
+            side: BorderSide(
+              color: phaseTheme.primaryColor.withOpacity(0.18),
+              width: 1,
+            ),
           ),
           elevation: 0,
           child: Column(
@@ -433,12 +439,12 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.1),
+                              color: phaseTheme.primaryColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
-                              _getPhaseIcon(phase.name ?? ''),
-                              color: color,
+                              phaseTheme.icon,
+                              color: phaseTheme.primaryColor,
                               size: 24,
                             ),
                           ),
@@ -466,6 +472,29 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                               ],
                             ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _isFailedStatus(phase.status)
+                                  ? Colors.redAccent.withOpacity(0.15)
+                                  : phaseTheme.primaryColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _formatStatus(phase.status),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: _isFailedStatus(phase.status)
+                                    ? Colors.redAccent
+                                    : phaseTheme.primaryColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
                           Icon(
                             isExpanded
                                 ? Icons.keyboard_arrow_up
@@ -475,14 +504,19 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
+                      _buildPhaseInfoChips(phase, phaseTheme),
                       // Progress bar giai đoạn
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: LinearProgressIndicator(
                           value: phaseProgress.clamp(0.0, 1.0),
                           minHeight: 6,
-                          backgroundColor: Colors.grey[200],
-                          valueColor: AlwaysStoppedAnimation(color),
+                          backgroundColor: phaseTheme.primaryColor.withOpacity(
+                            0.1,
+                          ),
+                          valueColor: AlwaysStoppedAnimation(
+                            phaseTheme.primaryColor,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -491,7 +525,11 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                         children: [
                           Text(
                             '$phasePercent% completed',
-                            style: TextStyle(fontSize: 10, color: color),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: phaseTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -499,7 +537,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                   ),
                 ),
               ),
-              if (isExpanded) _buildPhaseDetails(phase, color),
+              if (isExpanded) _buildPhaseDetails(plan, phase, phaseTheme),
             ],
           ),
         );
@@ -507,25 +545,31 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     );
   }
 
-  Widget _buildPhaseDetails(QuitPhaseDetail phase, Color color) {
+  Widget _buildPhaseDetails(
+    QuitPlanDetail plan,
+    QuitPhaseDetail phase,
+    PhaseTheme theme,
+  ) {
     final days = phase.details ?? [];
+    final isFailed = _isFailedStatus(phase.status);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isFailed) _buildFailedPhaseBanner(plan, phase, theme),
           if ((phase.reason ?? '').isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.05),
+                color: theme.primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, color: color, size: 16),
+                  Icon(Icons.info_outline, color: theme.primaryColor, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -546,21 +590,25 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FFFE),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: color.withOpacity(0.3)),
+                border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.analytics_outlined, size: 16, color: color),
+                      Icon(
+                        Icons.analytics_outlined,
+                        size: 16,
+                        color: theme.primaryColor,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Phase Statistics',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: color,
+                          color: theme.primaryColor,
                         ),
                       ),
                     ],
@@ -606,29 +654,37 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.05),
+                color: theme.primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: color.withOpacity(0.3)),
+                border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.verified_outlined, size: 16, color: color),
+                      Icon(
+                        Icons.verified_outlined,
+                        size: 16,
+                        color: theme.primaryColor,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Conditions to Pass',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: color,
+                          color: theme.primaryColor,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _buildPhaseConditions(phase.condition!, color),
+                  _buildPhaseConditions(
+                    phase.condition!,
+                    theme,
+                    phase.fmCigarettesTotal ?? 0,
+                  ),
                 ],
               ),
             ),
@@ -673,12 +729,14 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                         horizontal: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected ? color : Colors.grey[100],
+                        color: isSelected
+                            ? theme.primaryColor
+                            : Colors.grey[100],
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: color.withOpacity(0.3),
+                                  color: theme.primaryColor.withOpacity(0.3),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -718,7 +776,9 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white70 : color,
+                              color: isSelected
+                                  ? Colors.white70
+                                  : theme.primaryColor,
                             ),
                           ),
                         ],
@@ -731,14 +791,14 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
 
             const SizedBox(height: 12),
             if (selectedDayIndex < days.length)
-              _buildMissionsList(days[selectedDayIndex].missions ?? [], color),
+              _buildMissionsList(days[selectedDayIndex].missions ?? [], theme),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildMissionsList(List<QuitMissionItem> missions, Color color) {
+  Widget _buildMissionsList(List<QuitMissionItem> missions, PhaseTheme theme) {
     if (missions.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(20),
@@ -754,26 +814,31 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: completed ? Colors.green.withOpacity(0.05) : Colors.grey[50],
+            color: completed
+                ? Colors.green.withOpacity(0.05)
+                : theme.primaryColor.withOpacity(0.06),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: completed ? Colors.green : Colors.grey[300]!,
+              color: completed
+                  ? Colors.green
+                  : theme.primaryColor.withOpacity(0.4),
             ),
           ),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                completed ? Icons.check_circle : Icons.radio_button_unchecked,
-                color: completed ? Colors.green : color,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                children: [
+                  Icon(
+                    completed
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: completed ? Colors.green : theme.primaryColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
                       mission.name ?? '',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -783,38 +848,24 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                         color: completed ? Colors.green : Colors.black87,
                       ),
                     ),
-                    if ((mission.description ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        mission.description ?? '',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
               ),
+              if ((mission.description ?? '').isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 28),
+                  child: Text(
+                    mission.description ?? '',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ),
+              ],
             ],
           ),
         );
       }).toList(),
     );
-  }
-
-  IconData _getPhaseIcon(String phaseName) {
-    switch (phaseName.toLowerCase()) {
-      case 'preparation':
-        return Icons.settings;
-      case 'onset':
-        return Icons.play_arrow;
-      case 'peak craving':
-        return Icons.whatshot;
-      case 'subsiding':
-        return Icons.trending_down;
-      case 'maintenance':
-        return Icons.health_and_safety;
-      default:
-        return Icons.flag;
-    }
   }
 
   Widget _buildSmallStat({
@@ -854,7 +905,11 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     );
   }
 
-  Widget _buildPhaseConditions(PhaseCondition condition, Color color) {
+  Widget _buildPhaseConditions(
+    PhaseCondition condition,
+    PhaseTheme theme,
+    double fmCigarettesTotal,
+  ) {
     final rules = condition.rules ?? [];
 
     return Column(
@@ -864,7 +919,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: theme.primaryColor.withOpacity(0.2),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -872,17 +927,47 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: theme.primaryColor,
+              ),
+            ),
+          ),
+        if (fmCigarettesTotal > 0)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Baseline total cigarettes: ${fmCigarettesTotal.toStringAsFixed(1)}',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: theme.primaryColor,
               ),
             ),
           ),
         const SizedBox(height: 6),
-        ...rules.map<Widget>((rule) => _buildPhaseRule(rule, color)).toList(),
+        ...rules
+            .map<Widget>(
+              (rule) => _buildPhaseRule(
+                rule,
+                theme,
+                fmCigarettesTotal: fmCigarettesTotal,
+              ),
+            )
+            .toList(),
       ],
     );
   }
 
-  Widget _buildPhaseRule(PhaseRule rule, Color color, {int indent = 0}) {
+  Widget _buildPhaseRule(
+    PhaseRule rule,
+    PhaseTheme theme, {
+    int indent = 0,
+    required double fmCigarettesTotal,
+  }) {
     return Container(
       margin: EdgeInsets.only(left: indent * 12.0, bottom: 6),
       padding: const EdgeInsets.all(10),
@@ -897,14 +982,14 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
           if (rule.rules != null && rule.rules!.isNotEmpty) ...[
             Row(
               children: [
-                Icon(Icons.alt_route, size: 12, color: Colors.blue[700]),
+                Icon(Icons.alt_route, size: 12, color: theme.primaryColor),
                 const SizedBox(width: 4),
                 Text(
                   'Logic: ${rule.logic ?? "AND"}',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue[700],
+                    color: theme.primaryColor,
                   ),
                 ),
               ],
@@ -912,8 +997,12 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
             const SizedBox(height: 6),
             ...rule.rules!
                 .map<Widget>(
-                  (nestedRule) =>
-                      _buildPhaseRule(nestedRule, color, indent: indent + 1),
+                  (nestedRule) => _buildPhaseRule(
+                    nestedRule,
+                    theme,
+                    indent: indent + 1,
+                    fmCigarettesTotal: fmCigarettesTotal,
+                  ),
                 )
                 .toList(),
           ] else ...[
@@ -922,7 +1011,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                 Icon(
                   Icons.check_circle_outline,
                   size: 12,
-                  color: Colors.green[700],
+                  color: theme.primaryColor,
                 ),
                 const SizedBox(width: 4),
                 Expanded(
@@ -939,7 +1028,10 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        _formatPhaseRuleCondition(rule),
+                        _formatPhaseRuleCondition(
+                          rule,
+                          fmCigarettesTotal: fmCigarettesTotal,
+                        ),
                         style: TextStyle(fontSize: 10, color: Colors.grey[700]),
                       ),
                     ],
@@ -967,19 +1059,234 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     }
   }
 
-  String _formatPhaseRuleCondition(PhaseRule rule) {
+  String _formatPhaseRuleCondition(
+    PhaseRule rule, {
+    required double fmCigarettesTotal,
+  }) {
     final operator = rule.operator ?? '';
 
     if (rule.formula != null) {
       final formula = rule.formula!;
-      final base = formula['base'] ?? '';
-      final percent = formula['percent'] ?? 0;
-      final op = formula['operator'] ?? '';
-      return 'Must be $operator ${(percent * 100).toInt()}% $op $base';
+      final base = (formula['base'] ?? '').toString();
+      final percent = (formula['percent'] ?? 0) as num;
+      final op = (formula['operator'] ?? '').toString();
+      final percentLabel = (percent * 100).toStringAsFixed(
+        percent * 100 % 1 == 0 ? 0 : 1,
+      );
+
+      if (base == 'fm_cigarettes_total' && fmCigarettesTotal > 0) {
+        final computed = fmCigarettesTotal * percent;
+        return 'Must be $operator $percentLabel% $op ${_formatFormulaBase(base)} (≤ ${computed.toStringAsFixed(1)})';
+      }
+
+      return 'Must be $operator $percentLabel% $op ${_formatFormulaBase(base)}';
     }
 
     final value = rule.value;
-    return 'Must be $operator $value';
+    if (value == null) {
+      return 'Must be $operator value';
+    }
+
+    String displayValue = value.toString();
+    if (rule.field == 'progress' && value is num) {
+      displayValue = '${value.toString()}%';
+    }
+
+    return 'Must be $operator $displayValue';
+  }
+
+  String _formatStatus(String? status) {
+    if (status == null || status.isEmpty) return 'Unknown';
+    final normalized = status.replaceAll('_', ' ').toLowerCase();
+    return normalized
+        .split(' ')
+        .map(
+          (word) => word.isEmpty
+              ? word
+              : word[0].toUpperCase() + word.substring(1).toLowerCase(),
+        )
+        .join(' ');
+  }
+
+  bool _isFailedStatus(String? status) =>
+      status != null && status.toUpperCase() == 'FAILED';
+
+  String _formatBoolean(
+    bool value, {
+    String trueLabel = 'Yes',
+    String falseLabel = 'No',
+  }) => value ? trueLabel : falseLabel;
+
+  String _formatDateTime(String? dateTime) {
+    if (dateTime == null || dateTime.isEmpty) return 'N/A';
+    try {
+      final parsed = DateTime.parse(dateTime).toLocal();
+      return DateFormat('dd/MM/yyyy HH:mm').format(parsed);
+    } catch (_) {
+      return dateTime;
+    }
+  }
+
+  Widget _buildFailedPhaseBanner(
+    QuitPlanDetail plan,
+    QuitPhaseDetail phase,
+    PhaseTheme theme,
+  ) {
+    final planName = plan.name.trim();
+    final displayPlanName = planName.isEmpty ? 'Quit Plan' : planName;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Text('😞', style: TextStyle(fontSize: 20)),
+              SizedBox(width: 8),
+              Text(
+                'Oh no! Phase failed',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'This phase did not meet the exit criteria. Review the statistics and conditions below to understand what happened.',
+            style: TextStyle(fontSize: 13),
+          ),
+          if ((phase.reason ?? '').isEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Plan: $displayPlanName',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhaseInfoChips(QuitPhaseDetail phase, PhaseTheme theme) {
+    final chips = <Widget>[];
+
+    if (phase.createdAt != null && phase.createdAt!.isNotEmpty) {
+      chips.add(
+        _buildInfoChip(
+          icon: Icons.event,
+          label: 'Created',
+          value: _formatDateTime(phase.createdAt),
+          theme: theme,
+        ),
+      );
+    }
+
+    if (phase.keepPhase != null) {
+      chips.add(
+        _buildInfoChip(
+          icon: Icons.shield,
+          label: 'Keep Phase',
+          value: _formatBoolean(
+            phase.keepPhase!,
+            trueLabel: 'Allowed',
+            falseLabel: 'Disabled',
+          ),
+          theme: theme,
+        ),
+      );
+    }
+
+    if (phase.redo != null) {
+      chips.add(
+        _buildInfoChip(
+          icon: Icons.refresh,
+          label: 'Redo',
+          value: _formatBoolean(
+            phase.redo!,
+            trueLabel: 'Available',
+            falseLabel: 'Unavailable',
+          ),
+          theme: theme,
+        ),
+      );
+    }
+
+    if (chips.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+      child: Wrap(spacing: 10, runSpacing: 10, children: chips),
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required String value,
+    required PhaseTheme theme,
+    Color? valueColor,
+  }) {
+    final effectiveColor = valueColor ?? theme.primaryColor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: effectiveColor.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: effectiveColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: effectiveColor),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: effectiveColor.withOpacity(0.8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: effectiveColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatFormulaBase(String base) {
+    switch (base) {
+      case 'fm_cigarettes_total':
+        return 'baseline total cigarettes';
+      case 'progress':
+        return 'mission progress';
+      default:
+        return base.replaceAll('_', ' ');
+    }
   }
 
   String _formatDate(String? dateString) {

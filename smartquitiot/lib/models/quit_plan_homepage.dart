@@ -6,6 +6,10 @@ class QuitPlanHomePage {
   final String endDate;
   final int durationDay;
   final String reason;
+  final String status;
+  final String? createdAt;
+  final bool keepPhase;
+  final bool redo;
   final int totalMissions;
   final int completedMissions;
   final double progress;
@@ -23,6 +27,10 @@ class QuitPlanHomePage {
     required this.endDate,
     required this.durationDay,
     required this.reason,
+    required this.status,
+    required this.createdAt,
+    required this.keepPhase,
+    required this.redo,
     required this.totalMissions,
     required this.completedMissions,
     required this.progress,
@@ -42,6 +50,10 @@ class QuitPlanHomePage {
       endDate: json['endDate'] ?? '',
       durationDay: json['durationDay'] ?? 0,
       reason: json['reason'] ?? '',
+      status: (json['status'] ?? 'UNKNOWN').toString(),
+      createdAt: json['createAt'] as String?,
+      keepPhase: json['keepPhase'] ?? false,
+      redo: json['redo'] ?? false,
       totalMissions: json['totalMissions'] ?? 0,
       completedMissions: json['completedMissions'] ?? 0,
       progress: (json['progress'] ?? 0).toDouble(),
@@ -49,7 +61,9 @@ class QuitPlanHomePage {
       avgCigarettes: (json['avg_cigarettes'] ?? 0).toDouble(),
       fmCigarettesTotal: (json['fm_cigarettes_total'] ?? 0).toDouble(),
       condition: QuitPlanCondition.fromJson(json['condition'] ?? {}),
-      currentPhaseDetail: CurrentPhaseDetail.fromJson(json['currentPhaseDetail'] ?? {}),
+      currentPhaseDetail: CurrentPhaseDetail.fromJson(
+        json['currentPhaseDetail'] ?? {},
+      ),
     );
   }
 
@@ -62,6 +76,10 @@ class QuitPlanHomePage {
       'endDate': endDate,
       'durationDay': durationDay,
       'reason': reason,
+      'status': status,
+      'createAt': createdAt,
+      'keepPhase': keepPhase,
+      'redo': redo,
       'totalMissions': totalMissions,
       'completedMissions': completedMissions,
       'progress': progress,
@@ -84,17 +102,18 @@ class QuitPlanCondition {
   final String logic;
   final List<QuitPlanRule> rules;
 
-  QuitPlanCondition({
-    required this.logic,
-    required this.rules,
-  });
+  QuitPlanCondition({required this.logic, required this.rules});
 
   factory QuitPlanCondition.fromJson(Map<String, dynamic> json) {
     return QuitPlanCondition(
       logic: json['logic'] ?? 'AND',
-      rules: (json['rules'] as List<dynamic>?)
-          ?.map((rule) => QuitPlanRule.fromJson(rule as Map<String, dynamic>))
-          .toList() ?? [],
+      rules:
+          (json['rules'] as List<dynamic>?)
+              ?.map(
+                (rule) => QuitPlanRule.fromJson(rule as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
     );
   }
 
@@ -189,5 +208,6 @@ class CurrentPhaseDetail {
 
   // Helper getters
   String get missionProgress => '$missionCompleted/$totalMission';
-  double get dayProgress => totalMission > 0 ? missionCompleted / totalMission : 0.0;
+  double get dayProgress =>
+      totalMission > 0 ? missionCompleted / totalMission : 0.0;
 }
