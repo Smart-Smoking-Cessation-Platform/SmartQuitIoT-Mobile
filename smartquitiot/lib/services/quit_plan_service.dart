@@ -76,10 +76,16 @@ class QuitPlanService {
   }) async {
     try {
       _logger.i('[QuitPlanService] POST $_baseUrl/quit-plan/create-new');
-      final response = await _dio.post(
+
+      // Create a temporary Dio instance with 1 minute timeout for this request
+      final tempDio = Dio(_dio.options);
+      tempDio.options.receiveTimeout = const Duration(seconds: 60);
+
+      final options = await _options();
+      final response = await tempDio.post(
         '/quit-plan/create-new',
         data: request.toJson(),
-        options: await _options(),
+        options: options,
       );
 
       _logger.d('[QuitPlanService] Response: ${response.statusCode}');

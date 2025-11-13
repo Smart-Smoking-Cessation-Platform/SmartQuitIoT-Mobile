@@ -44,10 +44,7 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
 class EditFormMetricDialog extends StatefulWidget {
   final FormMetricDTO currentData;
 
-  const EditFormMetricDialog({
-    super.key,
-    required this.currentData,
-  });
+  const EditFormMetricDialog({super.key, required this.currentData});
 
   @override
   State<EditFormMetricDialog> createState() => _EditFormMetricDialogState();
@@ -98,7 +95,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize controllers
     _smokeAvgController = TextEditingController(
       text: widget.currentData.smokeAvgPerDay.toString(),
@@ -112,11 +109,14 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
     _cigarettesPerPackageController = TextEditingController(
       text: widget.currentData.cigarettesPerPackage.toString(),
     );
-    
+
     // Format money with comma separator
-    final formattedMoney = NumberFormat('#,###', 'vi_VN').format(widget.currentData.moneyPerPackage);
+    final formattedMoney = NumberFormat(
+      '#,###',
+      'vi_VN',
+    ).format(widget.currentData.moneyPerPackage);
     _moneyPerPackageController = TextEditingController(text: formattedMoney);
-    
+
     _nicotineAmountController = TextEditingController(
       text: widget.currentData.amountOfNicotinePerCigarettes.toString(),
     );
@@ -195,23 +195,38 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
       return;
     }
 
-    // Parse money - remove commas before parsing
-    final moneyText = _moneyPerPackageController.text.replaceAll(',', '');
-    
+    // Parse money - strip any non-digit characters before parsing
+    final moneyText = _moneyPerPackageController.text.replaceAll(
+      RegExp(r'[^0-9]'),
+      '',
+    );
+
     final updatedData = FormMetricDTO(
       id: widget.currentData.id,
-      smokeAvgPerDay: int.tryParse(_smokeAvgController.text) ?? widget.currentData.smokeAvgPerDay,
-      numberOfYearsOfSmoking: int.tryParse(_yearsSmokingController.text) ?? widget.currentData.numberOfYearsOfSmoking,
-      minutesAfterWakingToSmoke: int.tryParse(_minutesAfterWakingController.text) ?? widget.currentData.minutesAfterWakingToSmoke,
-      cigarettesPerPackage: int.tryParse(_cigarettesPerPackageController.text) ?? widget.currentData.cigarettesPerPackage,
-      moneyPerPackage: double.tryParse(moneyText) ?? widget.currentData.moneyPerPackage,
-      amountOfNicotinePerCigarettes: double.tryParse(_nicotineAmountController.text) ?? widget.currentData.amountOfNicotinePerCigarettes,
+      smokeAvgPerDay:
+          int.tryParse(_smokeAvgController.text) ??
+          widget.currentData.smokeAvgPerDay,
+      numberOfYearsOfSmoking:
+          int.tryParse(_yearsSmokingController.text) ??
+          widget.currentData.numberOfYearsOfSmoking,
+      minutesAfterWakingToSmoke:
+          int.tryParse(_minutesAfterWakingController.text) ??
+          widget.currentData.minutesAfterWakingToSmoke,
+      cigarettesPerPackage:
+          int.tryParse(_cigarettesPerPackageController.text) ??
+          widget.currentData.cigarettesPerPackage,
+      moneyPerPackage:
+          double.tryParse(moneyText) ?? widget.currentData.moneyPerPackage,
+      amountOfNicotinePerCigarettes:
+          double.tryParse(_nicotineAmountController.text) ??
+          widget.currentData.amountOfNicotinePerCigarettes,
       smokingInForbiddenPlaces: _smokingInForbiddenPlaces,
       cigaretteHateToGiveUp: _cigaretteHateToGiveUp,
       morningSmokingFrequency: _morningSmokingFrequency,
       smokeWhenSick: _smokeWhenSick,
       estimatedMoneySavedOnPlan: widget.currentData.estimatedMoneySavedOnPlan,
-      estimatedNicotineIntakePerDay: widget.currentData.estimatedNicotineIntakePerDay,
+      estimatedNicotineIntakePerDay:
+          widget.currentData.estimatedNicotineIntakePerDay,
       interests: _selectedInterests,
       triggered: _selectedTriggers,
     );
@@ -226,10 +241,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
       appBar: AppBar(
         title: const Text(
           'Edit Form Metric',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF00D09E),
         foregroundColor: Colors.white,
@@ -373,11 +385,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
             color: const Color(0xFF00D09E).withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF00D09E),
-            size: 20,
-          ),
+          child: Icon(icon, color: const Color(0xFF00D09E), size: 20),
         ),
         const SizedBox(width: 12),
         Text(
@@ -450,9 +458,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
       child: TextField(
         controller: controller,
         keyboardType: TextInputType.number,
-        inputFormatters: [
-          ThousandsSeparatorInputFormatter(),
-        ],
+        inputFormatters: [ThousandsSeparatorInputFormatter()],
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: const Color(0xFF00D09E)),
@@ -494,10 +500,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
       child: SwitchListTile(
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
         ),
         secondary: Icon(icon, color: const Color(0xFF00D09E)),
         value: value,
@@ -507,11 +510,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
     );
   }
 
-  Widget _buildRadioSelection(
-    String title,
-    bool currentValue,
-    IconData icon,
-  ) {
+  Widget _buildRadioSelection(String title, bool currentValue, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -556,10 +555,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
                 SizedBox(width: 8),
                 Text(
                   'The first in the morning',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -579,10 +575,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
                 SizedBox(width: 8),
                 Text(
                   'Any other',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                 ),
               ],
             ),

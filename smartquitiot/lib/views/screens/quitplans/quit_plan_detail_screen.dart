@@ -271,18 +271,10 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
             ),
             const SizedBox(height: 8),
             Wrap(
-              spacing: 6,
-              runSpacing: 6,
+              spacing: 8,
+              runSpacing: 8,
               children: metrics.triggered
-                  .map(
-                    (t) => Chip(
-                      label: Text(t, style: const TextStyle(fontSize: 11)),
-                      backgroundColor: const Color(0xFFEF4444).withOpacity(0.1),
-                      side: BorderSide(
-                        color: const Color(0xFFEF4444).withOpacity(0.3),
-                      ),
-                    ),
-                  )
+                  .map((t) => _buildTriggerChip(t))
                   .toList(),
             ),
           ],
@@ -1297,5 +1289,50 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     } catch (e) {
       return '';
     }
+  }
+
+  Widget _buildTriggerChip(String label) {
+    const Color accent = Color(0xFFFF7A45);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF3ED), Color(0xFFFFE3D6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withOpacity(0.35), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withOpacity(0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.local_fire_department, size: 16, color: accent),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: accent,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
