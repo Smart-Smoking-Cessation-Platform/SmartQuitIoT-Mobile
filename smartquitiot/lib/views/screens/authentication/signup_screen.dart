@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/screens/authentication/enhanced_auth_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -148,7 +149,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const AuthHeader(title: 'Sign Up New Account', height: 120),
+                  const ProfessionalAuthHeader(title: 'Sign Up New Account'),
                   const SizedBox(height: 24),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
