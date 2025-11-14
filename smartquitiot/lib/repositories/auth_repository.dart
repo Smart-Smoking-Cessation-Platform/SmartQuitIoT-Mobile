@@ -66,18 +66,22 @@ class AuthRepository {
         password: password,
       );
       final loginResponse = await _authService.login(loginRequest);
-      
+
       print('💾 [AuthRepository] Saving tokens...');
-      print('   Access Token: ${loginResponse.accessToken.substring(0, 20)}...');
+      print(
+        '   Access Token: ${loginResponse.accessToken.substring(0, 20)}...',
+      );
       await _tokenStorageService.saveTokens(
         loginResponse.accessToken,
         loginResponse.refreshToken,
       );
       print('✅ [AuthRepository] Tokens saved successfully!');
-      
+
       // Verify tokens were saved
       final savedToken = await _tokenStorageService.getAccessToken();
-      print('🔍 [AuthRepository] Verifying saved token: ${savedToken?.substring(0, 20)}...');
+      print(
+        '🔍 [AuthRepository] Verifying saved token: ${savedToken?.substring(0, 20)}...',
+      );
 
       return loginResponse;
     } catch (e) {
@@ -275,11 +279,12 @@ class AuthRepository {
       final payloadMap = json.decode(decoded);
 
       // JWT token có thể chứa 'sub', 'userId', 'id', hoặc 'memberId'
-      final userId = payloadMap['sub'] ?? 
-                     payloadMap['userId'] ?? 
-                     payloadMap['id'] ??
-                     payloadMap['memberId'];
-      
+      final userId =
+          payloadMap['sub'] ??
+          payloadMap['userId'] ??
+          payloadMap['id'] ??
+          payloadMap['memberId'];
+
       if (userId != null) {
         return int.tryParse(userId.toString());
       }
@@ -288,6 +293,41 @@ class AuthRepository {
       return null;
     } catch (e) {
       print('[AuthRepository] Error getting user ID: $e');
+      return null;
+    }
+  }
+
+  /// Get account ID from JWT token for WebSocket initialization
+  Future<int?> getAccountId() async {
+    try {
+      final token = await getAccessToken();
+      if (token == null || token.isEmpty) {
+        print('[AuthRepository] No access token available');
+        return null;
+      }
+
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        print('[AuthRepository] Invalid JWT format');
+        return null;
+      }
+
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final payloadMap = json.decode(decoded);
+
+      // Lấy accountId từ JWT token
+      final accountId = payloadMap['accountId'];
+
+      if (accountId != null) {
+        return int.tryParse(accountId.toString());
+      }
+
+      print('[AuthRepository] No accountId found in token');
+      return null;
+    } catch (e) {
+      print('[AuthRepository] Error getting accountId: $e');
       return null;
     }
   }
