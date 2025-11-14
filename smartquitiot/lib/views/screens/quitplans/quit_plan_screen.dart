@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../models/quit_phase.dart';
+import '../../../models/request/create_new_quit_plan_request.dart';
 import '../../../utils/phase_theme.dart';
 import '../../widgets/mission_complete_dialog.dart';
 import '../diary/diary_screen.dart';
@@ -1315,6 +1316,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                 if (!mounted) return;
                 Navigator.of(context).pop();
                 _showSnack('Phase kept successfully. 🎯');
+                // Refresh quit plan data
+                ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
               } catch (e) {
                 await setProcessing(null);
                 _showSnack(
@@ -1351,6 +1354,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                 if (!mounted) return;
                 Navigator.of(context).pop();
                 _showSnack('Phase restarted from $formattedDate. 🔄');
+                // Refresh quit plan data
+                ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
               } catch (e) {
                 await setProcessing(null);
                 _showSnack(
@@ -1360,59 +1365,579 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
               }
             }
 
-            return AlertDialog(
-              title: Row(
-                children: [
-                  Icon(Icons.warning_amber, color: theme.primaryColor),
-                  const SizedBox(width: 8),
-                  const Text('Manage failed phase'),
-                ],
+            Future<void> handleCreateNewPlan() async {
+              await setProcessing('create');
+              Navigator.of(
+                context,
+              ).pop(); // Close the failed phase dialog first
+
+              // Show create new plan dialog
+              if (!mounted) return;
+              await _showCreateNewPlanDialog(theme);
+              await setProcessing(null);
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              content: const Text(
-                'Would you like to keep your current progress or restart this phase with a new anchor date?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: processingAction == null
-                      ? () => Navigator.pop(context)
-                      : null,
-                  child: const Text('Cancel'),
+              backgroundColor: Colors.white,
+              elevation: 8,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                OutlinedButton(
-                  onPressed: processingAction == null ? handleKeepPhase : null,
-                  child: processingAction == 'keep'
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Keep Phase'),
-                ),
-                ElevatedButton(
-                  onPressed: processingAction == null ? handleRedoPhase : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: processingAction == 'redo'
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.orange[700],
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Manage Failed Phase',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
                           ),
-                        )
-                      : const Text('Redo Phase'),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: processingAction == null
+                              ? () => Navigator.of(context).pop()
+                              : null,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // Message
+                    const Text(
+                      'Would you like to keep your current progress, restart this phase with a new anchor date, or create a completely new quit plan?',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Action Buttons
+                    // Keep Phase Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: processingAction == null
+                            ? handleKeepPhase
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: BorderSide(
+                            color: processingAction == 'keep'
+                                ? theme.primaryColor
+                                : Colors.grey.shade300,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: processingAction == 'keep'
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF00D09E),
+                                  ),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.shield_outlined,
+                                color: Color(0xFF00D09E),
+                              ),
+                        label: const Text(
+                          'Keep Phase',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF00D09E),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Redo Phase Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: processingAction == null
+                            ? handleRedoPhase
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: BorderSide(
+                            color: processingAction == 'redo'
+                                ? theme.primaryColor
+                                : Colors.grey.shade300,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: processingAction == 'redo'
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF00D09E),
+                                  ),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.refresh_outlined,
+                                color: Color(0xFF00D09E),
+                              ),
+                        label: const Text(
+                          'Redo Phase',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF00D09E),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Create New Plan Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: processingAction == null
+                            ? handleCreateNewPlan
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        icon: processingAction == 'create'
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Icon(Icons.add_circle_outline),
+                        label: const Text(
+                          'Create New Plan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Cancel Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: processingAction == null
+                            ? () => Navigator.of(context).pop()
+                            : null,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         );
       },
     );
+  }
+
+  Future<void> _showCreateNewPlanDialog(PhaseTheme theme) async {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final dateController = TextEditingController();
+    bool useNRT = false;
+    DateTime? selectedDate;
+    bool isProcessing = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> selectDate() async {
+              final now = DateTime.now();
+              final pickedDate = await showDatePicker(
+                context: context,
+                initialDate: now,
+                firstDate: DateTime(now.year, now.month, now.day),
+                lastDate: now.add(const Duration(days: 365)),
+                helpText: 'Select Start Date',
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: Color(0xFF00D09E),
+                        onPrimary: Colors.white,
+                        onSurface: Colors.black87,
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+
+              if (pickedDate != null) {
+                setDialogState(() {
+                  selectedDate = pickedDate;
+                  dateController.text = DateFormat(
+                    'yyyy-MM-dd',
+                  ).format(pickedDate);
+                });
+              }
+            }
+
+            Future<void> handleCreate() async {
+              if (!formKey.currentState!.validate()) {
+                return;
+              }
+
+              if (selectedDate == null) {
+                _showSnack('Please select a start date', isError: true);
+                return;
+              }
+
+              setDialogState(() {
+                isProcessing = true;
+              });
+
+              try {
+                final request = CreateNewQuitPlanRequest(
+                  startDate: dateController.text,
+                  useNRT: useNRT,
+                  quitPlanName: nameController.text.trim(),
+                );
+
+                await ref
+                    .read(quitPlanViewModelProvider.notifier)
+                    .createNewPlan(request);
+
+                if (!mounted) return;
+
+                Navigator.of(context).pop();
+                _showSnack('New quit plan created successfully! 🎉');
+                // Refresh quit plan data
+                ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+              } catch (e) {
+                setDialogState(() {
+                  isProcessing = false;
+                });
+                _showSnack(
+                  'Failed to create new plan: ${_errorMessage(e)}',
+                  isError: true,
+                );
+              }
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              backgroundColor: Colors.white,
+              elevation: 8,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: theme.primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.add_circle_outline,
+                                color: theme.primaryColor,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Create New Quit Plan',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.grey),
+                              onPressed: isProcessing
+                                  ? null
+                                  : () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        // Plan Name Field
+                        TextFormField(
+                          controller: nameController,
+                          enabled: !isProcessing,
+                          decoration: InputDecoration(
+                            labelText: 'Quit Plan Name',
+                            hintText: 'Enter quit plan name',
+                            prefixIcon: Icon(
+                              Icons.label_outline,
+                              color: theme.primaryColor,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: theme.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter quit plan name';
+                            }
+                            if (value.trim().length < 3) {
+                              return 'Name must be at least 3 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        // Start Date Field
+                        TextFormField(
+                          controller: dateController,
+                          enabled: !isProcessing,
+                          readOnly: true,
+                          onTap: selectDate,
+                          decoration: InputDecoration(
+                            labelText: 'Start Date',
+                            hintText: 'Select start date',
+                            prefixIcon: Icon(
+                              Icons.calendar_today,
+                              color: theme.primaryColor,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: theme.primaryColor,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select start date';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        // Use NRT Toggle
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.medical_services_outlined,
+                                color: theme.primaryColor,
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Use NRT',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Nicotine Replacement Therapy',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: useNRT,
+                                onChanged: isProcessing
+                                    ? null
+                                    : (value) {
+                                        setDialogState(() {
+                                          useNRT = value;
+                                        });
+                                      },
+                                activeColor: theme.primaryColor,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: isProcessing
+                                    ? null
+                                    : () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  side: BorderSide(
+                                    color: Colors.grey.shade300,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: isProcessing ? null : handleCreate,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: isProcessing
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Create',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    nameController.dispose();
+    dateController.dispose();
   }
 
   String _formatPhaseFieldName(String? field) {
