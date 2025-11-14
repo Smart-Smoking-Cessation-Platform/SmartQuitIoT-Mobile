@@ -26,24 +26,32 @@ final homeMetricsProvider = FutureProvider<HomeMetrics>((ref) async {
 });
 
 // Health Recoveries Provider
-final healthRecoveriesProvider = FutureProvider<HealthRecoveryResponse>((ref) async {
+final healthRecoveriesProvider = FutureProvider<HealthRecoveryResponse>((
+  ref,
+) async {
+  // Listen for refresh trigger
+  ref.watch(metricsRefreshProvider);
+
   final repository = ref.read(metricsRepositoryProvider);
   return await repository.getHealthRecoveries();
 });
 
 // Home Health Recovery Provider
-final homeHealthRecoveryProvider = FutureProvider<HomeHealthRecovery>((ref) async {
+final homeHealthRecoveryProvider = FutureProvider<HomeHealthRecovery>((
+  ref,
+) async {
   // Listen for refresh trigger
   ref.watch(metricsRefreshProvider);
-  
+
   final repository = ref.read(metricsRepositoryProvider);
   return await repository.getHomeHealthRecovery();
 });
 
 // Refresh Provider for metrics (similar to diary refresh)
-final metricsRefreshProvider = StateNotifierProvider<MetricsRefreshNotifier, int>((ref) {
-  return MetricsRefreshNotifier();
-});
+final metricsRefreshProvider =
+    StateNotifierProvider<MetricsRefreshNotifier, int>((ref) {
+      return MetricsRefreshNotifier();
+    });
 
 class MetricsRefreshNotifier extends StateNotifier<int> {
   MetricsRefreshNotifier() : super(0);
