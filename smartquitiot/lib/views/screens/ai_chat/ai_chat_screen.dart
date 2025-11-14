@@ -163,45 +163,62 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(
+                            children: [
+                              const Icon(
                                 Icons.chat_bubble_outline,
                                 size: 64,
                                 color: Colors.grey,
                               ),
-                              SizedBox(height: 16),
-                              Text(
+                              const SizedBox(height: 16),
+                              const Text(
                                 'No messages yet',
                                 style: TextStyle(
                                   color: Colors.grey,
                                   fontSize: 16,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Text(
                                 'Start a conversation with AI!',
                                 style: TextStyle(
-                                  color: Colors.grey,
+                                  color: Colors.grey[600],
                                   fontSize: 14,
                                 ),
                               ),
                             ],
                           ),
                         )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(16),
-                          itemCount: chatState.messages.length,
-                          itemBuilder: (context, index) {
-                            final message = chatState.messages[index];
-                            return AiChatMessageBubble(
-                              text: message.text,
-                              isUser: message.isUser,
-                              time: _formatTime(message.timestamp),
-                              media: message.media,
-                              isLoading: message.isLoading,
-                            );
-                          },
+                      : Stack(
+                          children: [
+                            ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.only(
+                                left: 16,
+                                right: 16,
+                                top: 16,
+                                bottom: 80,
+                              ),
+                              itemCount: chatState.messages.length,
+                              itemBuilder: (context, index) {
+                                final message = chatState.messages[index];
+                                return AiChatMessageBubble(
+                                  text: message.text,
+                                  isUser: message.isUser,
+                                  time: _formatTime(message.timestamp),
+                                  media: message.media,
+                                  isLoading: message.isLoading,
+                                );
+                              },
+                            ),
+                            // Metrics button (only show when there are messages)
+                            //   if (chatState.messages.isNotEmpty)
+                            //     // Positioned(
+                            //     //   top: 16,
+                            //     //   right: 16,
+                            //   child: _buildMetricsButton(),
+                            // ),
+                          ],
                         ),
                 ),
                 _buildMessageInput(),
@@ -213,6 +230,67 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   String _formatTime(DateTime? timestamp) {
     if (timestamp == null) return '';
     return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
+  }
+
+  // Widget _buildMetricsButton() {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFF00D09E),
+  //       borderRadius: BorderRadius.circular(20),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: const Color(0xFF00D09E).withOpacity(0.3),
+  //           blurRadius: 8,
+  //           offset: const Offset(0, 2),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Material(
+  //       color: Colors.transparent,
+  //       child: InkWell(
+  //         onTap: () {
+  //           _sendMetricsRequest();
+  //         },
+  //         borderRadius: BorderRadius.circular(20),
+  //         child: Padding(
+  //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+  //           child: Row(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: const [
+  //               Icon(Icons.analytics_outlined, color: Colors.white, size: 18),
+  //               SizedBox(width: 6),
+  //               Text(
+  //                 'Metrics',
+  //                 style: TextStyle(
+  //                   color: Colors.white,
+  //                   fontSize: 14,
+  //                   fontWeight: FontWeight.w600,
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Future<void> _sendMetricsRequest() async {
+    if (!ref.read(chatbotViewModelProvider).isConnected) {
+      _showFlushbar('Not connected to server. Please wait...', isError: true);
+      return;
+    }
+
+    try {
+      // Send metrics request - backend may expect "Cac chi so" but UI shows "Metrics"
+      await ref
+          .read(chatbotViewModelProvider.notifier)
+          .sendMessage('Cac chi so', null);
+      _scrollToBottom();
+    } catch (e) {
+      debugPrint('❌ Error sending metrics request: $e');
+      _showFlushbar('Failed to request metrics: $e', isError: true);
+    }
   }
 
   Widget _buildMessageInput() {
