@@ -142,9 +142,62 @@ class ChatbotViewModel extends StateNotifier<ChatbotState> {
 
   /// Add message to chat list
   void _addMessage(ChatMessage message) {
-    debugPrint('📥 [ChatbotViewModel] Adding message: type=${message.messageType}, isLoading=${message.isLoading}, text=${message.text.substring(0, message.text.length > 50 ? 50 : message.text.length)}...');
+    debugPrint('📥 [ChatbotViewModel] Adding message: type=${message.messageType}, isLoading=${message.isLoading}, id=${message.id}, text=${message.text.length > 50 ? message.text.substring(0, 50) : message.text}...');
     
     final currentMessages = List<ChatMessage>.from(state.messages);
+    
+    // Check for duplicates first
+    bool isDuplicate = false;
+    
+    // If message has an ID, check by ID first (most reliable)
+    if (message.id != null && message.id!.isNotEmpty) {
+      isDuplicate = currentMessages.any((m) => m.id == message.id && m.id!.isNotEmpty);
+      if (isDuplicate) {
+        debugPrint('⚠️ [ChatbotViewModel] Duplicate message detected by ID: ${message.id}');
+      }
+    }
+    
+    // If not duplicate by ID, check by content (text + messageType)
+    // This handles cases where messages don't have IDs or have duplicate IDs
+    if (!isDuplicate) {
+      isDuplicate = currentMessages.any((m) {
+        // Must match message type
+        if (m.messageType != message.messageType) return false;
+        
+        // Must match text content (exact match for now)
+        if (m.text.trim() != message.text.trim()) return false;
+        
+        // If both have IDs and they're different, not a duplicate
+        if (m.id != null && message.id != null && 
+            m.id!.isNotEmpty && message.id!.isNotEmpty && 
+            m.id != message.id) {
+          return false;
+        }
+        
+        // If both have timestamps, check if they're very close (within 2 seconds)
+        // This prevents false positives from messages sent at different times
+        if (m.timestamp != null && message.timestamp != null) {
+          final timeDiff = (m.timestamp!.difference(message.timestamp!).inSeconds).abs();
+          // If timestamps are more than 2 seconds apart, likely different messages
+          if (timeDiff > 2) {
+            return false;
+          }
+        }
+        
+        // Consider it a duplicate if text and type match
+        return true;
+      });
+      
+      if (isDuplicate) {
+        debugPrint('⚠️ [ChatbotViewModel] Duplicate message detected by content: ${message.text.length > 30 ? message.text.substring(0, 30) : message.text}...');
+      }
+    }
+    
+    // Skip if duplicate (unless it's a loading message being replaced)
+    if (isDuplicate && !message.isLoading) {
+      debugPrint('⏭️ [ChatbotViewModel] Skipping duplicate message');
+      return;
+    }
     
     // Count loading messages before
     final loadingCountBefore = currentMessages.where((m) => m.isLoading).length;
@@ -159,7 +212,24 @@ class ChatbotViewModel extends StateNotifier<ChatbotState> {
       debugPrint('🔍 [ChatbotViewModel] Loading messages after: $loadingCountAfter');
     }
     
-    currentMessages.add(message);
+    // If this is a duplicate loading message, replace the existing one instead of adding
+    if (isDuplicate && message.isLoading) {
+      // Replace existing loading message
+      final index = currentMessages.indexWhere((m) => 
+        m.isLoading && 
+        m.messageType == message.messageType &&
+        (m.id == message.id || (m.id == null && message.id == null))
+      );
+      if (index != -1) {
+        currentMessages[index] = message;
+        debugPrint('🔄 [ChatbotViewModel] Replaced loading message at index $index');
+      } else {
+        currentMessages.add(message);
+      }
+    } else {
+      currentMessages.add(message);
+    }
+    
     state = state.copyWith(messages: currentMessages);
     
     debugPrint('📊 [ChatbotViewModel] Total messages now: ${currentMessages.length}');

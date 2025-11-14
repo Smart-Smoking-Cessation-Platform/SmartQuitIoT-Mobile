@@ -17,4 +17,32 @@ class QuitPhaseViewModel extends StateNotifier<AsyncValue<QuitPhase?>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  Future<void> keepPhase({
+    required int quitPlanId,
+    required int phaseId,
+  }) async {
+    final previousState = state;
+    try {
+      await repository.keepPhase(quitPlanId: quitPlanId, phaseId: phaseId);
+      await loadQuitPlan();
+    } catch (e, st) {
+      state = previousState;
+      Error.throwWithStackTrace(e, st);
+    }
+  }
+
+  Future<void> redoPhase({
+    required int phaseId,
+    required String anchorStart,
+  }) async {
+    final previousState = state;
+    try {
+      await repository.redoPhase(phaseId: phaseId, anchorStart: anchorStart);
+      await loadQuitPlan();
+    } catch (e, st) {
+      state = previousState;
+      Error.throwWithStackTrace(e, st);
+    }
+  }
 }

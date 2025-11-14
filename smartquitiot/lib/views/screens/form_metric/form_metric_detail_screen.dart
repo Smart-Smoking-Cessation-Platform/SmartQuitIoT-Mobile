@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:logger/logger.dart';
+import 'package:go_router/go_router.dart';
 import '../../../viewmodels/form_metric_view_model.dart';
 import '../../../models/request/update_form_metric_request.dart';
 import '../../../models/response/form_metric_response.dart';
 import '_edit_form_metric_dialog.dart';
+import '_create_new_quit_plan_dialog.dart';
 
 final logger = Logger();
 
@@ -45,7 +47,7 @@ class _FormMetricDetailScreenState
             backgroundColor: const Color(0xFF00D09E),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.go('/main'),
             ),
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
@@ -62,10 +64,7 @@ class _FormMetricDetailScreenState
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF00D09E),
-                      Color(0xFF00B386),
-                    ],
+                    colors: [Color(0xFF00D09E), Color(0xFF00B386)],
                   ),
                 ),
               ),
@@ -75,9 +74,7 @@ class _FormMetricDetailScreenState
           // Content
           if (state.isLoading)
             const SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: Center(child: CircularProgressIndicator()),
             )
           else if (state.error != null)
             SliverFillRemaining(
@@ -94,10 +91,7 @@ class _FormMetricDetailScreenState
                     Text(
                       state.error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
@@ -121,10 +115,8 @@ class _FormMetricDetailScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // FTND Score Card
-                    Center(
-                      child: _buildFTNDScoreCard(formMetric.ftndScore),
-                    ),
-                    
+                    Center(child: _buildFTNDScoreCard(formMetric.ftndScore)),
+
                     const SizedBox(height: 24),
 
                     // Smoking Habits Section
@@ -140,14 +132,16 @@ class _FormMetricDetailScreenState
                     _buildInfoCard(
                       icon: Icons.calendar_today,
                       title: 'Years of Smoking',
-                      value: '${formMetric.formMetricDTO.numberOfYearsOfSmoking}',
+                      value:
+                          '${formMetric.formMetricDTO.numberOfYearsOfSmoking}',
                       color: const Color(0xFF00B386),
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
                       icon: Icons.access_time,
                       title: 'Minutes After Waking to Smoke',
-                      value: '${formMetric.formMetricDTO.minutesAfterWakingToSmoke}',
+                      value:
+                          '${formMetric.formMetricDTO.minutesAfterWakingToSmoke}',
                       color: const Color(0xFF00D09E),
                     ),
                     const SizedBox(height: 12),
@@ -166,14 +160,16 @@ class _FormMetricDetailScreenState
                     _buildInfoCard(
                       icon: Icons.water_drop,
                       title: 'Nicotine Per Cigarette',
-                      value: '${formMetric.formMetricDTO.amountOfNicotinePerCigarettes} mg',
+                      value:
+                          '${formMetric.formMetricDTO.amountOfNicotinePerCigarettes} mg',
                       color: const Color(0xFF00D09E),
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
                       icon: Icons.science,
                       title: 'Estimated Daily Nicotine Intake',
-                      value: '${formMetric.formMetricDTO.estimatedNicotineIntakePerDay} mg',
+                      value:
+                          '${formMetric.formMetricDTO.estimatedNicotineIntakePerDay} mg',
                       color: const Color(0xFF00B386),
                     ),
 
@@ -185,8 +181,10 @@ class _FormMetricDetailScreenState
                     _buildInfoCard(
                       icon: Icons.money,
                       title: 'Money Per Package',
-                      value: NumberFormat('#,###', 'vi_VN')
-                          .format(formMetric.formMetricDTO.moneyPerPackage),
+                      value: NumberFormat(
+                        '#,###',
+                        'vi_VN',
+                      ).format(formMetric.formMetricDTO.moneyPerPackage),
                       color: const Color(0xFF00B386),
                     ),
                     const SizedBox(height: 12),
@@ -194,7 +192,8 @@ class _FormMetricDetailScreenState
                       icon: Icons.savings,
                       title: 'Estimated Money Saved on Plan',
                       value: NumberFormat('#,###', 'vi_VN').format(
-                          formMetric.formMetricDTO.estimatedMoneySavedOnPlan),
+                        formMetric.formMetricDTO.estimatedMoneySavedOnPlan,
+                      ),
                       color: const Color(0xFF00D09E),
                       isHighlight: true,
                     ),
@@ -306,10 +305,7 @@ class _FormMetricDetailScreenState
               child: Center(
                 child: Text(
                   'No data available',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               ),
             ),
@@ -340,10 +336,7 @@ class _FormMetricDetailScreenState
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -439,11 +432,7 @@ class _FormMetricDetailScreenState
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 28,
-            ),
+            child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -452,10 +441,7 @@ class _FormMetricDetailScreenState
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -484,10 +470,7 @@ class _FormMetricDetailScreenState
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -516,10 +499,7 @@ class _FormMetricDetailScreenState
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Colors.black87,
-              ),
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
             ),
           ),
           Container(
@@ -548,16 +528,13 @@ class _FormMetricDetailScreenState
   }) {
     final displayText = value ? 'The first in the morning' : 'Any other';
     final displayColor = value ? const Color(0xFF00D09E) : Colors.orange;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -574,11 +551,7 @@ class _FormMetricDetailScreenState
               color: displayColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: displayColor,
-              size: 28,
-            ),
+            child: Icon(icon, color: displayColor, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -587,10 +560,7 @@ class _FormMetricDetailScreenState
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Colors.black87,
-                  ),
+                  style: const TextStyle(fontSize: 15, color: Colors.black87),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -631,19 +601,12 @@ class _FormMetricDetailScreenState
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: color.withOpacity(0.3),
-              width: 1,
-            ),
+            border: Border.all(color: color.withOpacity(0.3), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.check_circle,
-                size: 16,
-                color: color,
-              ),
+              Icon(Icons.check_circle, size: 16, color: color),
               const SizedBox(width: 8),
               Text(
                 item,
@@ -679,7 +642,7 @@ class _FormMetricDetailScreenState
 
   Future<void> _handleUpdate(FormMetricDTO currentData) async {
     logger.i('🔄 [FormMetricDetail] Starting update process');
-    
+
     final request = UpdateFormMetricRequest(
       smokeAvgPerDay: currentData.smokeAvgPerDay,
       numberOfYearsOfSmoking: currentData.numberOfYearsOfSmoking,
@@ -709,15 +672,14 @@ class _FormMetricDetailScreenState
     }
 
     if (response != null) {
-      logger.i('✅ [FormMetricDetail] Update successful - FTND Score: ${response.ftndScore}, Alert: ${response.alert}');
-      
+      logger.i(
+        '✅ [FormMetricDetail] Update successful - FTND Score: ${response.ftndScore}, Alert: ${response.alert}',
+      );
+
       // Show success message
       Flushbar(
         message: 'Form metric updated successfully!',
-        icon: const Icon(
-          Icons.check_circle,
-          color: Colors.white,
-        ),
+        icon: const Icon(Icons.check_circle, color: Colors.white),
         backgroundColor: const Color(0xFF00D09E),
         duration: const Duration(seconds: 3),
         margin: const EdgeInsets.all(8),
@@ -727,7 +689,9 @@ class _FormMetricDetailScreenState
 
       // Check if alert is true -> show warning dialog
       if (response.alert) {
-        logger.w('⚠️ [FormMetricDetail] Alert triggered - showing quit plan warning dialog');
+        logger.w(
+          '⚠️ [FormMetricDetail] Alert triggered - showing quit plan warning dialog',
+        );
         await Future.delayed(const Duration(milliseconds: 500));
         if (!mounted) return;
         _showAlertDialog(response.ftndScore);
@@ -735,14 +699,11 @@ class _FormMetricDetailScreenState
     } else {
       final state = ref.read(formMetricViewModelProvider);
       logger.e('❌ [FormMetricDetail] Update failed: ${state.error}');
-      
+
       // Show error message
       Flushbar(
         message: state.error ?? 'Failed to update form metric',
-        icon: const Icon(
-          Icons.error_outline,
-          color: Colors.white,
-        ),
+        icon: const Icon(Icons.error_outline, color: Colors.white),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
         margin: const EdgeInsets.all(8),
@@ -753,15 +714,15 @@ class _FormMetricDetailScreenState
   }
 
   void _showAlertDialog(int newFtndScore) {
-    logger.w('⚠️ [FormMetricDetail] Showing alert dialog for new FTND score: $newFtndScore');
-    
+    logger.w(
+      '⚠️ [FormMetricDetail] Showing alert dialog for new FTND score: $newFtndScore',
+    );
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 8,
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -802,17 +763,14 @@ class _FormMetricDetailScreenState
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Description
               const Text(
                 'You have updated fields that affect your FTND score.',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.black87,
-                ),
+                style: TextStyle(fontSize: 15, color: Colors.black87),
               ),
               const SizedBox(height: 16),
-              
+
               // FTND Score Box
               Container(
                 width: double.infinity,
@@ -859,17 +817,14 @@ class _FormMetricDetailScreenState
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Impact message
               const Text(
                 'This may affect your quit plan, phases, and missions.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.black54),
               ),
               const SizedBox(height: 12),
-              
+
               // Question
               const Text(
                 'Would you like to create a new quit plan based on your updated information?',
@@ -880,29 +835,23 @@ class _FormMetricDetailScreenState
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Buttons - Vertical Stack
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    logger.i('🔄 [FormMetricDetail] User chose to create new quit plan');
-                    Navigator.pop(context);
-                    // TODO: Navigate to create new quit plan screen
-                    // context.go('/create-quit-plan');
-                    Flushbar(
-                      message: 'Create new quit plan feature coming soon!',
-                      icon: const Icon(
-                        Icons.info_outline,
-                        color: Colors.white,
-                      ),
-                      backgroundColor: const Color(0xFF00D09E),
-                      duration: const Duration(seconds: 2),
-                      margin: const EdgeInsets.all(8),
-                      borderRadius: BorderRadius.circular(12),
-                      flushbarPosition: FlushbarPosition.TOP,
-                    ).show(context);
+                    logger.i(
+                      '🔄 [FormMetricDetail] User chose to create new quit plan',
+                    );
+                    Navigator.pop(context); // Close alert dialog
+                    // Show create new quit plan dialog
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const CreateNewQuitPlanDialog(),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
@@ -934,15 +883,14 @@ class _FormMetricDetailScreenState
                 height: 52,
                 child: OutlinedButton(
                   onPressed: () {
-                    logger.i('✅ [FormMetricDetail] User chose to keep current plan');
+                    logger.i(
+                      '✅ [FormMetricDetail] User chose to keep current plan',
+                    );
                     Navigator.pop(context);
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.grey.shade700,
-                    side: BorderSide(
-                      color: Colors.grey.shade300,
-                      width: 1.5,
-                    ),
+                    side: BorderSide(color: Colors.grey.shade300, width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

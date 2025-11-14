@@ -51,7 +51,8 @@ class AiChatMessageBubble extends StatelessWidget {
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                      Color(0xFF00D09E)),
+                                    Color(0xFF00D09E),
+                                  ),
                                 ),
                               ),
                               SizedBox(width: 8),
@@ -65,11 +66,7 @@ class AiChatMessageBubble extends StatelessWidget {
                               ),
                             ],
                           )
-                        : Text(
-                            text,
-                            style: const TextStyle(
-                                color: Colors.black, fontSize: 14),
-                          ),
+                        : _buildFormattedText(),
                   ),
                   if (media != null && media!.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -110,6 +107,79 @@ class AiChatMessageBubble extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildFormattedText() {
+    // Simple markdown parsing for bold (**text**) and bullet points
+    final textSpans = <TextSpan>[];
+    final lines = text.split('\n');
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      // Check if it's a bullet point
+      if (line.trim().startsWith('*   ') || line.trim().startsWith('- ')) {
+        final bulletText = line.replaceFirst(RegExp(r'^[\*\-\s]+'), '');
+        final spans = _parseMarkdown(bulletText);
+        textSpans.addAll([
+          const TextSpan(
+            text: '• ',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          ...spans,
+        ]);
+      } else {
+        final spans = _parseMarkdown(line);
+        textSpans.addAll(spans);
+      }
+
+      // Add newline except for last line
+      if (i < lines.length - 1) {
+        textSpans.add(const TextSpan(text: '\n'));
+      }
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(color: Colors.black, fontSize: 14, height: 1.5),
+        children: textSpans,
+      ),
+    );
+  }
+
+  List<TextSpan> _parseMarkdown(String text) {
+    final spans = <TextSpan>[];
+    final regex = RegExp(r'\*\*(.*?)\*\*');
+    int lastEnd = 0;
+
+    for (final match in regex.allMatches(text)) {
+      // Add text before the match
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(text: text.substring(lastEnd, match.start)));
+      }
+
+      // Add bold text
+      spans.add(
+        TextSpan(
+          text: match.group(1),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      );
+
+      lastEnd = match.end;
+    }
+
+    // Add remaining text
+    if (lastEnd < text.length) {
+      spans.add(TextSpan(text: text.substring(lastEnd)));
+    }
+
+    // If no markdown found, return the whole text
+    if (spans.isEmpty) {
+      spans.add(TextSpan(text: text));
+    }
+
+    return spans;
   }
 
   Widget _buildMediaPreview() {

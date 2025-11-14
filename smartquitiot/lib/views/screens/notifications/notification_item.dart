@@ -38,8 +38,8 @@ class NotificationItem extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isUnread 
-              ? const Color(0xFFF1FFF3)  // Light green for unread
+          color: isUnread
+              ? const Color(0xFFF1FFF3) // Light green for unread
               : const Color(0xFFF5F5F5), // Light gray for read
           borderRadius: BorderRadius.circular(16),
           border: isUnread
@@ -87,7 +87,7 @@ class NotificationItem extends StatelessWidget {
                   child: Icon(icon, color: Colors.white, size: 24),
                 ),
                 // Unread indicator dot
-                if (isUnread)
+                if (isUnread && !forceHideBadge)
                   Positioned(
                     right: -2,
                     top: -2,

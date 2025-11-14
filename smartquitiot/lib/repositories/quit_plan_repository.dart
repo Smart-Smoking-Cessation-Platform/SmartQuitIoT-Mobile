@@ -1,8 +1,4 @@
-import 'dart:convert';
-
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-
+import '../models/request/create_new_quit_plan_request.dart';
 import '../models/request/create_quit_plan_request.dart';
 import '../models/phase.dart';
 import '../services/quit_plan_service.dart';
@@ -21,42 +17,40 @@ class QuitPlanRepository {
         throw Exception('Access token not found. Please login again.');
       }
 
-      final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
-      final baseUrl = '$apiBaseUrl/quit-plan';
-      final serviceWithToken = QuitPlanService(token: token, baseUrl: baseUrl);
-      return await serviceWithToken.createQuitPlan(request);
+      return await service.createQuitPlan(request: request);
     } catch (e) {
       throw Exception('Failed to create quit plan: ${e.toString()}');
     }
   }
 
-  Future<Map<String, dynamic>> getQuitPlan() async {
-    // Direct API call from repository (skip service as requested)
-    final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
-    final baseUrl = '$apiBaseUrl/quit-plan';
-
-    // Try include token if available, but don't block if none (support local dev)
-    String? token;
+  Future<Phase> createNewPlan(CreateNewQuitPlanRequest request) async {
     try {
-      token = await authRepository.getAccessToken();
-    } catch (_) {
-      token = null;
+      final token = await authRepository.getAccessToken();
+      if (token == null) {
+        throw Exception('Access token not found. Please login again.');
+      }
+
+      return await service.createNewQuitPlan(request: request);
+    } catch (e) {
+      throw Exception('Failed to create new quit plan: ${e.toString()}');
     }
+  }
 
-    final response = await http.get(
-      Uri.parse(baseUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-      },
-    );
+  Future<Map<String, dynamic>> getQuitPlan() async {
+    return await service.getQuitPlan();
+  }
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    }
+  Future<void> keepPhase({
+    required int quitPlanId,
+    required int phaseId,
+  }) async {
+    await service.keepPhase(quitPlanId: quitPlanId, phaseId: phaseId);
+  }
 
-    throw Exception(
-      'Failed to fetch quit plan: ${response.statusCode} ${response.body}',
-    );
+  Future<void> redoPhase({
+    required int phaseId,
+    required String anchorStart,
+  }) async {
+    await service.redoPhase(phaseId: phaseId, anchorStart: anchorStart);
   }
 }

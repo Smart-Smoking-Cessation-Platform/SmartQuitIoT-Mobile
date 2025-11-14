@@ -269,13 +269,13 @@ class WelcomeScreen extends ConsumerWidget {
                     ),
                   );
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                    context.locale.languageCode == 'en' ? "🇺🇸" : "🇻🇳",
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                ),
+                // child: Container(
+                //   padding: const EdgeInsets.all(8),
+                //   child: Text(
+                //     context.locale.languageCode == 'en' ? "🇺🇸" : "🇻🇳",
+                //     style: const TextStyle(fontSize: 20),
+                //   ),
+                // ),
               ),
             ),
           ],

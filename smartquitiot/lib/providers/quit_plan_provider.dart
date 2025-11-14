@@ -9,10 +9,8 @@ import '../viewmodels/quit_plan_view_model.dart';
 import 'auth_provider.dart'; // Provider AuthRepository
 
 final quitPlanServiceProvider = Provider<QuitPlanService>((ref) {
-  final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
-  final baseUrl = '$apiBaseUrl/quit-plan';
-
-  return QuitPlanService(token: '', baseUrl: baseUrl);
+  final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080/api';
+  return QuitPlanService(baseUrl: apiBaseUrl);
 });
 
 // Repository Provider
