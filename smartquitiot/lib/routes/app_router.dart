@@ -1,3 +1,4 @@
+import 'package:SmartQuitIoT/views/screens/achievements/achievement_screen.dart';
 import 'package:SmartQuitIoT/views/screens/common/_relaunch_screen.dart';
 import 'package:SmartQuitIoT/views/screens/diary/create_diary_screen.dart';
 import 'package:SmartQuitIoT/views/screens/payment/success_payment_screen.dart';
@@ -230,6 +231,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/edit-profile',
       builder: (context, state) => const EditProfileScreen(),
+    ),
+     GoRoute(
+      path: '/achievements',
+      builder: (context, state) => const AchievementScreen(),
     ),
   ],
 );

@@ -73,6 +73,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
         backgroundColor: const Color(0xFF00D09E),
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.history, color: Colors.white),

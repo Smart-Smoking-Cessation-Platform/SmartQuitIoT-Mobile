@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../payment/premium_membership_screen.dart';
 import 'package:SmartQuitIoT/providers/membership_provider.dart';
 
@@ -33,11 +34,8 @@ class MembershipShortcutCard extends ConsumerWidget {
   Widget _buildCongratulationCard(BuildContext context, subscription) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PremiumMembershipScreen()),
-        );
-      },
+        context.push('/achievements');
+    },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
