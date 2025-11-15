@@ -11,7 +11,7 @@ import '../../../models/response/form_metric_response.dart';
 import '../../../models/request/update_form_metric_request.dart';
 import '../../widgets/mission_complete_dialog.dart';
 import '../diary/diary_screen.dart';
-import '../form_metric/_edit_form_metric_dialog.dart';
+import '../form_metric/_create_form_metric_dialog.dart';
 import 'quit_plan_history_screen.dart';
 
 class QuitPlanScreen extends ConsumerStatefulWidget {
@@ -25,6 +25,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   int selectedPhaseIndex = 0;
   int selectedDayIndex = 0;
   final Set<int> locallyCompletedMissionIds = <int>{};
+  final Set<int> _shownFailedPhaseDialogs =
+      <int>{}; // Track phases that already showed dialog
 
   void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
     showDialog(
@@ -75,6 +77,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != null && previous != next) {
         print('🔄 [QuitPlanScreen] Refresh triggered - reloading quit plan...');
+        // Reset failed phase dialogs when refreshing to allow re-showing if phase is still failed
+        _shownFailedPhaseDialogs.clear();
         ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
       }
     });
@@ -125,8 +129,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
         ),
         data: (data) {
           // Check if quit plan is inactive - treat as if no quit plan exists
+          // TODO: Temporarily allow viewing even when isActive is false
           if (data == null ||
-              data.active == false ||
+              // data.active == false ||  // Temporarily disabled
               (data.phases?.isEmpty ?? true)) {
             return const Center(child: Text('No quit plan found'));
           }
@@ -502,7 +507,22 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   ) {
     final days = phase.details ?? [];
     final isFailed = _isFailedStatus(phase.status);
-    final shouldShowBanner = isFailed && (phase.keepPhase != true);
+    final phaseId = phase.id ?? -1;
+
+    // Always show banner when phase failed
+    final shouldShowBanner = isFailed;
+
+    // Auto-show dialog when phase failed for the first time (when phase is expanded)
+    if (isFailed &&
+        phaseId != -1 &&
+        !_shownFailedPhaseDialogs.contains(phaseId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_shownFailedPhaseDialogs.contains(phaseId)) {
+          _shownFailedPhaseDialogs.add(phaseId);
+          _showFailedPhaseDialog(plan, phase, theme);
+        }
+      });
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -2209,56 +2229,37 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   }
 
   Future<void> _showCreateFormMetricDialog() async {
-    // Create default form metric data for new creation
-    final defaultFormMetric = FormMetricDTO(
-      id: 0,
-      smokeAvgPerDay: 0,
-      numberOfYearsOfSmoking: 0,
-      cigarettesPerPackage: 0,
-      minutesAfterWakingToSmoke: 0,
-      smokingInForbiddenPlaces: false,
-      cigaretteHateToGiveUp: false,
-      morningSmokingFrequency: false,
-      smokeWhenSick: false,
-      moneyPerPackage: 0,
-      estimatedMoneySavedOnPlan: 0,
-      amountOfNicotinePerCigarettes: 0,
-      estimatedNicotineIntakePerDay: 0,
-      interests: [],
-      triggered: [],
-    );
-
     if (!mounted) return;
 
-    final updatedData = await Navigator.push<FormMetricDTO>(
+    // Use CreateFormMetricDialog (required, cannot be dismissed)
+    final formMetricData = await Navigator.push<FormMetricDTO>(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            EditFormMetricDialog(currentData: defaultFormMetric),
+        builder: (context) => const CreateFormMetricDialog(),
         fullscreenDialog: true,
       ),
     );
 
-    if (updatedData != null && mounted) {
+    if (formMetricData != null && mounted) {
       try {
         // Create form metric using updateFormMetric API (which creates if doesn't exist)
         final request = UpdateFormMetricRequest(
-          smokeAvgPerDay: updatedData.smokeAvgPerDay,
-          numberOfYearsOfSmoking: updatedData.numberOfYearsOfSmoking,
-          cigarettesPerPackage: updatedData.cigarettesPerPackage,
-          minutesAfterWakingToSmoke: updatedData.minutesAfterWakingToSmoke,
-          smokingInForbiddenPlaces: updatedData.smokingInForbiddenPlaces,
-          cigaretteHateToGiveUp: updatedData.cigaretteHateToGiveUp,
-          morningSmokingFrequency: updatedData.morningSmokingFrequency,
-          smokeWhenSick: updatedData.smokeWhenSick,
-          moneyPerPackage: updatedData.moneyPerPackage,
-          estimatedMoneySavedOnPlan: updatedData.estimatedMoneySavedOnPlan,
+          smokeAvgPerDay: formMetricData.smokeAvgPerDay,
+          numberOfYearsOfSmoking: formMetricData.numberOfYearsOfSmoking,
+          cigarettesPerPackage: formMetricData.cigarettesPerPackage,
+          minutesAfterWakingToSmoke: formMetricData.minutesAfterWakingToSmoke,
+          smokingInForbiddenPlaces: formMetricData.smokingInForbiddenPlaces,
+          cigaretteHateToGiveUp: formMetricData.cigaretteHateToGiveUp,
+          morningSmokingFrequency: formMetricData.morningSmokingFrequency,
+          smokeWhenSick: formMetricData.smokeWhenSick,
+          moneyPerPackage: formMetricData.moneyPerPackage,
+          estimatedMoneySavedOnPlan: formMetricData.estimatedMoneySavedOnPlan,
           amountOfNicotinePerCigarettes:
-              updatedData.amountOfNicotinePerCigarettes,
+              formMetricData.amountOfNicotinePerCigarettes,
           estimatedNicotineIntakePerDay:
-              updatedData.estimatedNicotineIntakePerDay,
-          interests: updatedData.interests,
-          triggered: updatedData.triggered,
+              formMetricData.estimatedNicotineIntakePerDay,
+          interests: formMetricData.interests,
+          triggered: formMetricData.triggered,
         );
 
         final response = await ref
