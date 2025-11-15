@@ -5,6 +5,7 @@ class QuitPhase {
   final String? startDate;
   final String? endDate;
   final bool? useNRT;
+  final bool? active;
   final int? ftndScore;
   final List<QuitPhaseDetail>? phases; // phase list
   final double? progress; // optional overall progress if provided later
@@ -16,6 +17,7 @@ class QuitPhase {
     this.startDate,
     this.endDate,
     this.useNRT,
+    this.active,
     this.ftndScore,
     this.phases,
     this.progress,
@@ -29,6 +31,7 @@ class QuitPhase {
       startDate: json['startDate'] as String?,
       endDate: json['endDate'] as String?,
       useNRT: json['useNRT'] as bool?,
+      active: json['active'] as bool?,
       ftndScore: json['ftndScore'] as int?,
       progress: (json['progress'] as num?)?.toDouble(),
       phases: (json['phases'] as List<dynamic>?)

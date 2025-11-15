@@ -24,7 +24,9 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
     // Listen for quit plan refresh trigger
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != null && previous != next) {
-        print('🔄 [QuitPlanHistoryScreen] Refresh triggered - reloading quit plan history...');
+        print(
+          '🔄 [QuitPlanHistoryScreen] Refresh triggered - reloading quit plan history...',
+        );
         ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
       }
     });
@@ -107,7 +109,10 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
                   },
                   color: const Color(0xFF00D09E),
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     itemCount: filteredPlans.length,
                     itemBuilder: (context, index) {
                       return _buildQuitPlanCard(filteredPlans[index]);
@@ -124,18 +129,27 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
 
   Widget _buildFilterChips() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
             _buildFilterChip('ALL', 'All', Icons.list),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             _buildFilterChip('IN_PROGRESS', 'In Progress', Icons.play_circle),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             _buildFilterChip('COMPLETED', 'Completed', Icons.check_circle),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             _buildFilterChip('CANCELED', 'Canceled', Icons.cancel),
           ],
         ),
@@ -145,33 +159,52 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
 
   Widget _buildFilterChip(String value, String label, IconData icon) {
     final isSelected = _selectedFilter == value;
-    return FilterChip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: isSelected ? Colors.white : const Color(0xFF00D09E),
-          ),
-          const SizedBox(width: 4),
-          Text(label),
-        ],
-      ),
-      selected: isSelected,
-      onSelected: (selected) {
+    return GestureDetector(
+      onTap: () {
         setState(() {
           _selectedFilter = value;
         });
       },
-      backgroundColor: Colors.white,
-      selectedColor: const Color(0xFF00D09E),
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
-      side: BorderSide(
-        color: isSelected ? const Color(0xFF00D09E) : Colors.grey[300]!,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00D09E) : Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00D09E) : Colors.grey[300]!,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF00D09E).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.white : const Color(0xFF00D09E),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -184,264 +217,287 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
   }
 
   Widget _buildQuitPlanCard(QuitPlanHistory quitPlan) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shadowColor: Color(quitPlan.statusColor).withOpacity(0.2),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: Color(quitPlan.statusColor).withOpacity(0.3),
-          width: 1.5,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => QuitPlanDetailScreen(quitPlanId: quitPlan.id),
-            ),
-          );
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.white,
-                Color(quitPlan.statusColor).withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
+    final statusColor = Color(quitPlan.statusColor);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: statusColor, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(quitPlan.statusColor),
-                          Color(quitPlan.statusColor).withOpacity(0.7),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(quitPlan.statusColor).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _getStatusIcon(quitPlan.status),
-                      color: Colors.white,
-                      size: 26,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          quitPlan.name,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Color(quitPlan.statusColor),
-                                    Color(
-                                      quitPlan.statusColor,
-                                    ).withOpacity(0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(
-                                      quitPlan.statusColor,
-                                    ).withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                quitPlan.statusDisplayText,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            if (quitPlan.active) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF00D09E),
-                                      Color(0xFF00B87C),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFF00D09E,
-                                      ).withOpacity(0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Active',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QuitPlanDetailScreen(quitPlanId: quitPlan.id),
               ),
-              const SizedBox(height: 14),
-              Divider(
-                color: Color(quitPlan.statusColor).withOpacity(0.2),
-                height: 1,
-                thickness: 1,
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Start: ${_formatDate(quitPlan.startDate)}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.event, size: 14, color: Colors.grey[600]),
-                  const SizedBox(width: 6),
-                  Text(
-                    'End: ${_formatDate(quitPlan.endDate)}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.assessment, size: 14, color: Colors.grey[600]),
-                      const SizedBox(width: 6),
-                      Text(
-                        'FTND Score: ${quitPlan.ftndScore}',
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (quitPlan.useNRT)
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with icon and title
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Status icon circle
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00D09E), Color(0xFF00B87C)],
+                        gradient: LinearGradient(
+                          colors: [statusColor, statusColor.withOpacity(0.8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00D09E).withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                            color: statusColor.withOpacity(0.25),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Icon(
+                        _getStatusIcon(quitPlan.status),
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Title and badges
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.medical_services,
-                            size: 12,
-                            color: Colors.white,
-                          ),
-                          SizedBox(width: 4),
                           Text(
-                            'NRT',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            quitPlan.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A1A1A),
+                              height: 1.3,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildStatusBadge(
+                                quitPlan.statusDisplayText,
+                                statusColor,
+                              ),
+                              if (quitPlan.active) _buildActiveBadge(),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Divider
+                Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        statusColor.withOpacity(0.0),
+                        statusColor.withOpacity(0.2),
+                        statusColor.withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                // Information rows
+                _buildInfoRow(
+                  Icons.calendar_today_outlined,
+                  'Start',
+                  _formatDate(quitPlan.startDate),
+                ),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                  Icons.event_outlined,
+                  'End',
+                  _formatDate(quitPlan.endDate),
+                ),
+                const SizedBox(height: 16),
+                // Bottom row with FTND Score and NRT
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: _buildInfoRow(
+                        Icons.assessment_outlined,
+                        'FTND Score',
+                        '${quitPlan.ftndScore}',
+                        isCompact: true,
+                      ),
+                    ),
+                    if (quitPlan.useNRT) _buildNRTBadge(),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStatusBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.85)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00D09E), Color(0xFF00B87C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00D09E).withOpacity(0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle, size: 14, color: Colors.white),
+          SizedBox(width: 4),
+          Text(
+            'Active',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNRTBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00D09E), Color(0xFF00B87C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00D09E).withOpacity(0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.medical_services, size: 14, color: Colors.white),
+          SizedBox(width: 5),
+          Text(
+            'NRT',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    bool isCompact = false,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 8),
+        if (!isCompact) ...[
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isCompact ? 13 : 13,
+            color: Colors.grey[800],
+            fontWeight: isCompact ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -495,100 +551,6 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
     );
   }
 
-  void _showQuitPlanDetails(QuitPlanHistory quitPlan) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              _getStatusIcon(quitPlan.status),
-              color: Color(quitPlan.statusColor),
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(quitPlan.name, style: const TextStyle(fontSize: 18)),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow(
-                'Status',
-                quitPlan.statusDisplayText,
-                Colors.black87,
-              ),
-              _buildDetailRow(
-                'Start Date',
-                _formatDate(quitPlan.startDate),
-                Colors.black87,
-              ),
-              _buildDetailRow(
-                'End Date',
-                _formatDate(quitPlan.endDate),
-                Colors.black87,
-              ),
-              _buildDetailRow(
-                'Created',
-                _formatDateTime(quitPlan.createdAt),
-                Colors.black87,
-              ),
-              _buildDetailRow(
-                'FTND Score',
-                '${quitPlan.ftndScore}',
-                Colors.black87,
-              ),
-              _buildDetailRow(
-                'Use NRT',
-                quitPlan.useNRT ? 'Yes' : 'No',
-                Colors.black87,
-              ),
-              _buildDetailRow(
-                'Active',
-                quitPlan.active ? 'Yes' : 'No',
-                Colors.black87,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(value, style: TextStyle(color: color)),
-          ),
-        ],
-      ),
-    );
-  }
-
   IconData _getStatusIcon(String status) {
     switch (status) {
       case 'IN_PROGRESS':
@@ -606,15 +568,6 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
     try {
       final date = DateTime.parse(dateString);
       return DateFormat('dd/MM/yyyy').format(date);
-    } catch (e) {
-      return dateString;
-    }
-  }
-
-  String _formatDateTime(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('dd/MM/yyyy HH:mm').format(date);
     } catch (e) {
       return dateString;
     }
