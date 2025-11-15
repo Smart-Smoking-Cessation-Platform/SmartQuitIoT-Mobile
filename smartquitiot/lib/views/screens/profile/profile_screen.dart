@@ -1,7 +1,6 @@
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
 import 'package:SmartQuitIoT/providers/websocket_provider.dart';
 import 'package:SmartQuitIoT/utils/snackbar_helper.dart';
-import 'package:SmartQuitIoT/views/screens/profile/edit_profile_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_top_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -137,12 +136,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         )
                       // Success state - Avatar + Name + Status
                       else if (user != null)
-                        ProfileHeaderSection(
-                          name: user.displayName,
-                          status: 'Active Member', // You can customize this
-                          avatarPath: user.avatarUrl.isNotEmpty
-                              ? user.avatarUrl
-                              : "lib/assets/images/profile.png",
+                        Builder(
+                          builder: (context) {
+                            // Debug: Print avatarUrl to check if it's loaded
+                            print('🖼️ [ProfileScreen] Avatar URL: ${user.avatarUrl}');
+                            print('🖼️ [ProfileScreen] Avatar URL isEmpty: ${user.avatarUrl.isEmpty}');
+                            
+                            return ProfileHeaderSection(
+                              name: user.displayName,
+                              status: 'Active Member', // You can customize this
+                              avatarPath: user.avatarUrl.isNotEmpty
+                                  ? user.avatarUrl
+                                  : "lib/assets/images/profile.png",
+                            );
+                          },
                         ),
 
                       // Menu Items
@@ -151,12 +158,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         title: 'Edit Profile',
                         iconColor: const Color(0xFF0984E3),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const EditProfileScreen(),
-                            ),
-                          );
+                          context.push('/edit-profile');
                         },
                       ),
                       const SizedBox(height: 12),
@@ -167,19 +169,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: () {},
                       ),
                       const SizedBox(height: 12),
-                      ProfileMenuItem(
-                        icon: Icons.settings_outlined,
-                        title: 'Setting',
-                        iconColor: const Color(0xFF0984E3),
-                        onTap: () {},
-                      ),
-                      const SizedBox(height: 12),
-                      ProfileMenuItem(
-                        icon: Icons.help_outline,
-                        title: 'Help',
-                        iconColor: const Color(0xFF0984E3),
-                        onTap: () {},
-                      ),
+                      // ProfileMenuItem(
+                      //   icon: Icons.settings_outlined,
+                      //   title: 'Setting',
+                      //   iconColor: const Color(0xFF0984E3),
+                      //   onTap: () {},
+                      // ),
+                      // const SizedBox(height: 12),
+                      // ProfileMenuItem(
+                      //   icon: Icons.help_outline,
+                      //   title: 'Help',
+                      //   iconColor: const Color(0xFF0984E3),
+                      //   onTap: () {},
+                      // ),
                       const SizedBox(height: 12),
                       ProfileMenuItem(
                         icon: Icons.logout,

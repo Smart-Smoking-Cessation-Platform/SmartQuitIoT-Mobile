@@ -8,6 +8,10 @@ class UserModel {
   final int age;
   final AccountModel account;
   final bool usedFreeTrial;
+  final String? morningReminderTime;
+  final String? quietStart;
+  final String? quietEnd;
+  final String? timeZone;
 
   UserModel({
     required this.id,
@@ -19,6 +23,10 @@ class UserModel {
     required this.age,
     required this.account,
     required this.usedFreeTrial,
+    this.morningReminderTime,
+    this.quietStart,
+    this.quietEnd,
+    this.timeZone,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +42,10 @@ class UserModel {
           : int.tryParse(json['age']?.toString() ?? '0') ?? 0,
       account: AccountModel.fromJson(json['account'] ?? {}),
       usedFreeTrial: json['usedFreeTrial'] ?? false,
+      morningReminderTime: json['morningReminderTime'],
+      quietStart: json['quietStart'],
+      quietEnd: json['quietEnd'],
+      timeZone: json['timeZone'],
     );
   }
 
@@ -48,6 +60,10 @@ class UserModel {
       'age': age,
       'account': account.toJson(),
       'usedFreeTrial': usedFreeTrial,
+      'morningReminderTime': morningReminderTime,
+      'quietStart': quietStart,
+      'quietEnd': quietEnd,
+      'timeZone': timeZone,
     };
   }
 

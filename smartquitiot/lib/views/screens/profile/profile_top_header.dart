@@ -1,4 +1,6 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 // ---------------- Header (Back + Notification) ----------------
 class ProfileTopHeader extends StatelessWidget {
   final VoidCallback? onBackTap;
@@ -14,7 +16,7 @@ class ProfileTopHeader extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: onBackTap ?? () => Navigator.pop(context),
+            onPressed: onBackTap ?? () => context.pop(),
           ),
           const Expanded(
             child: Text(
