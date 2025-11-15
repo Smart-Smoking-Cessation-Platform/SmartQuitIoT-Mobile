@@ -41,23 +41,40 @@ class InProgressAchievementCard extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
-                  child: ColorFiltered(
-                    colorFilter: const ColorFilter.mode(
-                      Colors.grey,
-                      BlendMode.saturation,
-                    ),
-                    child: Image.network(
-                      achievement.icon,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.lock_outline,
-                          color: lockedColor,
-                          size: 34,
-                        );
-                      },
+                  child: Center(
+                    child: ColorFiltered(
+                      colorFilter: const ColorFilter.matrix([
+                        0.2126, 0.7152, 0.0722, 0, 0, // Red channel
+                        0.2126, 0.7152, 0.0722, 0, 0, // Green channel
+                        0.2126, 0.7152, 0.0722, 0, 0, // Blue channel
+                        0, 0, 0, 1, 0, // Alpha channel
+                      ]),
+                      child: Image.network(
+                        achievement.icon,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.lock_outline,
+                            color: lockedColor,
+                            size: 34,
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
+                              color: lockedColor,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),

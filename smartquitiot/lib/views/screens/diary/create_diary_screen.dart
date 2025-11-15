@@ -1008,31 +1008,31 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         if (result == null) return;
 
         // Check if user smoked during quit plan (HTTP 209)
-        if (result.isSmokedDuringQuitPlan) {
-          print(
-            '⚠️ [CreateDiary] User smoked during quit plan, showing dialog...',
-          );
+        // if (result.isSmokedDuringQuitPlan) {
+        //   print(
+        //     '⚠️ [CreateDiary] User smoked during quit plan, showing dialog...',
+        //   );
 
-          // Trigger refreshes even for 209 response
-          ref.read(metricsRefreshProvider.notifier).refreshMetrics();
-          ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
-          ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+        //   // Trigger refreshes even for 209 response
+        //   ref.read(metricsRefreshProvider.notifier).refreshMetrics();
+        //   ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+        //   ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
 
-          if (!mounted) return;
+        //   if (!mounted) return;
 
-          // Show the "Smoked Again" dialog
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const SmokedAgainDialog(),
-          ).then((_) {
-            // After dialog is dismissed, navigate back
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
-          });
-          return;
-        }
+        //   // Show the "Smoked Again" dialog
+        //   showDialog(
+        //     context: context,
+        //     barrierDismissible: false,
+        //     builder: (context) => const SmokedAgainDialog(),
+        //   ).then((_) {
+        //     // After dialog is dismissed, navigate back
+        //     if (mounted) {
+        //       Navigator.of(context).pop();
+        //     }
+        //   });
+        //   return;
+        // }
 
         // Normal success case (200/201)
         if (result.isSuccess) {
