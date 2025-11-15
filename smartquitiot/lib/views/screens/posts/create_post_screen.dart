@@ -67,7 +67,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 'thumbUrl': m.mediaType == 'VIDEO' ? m.mediaUrl : '',
               },
             )
-            .toList();
+              .toList();
       }
     }
   }
