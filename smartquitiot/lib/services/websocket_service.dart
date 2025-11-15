@@ -12,7 +12,7 @@ class WebSocketService {
   StreamController<AchievementNotification>? _notificationController;
   bool _isConnected = false;
   Timer? _reconnectTimer;
-  int? _currentUserId;
+  int? _currentAccountId;
 
   WebSocketService(this._authRepository) {
     _notificationController =
@@ -23,23 +23,23 @@ class WebSocketService {
   Stream<AchievementNotification> get notificationStream =>
       _notificationController!.stream;
 
-  Future<void> connect(int userId) async {
-    if (_isConnected && _currentUserId == userId) {
-      debugPrint('🟢 WebSocket already connected for user $userId');
+  Future<void> connect(int accountId) async {
+    if (_isConnected && _currentAccountId == accountId) {
+      debugPrint('🟢 WebSocket already connected for account $accountId');
       return;
     }
 
-    _currentUserId = userId;
+    _currentAccountId = accountId;
     // Get base URL - keep /api if present, backend might need /api/ws
     var baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
-    
+
     final wsUrl = baseUrl
         .replaceFirst('http://', 'ws://')
         .replaceFirst('https://', 'wss://');
     final fullWsUrl = '$wsUrl/ws';
 
     debugPrint('🔌 Connecting to WebSocket: $fullWsUrl');
-    debugPrint('📡 Subscribing to topic: /topic/notifications/$userId');
+    debugPrint('📡 Subscribing to topic: /topic/notifications/$accountId');
 
     try {
       final token = await _authRepository.getAccessToken();
@@ -54,7 +54,7 @@ class WebSocketService {
 
             // Subscribe to user's notification channel
             _stompClient!.subscribe(
-              destination: '/topic/notifications/$userId',
+              destination: '/topic/notifications/$accountId',
               callback: (StompFrame frame) {
                 if (frame.body != null) {
                   try {
@@ -72,7 +72,7 @@ class WebSocketService {
           onWebSocketError: (dynamic error) {
             debugPrint('❌ WebSocket error: $error');
             _isConnected = false;
-            _scheduleReconnect(userId);
+            _scheduleReconnect(accountId);
           },
           onStompError: (StompFrame frame) {
             debugPrint('❌ STOMP error: ${frame.body}');
@@ -81,7 +81,7 @@ class WebSocketService {
           onDisconnect: (StompFrame frame) {
             debugPrint('🔴 WebSocket disconnected');
             _isConnected = false;
-            _scheduleReconnect(userId);
+            _scheduleReconnect(accountId);
           },
           beforeConnect: () async {
             debugPrint('🔄 Before connect callback');
@@ -102,15 +102,15 @@ class WebSocketService {
     } catch (e) {
       debugPrint('❌ Error connecting to WebSocket: $e');
       _isConnected = false;
-      _scheduleReconnect(userId);
+      _scheduleReconnect(accountId);
     }
   }
 
-  void _scheduleReconnect(int userId) {
+  void _scheduleReconnect(int accountId) {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 10), () {
       debugPrint('🔄 Attempting to reconnect WebSocket...');
-      connect(userId);
+      connect(accountId);
     });
   }
 
@@ -119,7 +119,7 @@ class WebSocketService {
     _reconnectTimer?.cancel();
     _stompClient?.deactivate();
     _isConnected = false;
-    _currentUserId = null;
+    _currentAccountId = null;
   }
 
   void dispose() {

@@ -1,4 +1,3 @@
-import 'package:SmartQuitIoT/views/widgets/cards/form_metric_card.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -26,7 +25,6 @@ import 'package:SmartQuitIoT/views/screens/achievements/achievement_screen.dart'
 import 'package:SmartQuitIoT/views/screens/leaderboard/leaderboard_screen.dart';
 import '../../../providers/membership_provider.dart';
 import '../../../providers/websocket_provider.dart';
-import '../../../providers/user_provider.dart';
 import '../../../models/membership_subscription.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
@@ -54,26 +52,14 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     if (_websocketInitialized) return;
 
     try {
-      // Get user profile to retrieve userId
-      final userProfile = await ref.read(userProfileProvider.future);
+      debugPrint('🔌 [MainNavigation] Initializing WebSocket...');
 
-      if (userProfile != null) {
-        final userId = userProfile.id;
-        debugPrint(
-          '🔌 [MainNavigation] Initializing WebSocket for user: $userId',
-        );
+      // Initialize WebSocket manager (it will get accountId from JWT token)
+      final websocketManager = ref.read(websocketManagerProvider);
+      await websocketManager.initialize();
 
-        // Initialize WebSocket manager
-        final websocketManager = ref.read(websocketManagerProvider);
-        await websocketManager.initialize(userId);
-
-        _websocketInitialized = true;
-        debugPrint('✅ [MainNavigation] WebSocket initialized successfully');
-      } else {
-        debugPrint(
-          '⚠️ [MainNavigation] Cannot initialize WebSocket - no user profile',
-        );
-      }
+      _websocketInitialized = true;
+      debugPrint('✅ [MainNavigation] WebSocket initialized successfully');
     } catch (e, stack) {
       debugPrint('❌ [MainNavigation] Failed to initialize WebSocket: $e');
       debugPrint('📚 [MainNavigation] Stack trace: $stack');

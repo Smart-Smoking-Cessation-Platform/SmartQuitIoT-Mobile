@@ -8,6 +8,7 @@ import 'package:SmartQuitIoT/views/screens/posts/post_detail_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/post_list_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/my_posts_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
+import 'package:SmartQuitIoT/views/screens/profile/edit_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -29,7 +30,6 @@ import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_screen.dart';
 // import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
-import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/meeting_screen.dart';
 import 'package:SmartQuitIoT/views/screens/form_metric/form_metric_detail_screen.dart';
 
@@ -222,6 +222,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/form-metric-detail',
       builder: (context, state) => const FormMetricDetailScreen(),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: '/edit-profile',
+      builder: (context, state) => const EditProfileScreen(),
     ),
   ],
 );

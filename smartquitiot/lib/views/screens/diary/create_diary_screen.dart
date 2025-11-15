@@ -622,28 +622,12 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildHealthField(
-                'SpO2 (%)',
-                spo2Controller,
-                Icons.healing,
-                (value) => spo2 = int.tryParse(value) ?? 0,
-                readOnly: true, // ✅ READ-ONLY: Chỉ fill khi connect IoT
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildHealthField(
-                'Sleep Duration (h)',
-                sleepDurationController,
-                Icons.bedtime,
-                (value) => sleepDuration = double.tryParse(value) ?? 0.0,
-                readOnly: true,
-              ),
-            ),
-          ],
+        _buildHealthField(
+          'SpO2 (%)',
+          spo2Controller,
+          Icons.healing,
+          (value) => spo2 = int.tryParse(value) ?? 0,
+          readOnly: true, // ✅ READ-ONLY: Chỉ fill khi connect IoT
         ),
         const SizedBox(height: 12),
         Row(
@@ -654,7 +638,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
                 deepSleepController,
                 Icons.nights_stay,
                 (value) => deepSleepDuration = double.tryParse(value) ?? 0.0,
-                readOnly: true,
+                readOnly: true, // ✅ READ-ONLY: Chỉ fill khi connect IoT
               ),
             ),
             const SizedBox(width: 12),
@@ -664,7 +648,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
                 remSleepController,
                 Icons.dark_mode,
                 (value) => remSleepDuration = double.tryParse(value) ?? 0.0,
-                readOnly: true,
+                readOnly: true, // ✅ READ-ONLY: Chỉ fill khi connect IoT
               ),
             ),
           ],
@@ -675,7 +659,15 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
           lightSleepController,
           Icons.light_mode,
           (value) => lightSleepDuration = double.tryParse(value) ?? 0.0,
-          readOnly: true,
+          readOnly: true, // ✅ READ-ONLY: Chỉ fill khi connect IoT
+        ),
+        const SizedBox(height: 12),
+        _buildHealthField(
+          'Sleep Duration (h)',
+          sleepDurationController,
+          Icons.bedtime,
+          (value) => sleepDuration = double.tryParse(value) ?? 0.0,
+          readOnly: false, // ✅ USER CÓ THỂ NHẬP: Không khóa, cho phép user nhập
         ),
       ],
     );
@@ -1016,31 +1008,31 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
         if (result == null) return;
 
         // Check if user smoked during quit plan (HTTP 209)
-        if (result.isSmokedDuringQuitPlan) {
-          print(
-            '⚠️ [CreateDiary] User smoked during quit plan, showing dialog...',
-          );
+        // if (result.isSmokedDuringQuitPlan) {
+        //   print(
+        //     '⚠️ [CreateDiary] User smoked during quit plan, showing dialog...',
+        //   );
 
-          // Trigger refreshes even for 209 response
-          ref.read(metricsRefreshProvider.notifier).refreshMetrics();
-          ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
-          ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+        //   // Trigger refreshes even for 209 response
+        //   ref.read(metricsRefreshProvider.notifier).refreshMetrics();
+        //   ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+        //   ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
 
-          if (!mounted) return;
+        //   if (!mounted) return;
 
-          // Show the "Smoked Again" dialog
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const SmokedAgainDialog(),
-          ).then((_) {
-            // After dialog is dismissed, navigate back
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
-          });
-          return;
-        }
+        //   // Show the "Smoked Again" dialog
+        //   showDialog(
+        //     context: context,
+        //     barrierDismissible: false,
+        //     builder: (context) => const SmokedAgainDialog(),
+        //   ).then((_) {
+        //     // After dialog is dismissed, navigate back
+        //     if (mounted) {
+        //       Navigator.of(context).pop();
+        //     }
+        //   });
+        //   return;
+        // }
 
         // Normal success case (200/201)
         if (result.isSuccess) {

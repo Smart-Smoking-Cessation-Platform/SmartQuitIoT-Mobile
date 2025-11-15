@@ -1,7 +1,5 @@
 // lib/views/screens/settings/settings_screen.dart
 import 'package:SmartQuitIoT/views/screens/appointments/appointments_screen.dart';
-import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
-import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,7 +38,7 @@ class SettingsScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => context.pop(),
                       icon: const Icon(
                         Icons.arrow_back,
                         color: Colors.white,
@@ -89,12 +87,7 @@ class SettingsScreen extends ConsumerWidget {
                         icon: Icons.person_outline,
                         title: 'Profile',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileScreen(),
-                            ),
-                          );
+                          context.push('/profile');
                         },
                       ),
                       _buildSettingItem(
@@ -139,44 +132,44 @@ class SettingsScreen extends ConsumerWidget {
                     ]),
                     const SizedBox(height: 15),
                     _buildSettingsSection([
-                      _buildSettingItem(
-                        icon: Icons.psychology_outlined,
-                        title: 'Advice',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.medical_services_outlined,
-                        title: 'Nicotine replacement therapy',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.vape_free_outlined,
-                        title: 'E-cigs/vapes',
-                        onTap: () {},
-                      ),
+                      // _buildSettingItem(
+                      //   icon: Icons.psychology_outlined,
+                      //   title: 'Advice',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.medical_services_outlined,
+                      //   title: 'Nicotine replacement therapy',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.vape_free_outlined,
+                      //   title: 'E-cigs/vapes',
+                      //   onTap: () {},
+                      // ),
                     ]),
                     const SizedBox(height: 15),
                     _buildSettingsSection([
-                      _buildSettingItem(
-                        icon: Icons.support_agent_outlined,
-                        title: 'Customer support',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.favorite_border,
-                        title: 'Our philosophy',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.flag_outlined,
-                        title: 'Our mission',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.help_outline,
-                        title: 'FAQ',
-                        onTap: () {},
-                      ),
+                      // _buildSettingItem(
+                      //   icon: Icons.support_agent_outlined,
+                      //   title: 'Customer support',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.favorite_border,
+                      //   title: 'Our philosophy',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.flag_outlined,
+                      //   title: 'Our mission',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.help_outline,
+                      //   title: 'FAQ',
+                      //   onTap: () {},
+                      // ),
 
                       // 🔥 Log out button có GoRouter + Snackbar
                       _buildSettingItem(

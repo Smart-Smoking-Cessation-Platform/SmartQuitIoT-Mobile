@@ -13,11 +13,11 @@ class DiaryCreateResult {
   });
 
   /// Check if creation was successful (200/201)
-  bool get isSuccess => statusCode == 200 || statusCode == 201;
+  bool get isSuccess => statusCode == 200 || statusCode == 201 || statusCode == 209;
 
-  /// Check if user smoked during quit plan (209)
-  bool get isSmokedDuringQuitPlan => statusCode == 209;
+  // /// Check if user smoked during quit plan (209)
+  // bool get isSmokedDuringQuitPlan => statusCode == 209;
 
   /// Check if there was an error
-  bool get isError => !isSuccess && !isSmokedDuringQuitPlan;
+  bool get isError => !isSuccess;
 }

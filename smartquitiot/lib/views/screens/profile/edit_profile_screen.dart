@@ -1,12 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:SmartQuitIoT/viewmodels/user_view_model.dart';
+import 'package:SmartQuitIoT/viewmodels/reminder_settings_view_model.dart';
 import 'package:SmartQuitIoT/services/cloudinary_service.dart';
+import 'package:SmartQuitIoT/utils/avatar_helper.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -20,6 +24,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController dobController = TextEditingController();
+  
+  // Reminder settings controllers
+  final TextEditingController morningReminderTimeController = TextEditingController();
+  final TextEditingController quietStartController = TextEditingController();
+  final TextEditingController quietEndController = TextEditingController();
 
   // Avatar
   File? avatarImageFile;
@@ -42,6 +51,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     firstNameController.dispose();
     lastNameController.dispose();
     dobController.dispose();
+    morningReminderTimeController.dispose();
+    quietStartController.dispose();
+    quietEndController.dispose();
     super.dispose();
   }
 
@@ -66,6 +78,35 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         dobController.text = DateFormat('yyyy-MM-dd').format(picked);
       });
     }
+  }
+
+  Future<void> _selectTime(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        final hour = picked.hour.toString().padLeft(2, '0');
+        final minute = picked.minute.toString().padLeft(2, '0');
+        controller.text = '$hour:$minute';
+      });
+    }
+  }
+
+  String _formatTimeFromApi(String? timeString) {
+    if (timeString == null || timeString.isEmpty) return '';
+    // Convert "07:00:00" to "07:00"
+    if (timeString.contains(':')) {
+      final parts = timeString.split(':');
+      if (parts.length >= 2) {
+        return '${parts[0]}:${parts[1]}';
+      }
+    }
+    return timeString;
   }
 
   Future<void> _updateProfile() async {
@@ -107,18 +148,52 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         );
 
     if (mounted) {
-      final error = ref.read(userViewModelProvider).error;
-      if (error != null) {
-        _showFlushbar('Error: $error', Colors.red);
-      } else {
-        _showFlushbar('Profile updated successfully!', const Color(0xFF00D09E));
-        // Navigate to profile screen để user thấy thay đổi
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            context.go('/profile');
-          }
-        });
+      final userError = ref.read(userViewModelProvider).error;
+      if (userError != null) {
+        _showFlushbar('Error: $userError', Colors.red);
+        return;
       }
+    }
+
+    // Update reminder settings if they have values
+    final morningTime = morningReminderTimeController.text.trim();
+    final quietStart = quietStartController.text.trim();
+    final quietEnd = quietEndController.text.trim();
+
+    if (morningTime.isNotEmpty || quietStart.isNotEmpty || quietEnd.isNotEmpty) {
+      // Validate all reminder fields are filled if any is filled
+      if (morningTime.isEmpty || quietStart.isEmpty || quietEnd.isEmpty) {
+        _showFlushbar('Please fill all reminder time fields', Colors.orange);
+        return;
+      }
+
+      await ref
+          .read(reminderSettingsViewModelProvider.notifier)
+          .updateReminderSettings(
+            morningReminderTime: morningTime,
+            quietStart: quietStart,
+            quietEnd: quietEnd,
+          );
+
+      if (mounted) {
+        final reminderError = ref.read(reminderSettingsViewModelProvider).error;
+        if (reminderError != null) {
+          _showFlushbar('Error updating reminder settings: $reminderError', Colors.red);
+          return;
+        }
+      }
+    }
+
+    if (mounted) {
+      _showFlushbar('Profile updated successfully!', const Color(0xFF00D09E));
+      // Refresh profile data để UI cập nhật
+      await ref.read(userViewModelProvider.notifier).loadUserProfile();
+      // Navigate to profile screen để user thấy thay đổi
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          context.go('/profile');
+        }
+      });
     }
   }
 
@@ -144,6 +219,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final user = userState.user;
     final isLoading = userState.isLoading;
     final isUpdating = userState.isUpdating;
+    final reminderSettingsState = ref.watch(reminderSettingsViewModelProvider);
+    final isUpdatingReminder = reminderSettingsState.isUpdating;
 
     // Populate controllers when user data is loaded
     if (user != null && firstNameController.text.isEmpty) {
@@ -151,6 +228,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       lastNameController.text = user.lastName;
       dobController.text = user.dob;
       avatarUrl = user.avatarUrl;
+      
+      // Populate reminder settings
+      if (user.morningReminderTime != null) {
+        morningReminderTimeController.text = _formatTimeFromApi(user.morningReminderTime);
+      }
+      if (user.quietStart != null) {
+        quietStartController.text = _formatTimeFromApi(user.quietStart);
+      }
+      if (user.quietEnd != null) {
+        quietEndController.text = _formatTimeFromApi(user.quietEnd);
+      }
     }
 
     return Scaffold(
@@ -175,7 +263,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.go('/profile'),
+                      onPressed: () => context.pop(),
                     ),
                     const Expanded(
                       child: Text(
@@ -216,17 +304,34 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 3),
                         ),
-                        child: CircleAvatar(
-                          radius: 48,
-                          backgroundImage: avatarImageFile != null
-                              ? FileImage(avatarImageFile!) as ImageProvider
+                        child: ClipOval(
+                          child: avatarImageFile != null
+                              ? Image.file(
+                                  avatarImageFile!,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                )
                               : (avatarUrl != null && avatarUrl!.isNotEmpty)
-                              ? NetworkImage(avatarUrl!)
-                              : const AssetImage(
+                                  ? _buildNetworkAvatar(formatAvatarUrl(avatarUrl!))
+                                  : Image.asset(
                                       "lib/assets/images/profile.png",
-                                    )
-                                    as ImageProvider,
-                          backgroundColor: Colors.grey[200],
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          width: 100,
+                                          height: 100,
+                                          color: Colors.grey[200],
+                                          child: const Icon(
+                                            Icons.person,
+                                            size: 50,
+                                            color: Colors.grey,
+                                          ),
+                                        );
+                                      },
+                                    ),
                         ),
                       ),
                       Positioned(
@@ -378,11 +483,88 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               ),
                               const SizedBox(height: 25),
 
+                              // Reminder Settings section
+                              const Text(
+                                'Reminder Settings (Editable)',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF00D09E),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Morning Reminder Time
+                              TextFormField(
+                                controller: morningReminderTimeController,
+                                readOnly: true,
+                                onTap: () => _selectTime(context, morningReminderTimeController),
+                                decoration: InputDecoration(
+                                  labelText: "Morning Reminder Time",
+                                  hintText: "HH:mm",
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  suffixIcon: const Icon(Icons.access_time),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
+                                ],
+                              ),
+                              const SizedBox(height: 15),
+
+                              // Quiet Start Time
+                              TextFormField(
+                                controller: quietStartController,
+                                readOnly: true,
+                                onTap: () => _selectTime(context, quietStartController),
+                                decoration: InputDecoration(
+                                  labelText: "Quiet Start Time",
+                                  hintText: "HH:mm",
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  suffixIcon: const Icon(Icons.access_time),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
+                                ],
+                              ),
+                              const SizedBox(height: 15),
+
+                              // Quiet End Time
+                              TextFormField(
+                                controller: quietEndController,
+                                readOnly: true,
+                                onTap: () => _selectTime(context, quietEndController),
+                                decoration: InputDecoration(
+                                  labelText: "Quiet End Time",
+                                  hintText: "HH:mm",
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  suffixIcon: const Icon(Icons.access_time),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
+                                ],
+                              ),
+                              const SizedBox(height: 25),
+
                               // Update Button
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: (isUpdating || _isUploadingAvatar)
+                                  onPressed: (isUpdating || _isUploadingAvatar || isUpdatingReminder)
                                       ? null
                                       : _updateProfile,
                                   style: ElevatedButton.styleFrom(
@@ -395,7 +577,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     ),
                                     disabledBackgroundColor: Colors.grey[400],
                                   ),
-                                  child: (isUpdating || _isUploadingAvatar)
+                                  child: (isUpdating || _isUploadingAvatar || isUpdatingReminder)
                                       ? const Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
@@ -479,5 +661,92 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildNetworkAvatar(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final encodedUrl = uri.toString();
+      
+      return Image.network(
+        encodedUrl,
+        width: 100,
+        height: 100,
+        fit: BoxFit.cover,
+        headers: {
+          'Accept': 'image/*',
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ [EditProfileScreen] Error loading avatar: $error');
+          print('❌ [EditProfileScreen] URL: $url');
+          
+          // Fallback: Try loading with http package
+          return FutureBuilder<http.Response>(
+            future: http.get(Uri.parse(url)),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                );
+              }
+              
+              if (snapshot.hasData && snapshot.data!.statusCode == 200) {
+                return Image.memory(
+                  snapshot.data!.bodyBytes,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                );
+              }
+              
+              return Container(
+                width: 100,
+                height: 100,
+                color: Colors.grey[200],
+                child: const Icon(
+                  Icons.person,
+                  size: 50,
+                  color: Colors.grey,
+                ),
+              );
+            },
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: 100,
+            height: 100,
+            color: Colors.grey[200],
+            child: const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print('❌ [EditProfileScreen] Error parsing URL: $e');
+      return Container(
+        width: 100,
+        height: 100,
+        color: Colors.grey[200],
+        child: const Icon(
+          Icons.person,
+          size: 50,
+          color: Colors.grey,
+        ),
+      );
+    }
   }
 }

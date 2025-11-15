@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/services/websocket_service.dart';
 import 'package:SmartQuitIoT/services/local_notification_service.dart';
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
+import 'package:SmartQuitIoT/repositories/auth_repository.dart';
 import 'package:SmartQuitIoT/providers/achievement_refresh_provider.dart';
 import 'package:SmartQuitIoT/providers/notification_refresh_provider.dart';
 import 'package:SmartQuitIoT/providers/mission_refresh_provider.dart';
@@ -59,6 +60,7 @@ class AchievementNotificationsNotifier
 final websocketManagerProvider = Provider<WebSocketManager>((ref) {
   final websocketService = ref.watch(websocketServiceProvider);
   final localNotificationService = ref.watch(localNotificationServiceProvider);
+  final authRepository = ref.watch(authRepositoryProvider);
   final notificationsNotifier = ref.watch(
     achievementNotificationsProvider.notifier,
   );
@@ -73,6 +75,7 @@ final websocketManagerProvider = Provider<WebSocketManager>((ref) {
   return WebSocketManager(
     websocketService,
     localNotificationService,
+    authRepository,
     notificationsNotifier,
     achievementRefreshNotifier,
     notificationRefreshNotifier,
@@ -83,6 +86,7 @@ final websocketManagerProvider = Provider<WebSocketManager>((ref) {
 class WebSocketManager {
   final WebSocketService _websocketService;
   final LocalNotificationService _localNotificationService;
+  final AuthRepository _authRepository;
   final AchievementNotificationsNotifier _notificationsNotifier;
   final AchievementRefreshNotifier _achievementRefreshNotifier;
   final NotificationRefreshNotifier _notificationRefreshNotifier;
@@ -92,15 +96,29 @@ class WebSocketManager {
   WebSocketManager(
     this._websocketService,
     this._localNotificationService,
+    this._authRepository,
     this._notificationsNotifier,
     this._achievementRefreshNotifier,
     this._notificationRefreshNotifier,
     this._missionRefreshNotifier,
   );
 
-  Future<void> initialize(int userId) async {
+  Future<void> initialize() async {
     await _localNotificationService.initialize();
     await _localNotificationService.requestPermissions();
+
+    // Get accountId from JWT token
+    final accountId = await _authRepository.getAccountId();
+    if (accountId == null) {
+      print(
+        '❌ [WebSocketManager] Cannot initialize - no accountId found in token',
+      );
+      return;
+    }
+
+    print(
+      '🔌 [WebSocketManager] Initializing WebSocket for accountId: $accountId',
+    );
 
     // Listen to notification stream
     _subscription = _websocketService.notificationStream.listen((notification) {
@@ -165,7 +183,7 @@ class WebSocketManager {
     });
 
     // Connect WebSocket
-    await _websocketService.connect(userId);
+    await _websocketService.connect(accountId);
   }
 
   Future<void> disconnect() async {
