@@ -28,6 +28,7 @@ import 'package:SmartQuitIoT/views/screens/payment/payment_cancel_screen.dart';
 import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
 import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
 import 'package:SmartQuitIoT/views/screens/settings/setting_screen.dart';
+import 'package:SmartQuitIoT/views/screens/settings/guide_screen.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_screen.dart';
 // import 'package:SmartQuitIoT/views/screens/membership/current_subscription_screen.dart';
@@ -212,6 +213,7 @@ final GoRouter appRouter = GoRouter(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
     ),
+    GoRoute(path: '/guide', builder: (context, state) => const GuideScreen()),
     GoRoute(
       path: '/ai-chat-welcome',
       builder: (context, state) => const AiChatWelcomeScreen(),
@@ -232,7 +234,7 @@ final GoRouter appRouter = GoRouter(
       path: '/edit-profile',
       builder: (context, state) => const EditProfileScreen(),
     ),
-     GoRoute(
+    GoRoute(
       path: '/achievements',
       builder: (context, state) => const AchievementScreen(),
     ),

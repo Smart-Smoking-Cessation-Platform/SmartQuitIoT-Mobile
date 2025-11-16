@@ -109,6 +109,13 @@ class SettingsScreen extends ConsumerWidget {
                           context.go('/form-metric-detail');
                         },
                       ),
+                      _buildSettingItem(
+                        icon: Icons.menu_book_outlined,
+                        title: 'Guide',
+                        onTap: () {
+                          context.push('/guide');
+                        },
+                      ),
                       // _buildSettingItem(
                       //   icon: Icons.notifications_outlined,
                       //   title: 'Notifications',

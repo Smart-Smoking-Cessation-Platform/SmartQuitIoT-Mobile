@@ -133,7 +133,7 @@ class QuitPlanService {
     try {
       _logger.i('[QuitPlanService] POST $_baseUrl/redo-phase');
       await _dio.post(
-        '/phase/redo-phase',
+        '/phase/redo',
         data: {'phaseId': phaseId, 'anchorStart': anchorStart},
         options: await _options(),
       );

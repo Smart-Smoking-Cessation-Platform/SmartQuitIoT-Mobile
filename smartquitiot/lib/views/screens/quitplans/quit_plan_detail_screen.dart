@@ -38,7 +38,9 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     // Listen for quit plan refresh trigger
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != null && previous != next) {
-        print('🔄 [QuitPlanDetailScreen] Refresh triggered - reloading quit plan detail...');
+        print(
+          '🔄 [QuitPlanDetailScreen] Refresh triggered - reloading quit plan detail...',
+        );
         ref
             .read(quitPlanDetailViewModelProvider.notifier)
             .loadQuitPlanDetail(widget.quitPlanId);
@@ -101,7 +103,13 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                   _buildFormMetrics(data.formMetricDTO!),
                 _buildStats(data),
                 if (data.phases != null && data.phases!.isNotEmpty)
-                  _buildPhasesList(data.phases!, data),
+                  Builder(
+                    builder: (context) {
+                      // Sort phases: redo phases appear right after their failed phase
+                      final sortedPhases = _sortPhases(data.phases!);
+                      return _buildPhasesList(sortedPhases, data);
+                    },
+                  ),
                 const SizedBox(height: 20),
               ],
             ),
@@ -556,12 +564,18 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     final days = phase.details ?? [];
     final isFailed = _isFailedStatus(phase.status);
 
+    // Check if there's a new phase after this failed phase (redo scenario)
+    final allPhases = plan.phases ?? [];
+    final hasNewPhaseAfterFailed = _hasNewPhaseAfterFailed(phase, allPhases);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isFailed) _buildFailedPhaseBanner(plan, phase, theme),
+          // Only show failed banner if there's no new phase created after it
+          if (isFailed && !hasNewPhaseAfterFailed)
+            _buildFailedPhaseBanner(plan, phase, theme),
           if ((phase.reason ?? '').isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -687,6 +701,13 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                     phase.condition!,
                     theme,
                     phase.fmCigarettesTotal ?? 0,
+                    // Use formMetricDTO smokeAvgPerDay if available, otherwise calculate
+                    _getSmokeAvgPerDay(
+                      plan.formMetricDTO?.smokeAvgPerDay,
+                      phase.fmCigarettesTotal ?? 0,
+                      phase.durationDay ?? 0,
+                    ),
+                    phase.durationDay ?? 0,
                   ),
                 ],
               ),
@@ -912,8 +933,16 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     PhaseCondition condition,
     PhaseTheme theme,
     double fmCigarettesTotal,
+    int smokeAvgPerDay,
+    int durationDay,
   ) {
     final rules = condition.rules ?? [];
+
+    // Calculate baseline total: use fmCigarettesTotal if available, otherwise calculate from smokeAvgPerDay * durationDay
+    double baselineTotal = fmCigarettesTotal;
+    if (baselineTotal <= 0 && smokeAvgPerDay >= 0 && durationDay >= 0) {
+      baselineTotal = (smokeAvgPerDay * durationDay).toDouble();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -934,7 +963,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
               ),
             ),
           ),
-        if (fmCigarettesTotal > 0)
+        if (baselineTotal > 0)
           Container(
             margin: const EdgeInsets.only(top: 6),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -943,7 +972,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'Baseline total cigarettes: ${fmCigarettesTotal.toStringAsFixed(1)}',
+              'Baseline total cigarettes: ${baselineTotal.toStringAsFixed(0)}',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -957,7 +986,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
               (rule) => _buildPhaseRule(
                 rule,
                 theme,
-                fmCigarettesTotal: fmCigarettesTotal,
+                fmCigarettesTotal: baselineTotal,
               ),
             )
             .toList(),
@@ -1077,9 +1106,16 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
         percent * 100 % 1 == 0 ? 0 : 1,
       );
 
-      if (base == 'fm_cigarettes_total' && fmCigarettesTotal > 0) {
-        final computed = fmCigarettesTotal * percent;
-        return 'Must be $operator $percentLabel% $op ${_formatFormulaBase(base)} (≤ ${computed.toStringAsFixed(1)})';
+      if (base == 'fm_cigarettes_total') {
+        if (fmCigarettesTotal > 0) {
+          final computed = fmCigarettesTotal * percent;
+          final computedRounded = computed.toStringAsFixed(1);
+          // Show the computed value prominently with clear explanation
+          return 'Must be $operator $computedRounded cigarettes\n($percentLabel% of your baseline: ${fmCigarettesTotal.toStringAsFixed(0)} cigarettes)';
+        } else {
+          // If baseline is not available, still show the percentage
+          return 'Must be $operator $percentLabel% of baseline total cigarettes';
+        }
       }
 
       return 'Must be $operator $percentLabel% $op ${_formatFormulaBase(base)}';
@@ -1300,6 +1336,174 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     } catch (e) {
       return '';
     }
+  }
+
+  /// Check if there's a new phase created after a failed phase (redo scenario)
+  bool _hasNewPhaseAfterFailed(
+    QuitPhaseDetail failedPhase,
+    List<QuitPhaseDetail> allPhases,
+  ) {
+    if (!_isFailedStatus(failedPhase.status)) return false;
+
+    final failedPhaseName = failedPhase.name ?? '';
+    final failedPhaseId = failedPhase.id;
+    if (failedPhaseName.isEmpty || failedPhaseId == null) return false;
+
+    // Find if there's a phase with the same name but different status (CREATED or IN_PROGRESS)
+    // and created after the failed phase
+    for (final phase in allPhases) {
+      if (phase.id == failedPhaseId) continue; // Skip the failed phase itself
+      if (phase.name != failedPhaseName) continue; // Must be same phase name
+
+      // Check if it's a new phase (CREATED or IN_PROGRESS) that was created after the failed phase
+      final isNewPhase =
+          phase.status == 'CREATED' || phase.status == 'IN_PROGRESS';
+      if (isNewPhase) {
+        // Check if startDate is after failed phase's endDate (or created after)
+        try {
+          if (failedPhase.endDate != null && phase.startDate != null) {
+            final failedEndDate = DateTime.parse(failedPhase.endDate!);
+            final newStartDate = DateTime.parse(phase.startDate!);
+            if (newStartDate.isAfter(failedEndDate) ||
+                newStartDate.isAtSameMomentAs(failedEndDate)) {
+              return true;
+            }
+          }
+          // If dates are not available, check by createdAt
+          if (failedPhase.createdAt != null && phase.createdAt != null) {
+            final failedCreatedAt = DateTime.parse(failedPhase.createdAt!);
+            final newCreatedAt = DateTime.parse(phase.createdAt!);
+            if (newCreatedAt.isAfter(failedCreatedAt)) {
+              return true;
+            }
+          }
+        } catch (e) {
+          // If date parsing fails, assume it's a new phase if status matches
+          if (isNewPhase) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Get smokeAvgPerDay from formMetricDTO or calculate from fmCigarettesTotal
+  int _getSmokeAvgPerDay(
+    int? formMetricSmokeAvgPerDay,
+    double fmCigarettesTotal,
+    int durationDay,
+  ) {
+    // Prefer formMetricDTO value if available
+    if (formMetricSmokeAvgPerDay != null && formMetricSmokeAvgPerDay > 0) {
+      return formMetricSmokeAvgPerDay;
+    }
+    // Otherwise calculate from fmCigarettesTotal / durationDay
+    if (durationDay > 0 && fmCigarettesTotal > 0) {
+      return (fmCigarettesTotal / durationDay).round();
+    }
+    return 0;
+  }
+
+  /// Sort phases so that redo phases appear right after their failed phase
+  /// Primary sort: by startDate
+  /// Secondary: if phase failed has a redo phase, place redo phase immediately after
+  List<QuitPhaseDetail> _sortPhases(List<QuitPhaseDetail> phases) {
+    if (phases.isEmpty) return phases;
+
+    // Create a copy to avoid modifying original list
+    final sorted = List<QuitPhaseDetail>.from(phases);
+
+    // First, sort by startDate
+    sorted.sort((a, b) {
+      final aStart = a.startDate;
+      final bStart = b.startDate;
+      if (aStart == null && bStart == null) return 0;
+      if (aStart == null) return 1;
+      if (bStart == null) return -1;
+      try {
+        final aDate = DateTime.parse(aStart);
+        final bDate = DateTime.parse(bStart);
+        return aDate.compareTo(bDate);
+      } catch (e) {
+        return 0;
+      }
+    });
+
+    // Then, reorganize: if a failed phase has a redo phase, move redo phase right after it
+    final result = <QuitPhaseDetail>[];
+    final processedIds = <int>{};
+
+    for (int i = 0; i < sorted.length; i++) {
+      final phase = sorted[i];
+      final phaseId = phase.id;
+      if (phaseId == null || processedIds.contains(phaseId)) continue;
+
+      // If this is a failed phase, check if there's a redo phase
+      if (_isFailedStatus(phase.status)) {
+        result.add(phase);
+        processedIds.add(phaseId);
+
+        // Find redo phase (same name, different id, CREATED or IN_PROGRESS)
+        final phaseName = phase.name ?? '';
+        if (phaseName.isNotEmpty) {
+          // Search through all phases to find the redo phase
+          for (final candidate in sorted) {
+            final candidateId = candidate.id;
+            if (candidateId == null || processedIds.contains(candidateId))
+              continue;
+
+            // Check if this is a redo phase of the failed phase
+            if (candidate.name == phaseName &&
+                candidateId != phaseId &&
+                (candidate.status == 'CREATED' ||
+                    candidate.status == 'IN_PROGRESS')) {
+              // Check if it's created after the failed phase
+              if (_hasNewPhaseAfterFailed(phase, sorted)) {
+                result.add(candidate);
+                processedIds.add(candidateId);
+                break; // Only take the first matching redo phase
+              }
+            }
+          }
+        }
+      } else {
+        // Regular phase - check if it's not a redo of a failed phase we already processed
+        final phaseName = phase.name ?? '';
+        bool isRedoOfProcessedFailed = false;
+
+        if (phaseName.isNotEmpty) {
+          // Check if this phase is a redo of a failed phase we already added
+          for (final processedPhase in result) {
+            if (_isFailedStatus(processedPhase.status) &&
+                processedPhase.name == phaseName &&
+                processedPhase.id != phaseId) {
+              // Check if this phase is the redo
+              if ((phase.status == 'CREATED' ||
+                      phase.status == 'IN_PROGRESS') &&
+                  _hasNewPhaseAfterFailed(processedPhase, sorted)) {
+                isRedoOfProcessedFailed = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!isRedoOfProcessedFailed) {
+          result.add(phase);
+          processedIds.add(phaseId);
+        }
+      }
+    }
+
+    // Add any remaining phases that weren't processed
+    for (final phase in sorted) {
+      final phaseId = phase.id;
+      if (phaseId != null && !processedIds.contains(phaseId)) {
+        result.add(phase);
+        processedIds.add(phaseId);
+      }
+    }
+
+    return result;
   }
 
   Widget _buildTriggerChip(String label) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:another_flushbar/flushbar.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
 import '../../../models/quit_phase.dart';
@@ -27,6 +28,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   final Set<int> locallyCompletedMissionIds = <int>{};
   final Set<int> _shownFailedPhaseDialogs =
       <int>{}; // Track phases that already showed dialog
+  final Set<int> _notifiedNewPhases =
+      <int>{}; // Track new phases that already showed notification
+  List<QuitPhaseDetail>?
+  _previousPhases; // Track previous phases to detect new ones
 
   void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
     showDialog(
@@ -52,13 +57,126 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
 
   void _showSnack(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF00D09E),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    Flushbar(
+      message: message,
+      duration: const Duration(seconds: 3),
+      backgroundColor: isError ? Colors.redAccent : const Color(0xFF00D09E),
+      margin: const EdgeInsets.all(8),
+      borderRadius: BorderRadius.circular(8),
+      flushbarPosition: FlushbarPosition.TOP,
+    ).show(context);
+  }
+
+  /// Check if there's a new phase created after a failed phase (redo scenario)
+  bool _hasNewPhaseAfterFailed(
+    QuitPhaseDetail failedPhase,
+    List<QuitPhaseDetail> allPhases,
+  ) {
+    if (!_isFailedStatus(failedPhase.status)) return false;
+
+    final failedPhaseName = failedPhase.name ?? '';
+    final failedPhaseId = failedPhase.id;
+    if (failedPhaseName.isEmpty || failedPhaseId == null) return false;
+
+    // Find if there's a phase with the same name but different status (CREATED or IN_PROGRESS)
+    // and created after the failed phase
+    for (final phase in allPhases) {
+      if (phase.id == failedPhaseId) continue; // Skip the failed phase itself
+      if (phase.name != failedPhaseName) continue; // Must be same phase name
+
+      // Check if it's a new phase (CREATED or IN_PROGRESS) that was created after the failed phase
+      final isNewPhase =
+          phase.status == 'CREATED' || phase.status == 'IN_PROGRESS';
+      if (isNewPhase) {
+        // Check if startDate is after failed phase's endDate (or created after)
+        try {
+          if (failedPhase.endDate != null && phase.startDate != null) {
+            final failedEndDate = DateTime.parse(failedPhase.endDate!);
+            final newStartDate = DateTime.parse(phase.startDate!);
+            if (newStartDate.isAfter(failedEndDate) ||
+                newStartDate.isAtSameMomentAs(failedEndDate)) {
+              return true;
+            }
+          }
+          // If dates are not available, check by createdAt
+          if (failedPhase.createdAt != null && phase.createdAt != null) {
+            final failedCreatedAt = DateTime.parse(failedPhase.createdAt!);
+            final newCreatedAt = DateTime.parse(phase.createdAt!);
+            if (newCreatedAt.isAfter(failedCreatedAt)) {
+              return true;
+            }
+          }
+        } catch (e) {
+          // If date parsing fails, assume it's a new phase if status matches
+          if (isNewPhase) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Detect new phases and show notification
+  void _detectAndNotifyNewPhases(List<QuitPhaseDetail> currentPhases) {
+    if (_previousPhases == null) {
+      _previousPhases = List.from(currentPhases);
+      return;
+    }
+
+    // Find new phases that weren't in previous list
+    final previousPhaseIds = _previousPhases!.map((p) => p.id).toSet();
+    final newPhases = currentPhases.where((phase) {
+      final phaseId = phase.id;
+      if (phaseId == null) return false;
+      if (previousPhaseIds.contains(phaseId)) return false;
+      if (_notifiedNewPhases.contains(phaseId)) return false;
+      // Only notify for CREATED or IN_PROGRESS phases
+      return phase.status == 'CREATED' || phase.status == 'IN_PROGRESS';
+    }).toList();
+
+    // Check for phases that were redo (same name as failed phase)
+    for (final phase in currentPhases) {
+      if (_isFailedStatus(phase.status)) {
+        if (_hasNewPhaseAfterFailed(phase, currentPhases)) {
+          // Find the new phase
+          final newPhase = currentPhases.firstWhere(
+            (p) =>
+                p.name == phase.name &&
+                p.id != phase.id &&
+                (p.status == 'CREATED' || p.status == 'IN_PROGRESS'),
+            orElse: () => phase,
+          );
+          if (newPhase.id != null &&
+              newPhase.id != phase.id &&
+              !_notifiedNewPhases.contains(newPhase.id)) {
+            _notifiedNewPhases.add(newPhase.id!);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _showSnack(
+                  '✨ New phase "${newPhase.name ?? 'Phase'}" has been created! You can continue your journey.',
+                );
+              }
+            });
+          }
+        }
+      }
+    }
+
+    // Notify about completely new phases
+    for (final newPhase in newPhases) {
+      final phaseId = newPhase.id;
+      if (phaseId != null && !_notifiedNewPhases.contains(phaseId)) {
+        _notifiedNewPhases.add(phaseId);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _showSnack(
+              '✨ New phase "${newPhase.name ?? 'Phase'}" has been created!',
+            );
+          }
+        });
+      }
+    }
+
+    _previousPhases = List.from(currentPhases);
   }
 
   @override
@@ -83,6 +201,17 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       }
     });
 
+    // Detect new phases after redo and show notification
+    state.when(
+      data: (data) {
+        if (data != null && data.phases != null) {
+          _detectAndNotifyNewPhases(data.phases!);
+        }
+      },
+      loading: () {},
+      error: (_, __) {},
+    );
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -92,6 +221,13 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+            },
+            tooltip: 'Refresh Quit Plan',
+          ),
           IconButton(
             icon: const Icon(Icons.history, color: Colors.white),
             onPressed: () {
@@ -137,12 +273,14 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
           }
 
           final phases = data.phases!;
+          // Sort phases: redo phases appear right after their failed phase
+          final sortedPhases = _sortPhases(phases);
           return SingleChildScrollView(
             child: Column(
               children: [
                 _buildHeader(data),
-                _buildStats(phases),
-                _buildPhasesList(phases, data),
+                _buildStats(sortedPhases),
+                _buildPhasesList(sortedPhases, data),
                 const SizedBox(height: 20),
               ],
             ),
@@ -512,10 +650,28 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     // Always show banner when phase failed
     final shouldShowBanner = isFailed;
 
+    // Get all phases to check if new phase exists after failed phase
+    final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
+    List<QuitPhaseDetail> allPhases = [];
+    quitPhaseState.when(
+      data: (quitPhase) {
+        if (quitPhase != null && quitPhase.phases != null) {
+          allPhases = quitPhase.phases!;
+        }
+      },
+      loading: () {},
+      error: (_, __) {},
+    );
+
+    // Check if there's a new phase after this failed phase (redo scenario)
+    final hasNewPhaseAfterFailed = _hasNewPhaseAfterFailed(phase, allPhases);
+
     // Auto-show dialog when phase failed for the first time (when phase is expanded)
+    // BUT only if there's no new phase created after it (no redo happened)
     if (isFailed &&
         phaseId != -1 &&
-        !_shownFailedPhaseDialogs.contains(phaseId)) {
+        !_shownFailedPhaseDialogs.contains(phaseId) &&
+        !hasNewPhaseAfterFailed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_shownFailedPhaseDialogs.contains(phaseId)) {
           _shownFailedPhaseDialogs.add(phaseId);
@@ -656,6 +812,12 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                     theme,
                     phase.fmCigarettesTotal ?? 0,
                     phase.durationDay ?? 0,
+                    // Try to get smokeAvgPerDay from formMetricDTO if available
+                    // Otherwise calculate from fmCigarettesTotal / durationDay
+                    _calculateSmokeAvgPerDay(
+                      phase.fmCigarettesTotal ?? 0,
+                      phase.durationDay ?? 0,
+                    ),
                   ),
                 ],
               ),
@@ -1034,11 +1196,15 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     PhaseTheme theme,
     double fmCigarettesTotal,
     int durationDay,
+    int smokeAvgPerDay,
   ) {
     final rules = condition.rules ?? [];
 
-    // Use fmCigarettesTotal as baseline if available
+    // Calculate baseline total: use fmCigarettesTotal if available, otherwise calculate from smokeAvgPerDay * durationDay
     double baselineTotal = fmCigarettesTotal;
+    if (baselineTotal <= 0 && smokeAvgPerDay >= 0 && durationDay >= 0) {
+      baselineTotal = (smokeAvgPerDay * durationDay).toDouble();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1469,7 +1635,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                     .keepPhase(quitPlanId: planId, phaseId: phaseId);
                 if (!mounted) return;
                 Navigator.of(context).pop();
-                _showSnack('Phase kept successfully. 🎯');
+                _showSnack('Phase kept successfully.');
                 // Refresh quit plan data
                 ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
               } catch (e) {
@@ -1507,7 +1673,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                     .redoPhase(phaseId: phaseId, anchorStart: formattedDate);
                 if (!mounted) return;
                 Navigator.of(context).pop();
-                _showSnack('Phase restarted from $formattedDate. 🔄');
+                _showSnack('Phase restarted from $formattedDate.');
                 // Refresh quit plan data
                 ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
               } catch (e) {
@@ -2226,6 +2392,117 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   String _errorMessage(Object error) {
     final message = error.toString();
     return message.replaceFirst('Exception: ', '');
+  }
+
+  /// Calculate smokeAvgPerDay from fmCigarettesTotal and durationDay
+  int _calculateSmokeAvgPerDay(double fmCigarettesTotal, int durationDay) {
+    if (durationDay > 0 && fmCigarettesTotal > 0) {
+      return (fmCigarettesTotal / durationDay).round();
+    }
+    return 0;
+  }
+
+  /// Sort phases so that redo phases appear right after their failed phase
+  /// Primary sort: by startDate
+  /// Secondary: if phase failed has a redo phase, place redo phase immediately after
+  List<QuitPhaseDetail> _sortPhases(List<QuitPhaseDetail> phases) {
+    if (phases.isEmpty) return phases;
+
+    // Create a copy to avoid modifying original list
+    final sorted = List<QuitPhaseDetail>.from(phases);
+
+    // First, sort by startDate
+    sorted.sort((a, b) {
+      final aStart = a.startDate;
+      final bStart = b.startDate;
+      if (aStart == null && bStart == null) return 0;
+      if (aStart == null) return 1;
+      if (bStart == null) return -1;
+      try {
+        final aDate = DateTime.parse(aStart);
+        final bDate = DateTime.parse(bStart);
+        return aDate.compareTo(bDate);
+      } catch (e) {
+        return 0;
+      }
+    });
+
+    // Then, reorganize: if a failed phase has a redo phase, move redo phase right after it
+    final result = <QuitPhaseDetail>[];
+    final processedIds = <int>{};
+
+    for (int i = 0; i < sorted.length; i++) {
+      final phase = sorted[i];
+      final phaseId = phase.id;
+      if (phaseId == null || processedIds.contains(phaseId)) continue;
+
+      // If this is a failed phase, check if there's a redo phase
+      if (_isFailedStatus(phase.status)) {
+        result.add(phase);
+        processedIds.add(phaseId);
+
+        // Find redo phase (same name, different id, CREATED or IN_PROGRESS)
+        final phaseName = phase.name ?? '';
+        if (phaseName.isNotEmpty) {
+          // Search through all phases to find the redo phase
+          for (final candidate in sorted) {
+            final candidateId = candidate.id;
+            if (candidateId == null || processedIds.contains(candidateId))
+              continue;
+
+            // Check if this is a redo phase of the failed phase
+            if (candidate.name == phaseName &&
+                candidateId != phaseId &&
+                (candidate.status == 'CREATED' ||
+                    candidate.status == 'IN_PROGRESS')) {
+              // Check if it's created after the failed phase
+              if (_hasNewPhaseAfterFailed(phase, sorted)) {
+                result.add(candidate);
+                processedIds.add(candidateId);
+                break; // Only take the first matching redo phase
+              }
+            }
+          }
+        }
+      } else {
+        // Regular phase - check if it's not a redo of a failed phase we already processed
+        final phaseName = phase.name ?? '';
+        bool isRedoOfProcessedFailed = false;
+
+        if (phaseName.isNotEmpty) {
+          // Check if this phase is a redo of a failed phase we already added
+          for (final processedPhase in result) {
+            if (_isFailedStatus(processedPhase.status) &&
+                processedPhase.name == phaseName &&
+                processedPhase.id != phaseId) {
+              // Check if this phase is the redo
+              if ((phase.status == 'CREATED' ||
+                      phase.status == 'IN_PROGRESS') &&
+                  _hasNewPhaseAfterFailed(processedPhase, sorted)) {
+                isRedoOfProcessedFailed = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!isRedoOfProcessedFailed) {
+          result.add(phase);
+          processedIds.add(phaseId);
+        }
+      }
+    }
+
+    // Add any remaining phases that weren't processed
+    for (final phase in sorted) {
+      final phaseId = phase.id;
+      if (phaseId != null && !processedIds.contains(phaseId)) {
+        result.add(phase);
+        processedIds.add(phaseId);
+      }
+    }
+
+    return result;
   }
 
   Future<void> _showCreateFormMetricDialog() async {

@@ -125,21 +125,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     });
 
-    // Format nicotine amount with thousand separator
-    _nicotineAmountController.addListener(() {
-      final text = _nicotineAmountController.text.replaceAll(',', '');
-      if (text.isEmpty) return;
-      final number = double.tryParse(text);
-      if (number != null) {
-        final formatted = NumberFormat('#,###.##', 'en_US').format(number);
-        if (formatted != _nicotineAmountController.text) {
-          _nicotineAmountController.value = TextEditingValue(
-            text: formatted,
-            selection: TextSelection.collapsed(offset: formatted.length),
-          );
-        }
-      }
-    });
+    // Note: Nicotine amount doesn't need formatting - it's a small decimal number
+    // Allow direct decimal input without interference
   }
 
   @override
