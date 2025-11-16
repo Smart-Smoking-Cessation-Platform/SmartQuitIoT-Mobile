@@ -679,7 +679,6 @@ class _FormMetricDetailScreenState
       // Show success message
       Flushbar(
         message: 'Form metric updated successfully!',
-        icon: const Icon(Icons.check_circle, color: Colors.white),
         backgroundColor: const Color(0xFF00D09E),
         duration: const Duration(seconds: 3),
         margin: const EdgeInsets.all(8),
@@ -703,7 +702,6 @@ class _FormMetricDetailScreenState
       // Show error message
       Flushbar(
         message: state.error ?? 'Failed to update form metric',
-        icon: const Icon(Icons.error_outline, color: Colors.white),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
         margin: const EdgeInsets.all(8),

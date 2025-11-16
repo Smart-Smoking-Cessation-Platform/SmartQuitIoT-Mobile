@@ -95,7 +95,6 @@ class _CreateNewQuitPlanDialogState
     if (_selectedDate == null) {
       Flushbar(
         message: 'Please select a start date',
-        icon: const Icon(Icons.error_outline, color: Colors.white),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
         margin: const EdgeInsets.all(8),
@@ -138,7 +137,6 @@ class _CreateNewQuitPlanDialogState
         Navigator.of(context).pop(); // Close loading
         Flushbar(
           message: state.error.toString(),
-          icon: const Icon(Icons.error_outline, color: Colors.white),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
           margin: const EdgeInsets.all(8),
@@ -165,7 +163,6 @@ class _CreateNewQuitPlanDialogState
         Navigator.of(context).pop(); // Close loading
         Flushbar(
           message: 'Failed to create quit plan',
-          icon: const Icon(Icons.error_outline, color: Colors.white),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
           margin: const EdgeInsets.all(8),
@@ -178,7 +175,6 @@ class _CreateNewQuitPlanDialogState
       Navigator.of(context).pop(); // Close loading
       Flushbar(
         message: 'Failed to create quit plan: ${e.toString()}',
-        icon: const Icon(Icons.error_outline, color: Colors.white),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
         margin: const EdgeInsets.all(8),
