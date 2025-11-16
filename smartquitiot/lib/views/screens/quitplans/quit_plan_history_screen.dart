@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/quit_plan_history.dart';
 import '../../../providers/quit_plan_history_provider.dart';
+import '../../../providers/mission_refresh_provider.dart';
 import 'quit_plan_detail_screen.dart';
 
 class QuitPlanHistoryScreen extends ConsumerStatefulWidget {
@@ -19,6 +20,14 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final quitPlansAsync = ref.watch(quitPlanHistoryViewModelProvider);
+
+    // Listen for quit plan refresh trigger
+    ref.listen(missionRefreshProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        print('🔄 [QuitPlanHistoryScreen] Refresh triggered - reloading quit plan history...');
+        ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),

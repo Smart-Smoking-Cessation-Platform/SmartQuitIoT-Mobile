@@ -1,150 +1,167 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:another_flushbar/flushbar.dart';
+import '../../../routes/app_router.dart';
+import 'create_new_quit_plan_dialog.dart';
 
-/// Dialog shown when user smokes during an active quit plan (HTTP 209)
-class SmokedAgainDialog extends StatelessWidget {
+class SmokedAgainDialog extends ConsumerStatefulWidget {
   const SmokedAgainDialog({super.key});
+
+  @override
+  ConsumerState<SmokedAgainDialog> createState() => _SmokedAgainDialogState();
+}
+
+class _SmokedAgainDialogState extends ConsumerState<SmokedAgainDialog> {
+
+  void _handleKeepPhase() {
+    if (!mounted) return;
+    
+    // Close dialog first
+    Navigator.of(context).pop();
+    
+    // Navigate to main using go_router
+    context.go('/main');
+    
+    // Show success message after navigation with a small delay
+    // Use rootNavigatorKey to get a valid context
+    Future.delayed(const Duration(milliseconds: 300), () {
+      final rootContext = rootNavigatorKey.currentContext;
+      if (rootContext != null) {
+        Flushbar(
+          message: 'Phase kept successfully! 🎯',
+          icon: const Icon(Icons.check_circle, color: Colors.white),
+          backgroundColor: const Color(0xFF00D09E),
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(16),
+          borderRadius: BorderRadius.circular(12),
+          flushbarPosition: FlushbarPosition.TOP,
+        ).show(rootContext);
+      }
+    });
+  }
+
+  void _handleCreateNewQuitPlan() {
+    if (!mounted) return;
+    
+    // Close this dialog first
+    Navigator.of(context).pop();
+    
+    // Show create new quit plan dialog after a small delay to ensure previous dialog is closed
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const CreateNewQuitPlanDialog(),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      elevation: 8,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE8F5E9), // Light green
-              Color(0xFFC8E6C9), // Slightly darker green
-            ],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header with back button
+            // Icon
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color(0xFF00D09E),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
               ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Diary',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(width: 48), // Balance the back button
-                ],
+              child: Icon(
+                Icons.warning_amber_rounded,
+                size: 40,
+                color: Colors.orange.shade400,
               ),
             ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Title
-                  const Text(
-                    'So You Have Smoked Again?',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
-                    ),
-                    textAlign: TextAlign.center,
+            const SizedBox(height: 24),
+            
+            // Title
+            const Text(
+              'You Smoked During Your Quit Plan',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3748),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            
+            // Message
+            Text(
+              'What would you like to do?',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            
+            // Keep Phase Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _handleKeepPhase,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D09E),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 12),
-
-                  // Subtitle
-                  const Text(
-                    'No Problem, It\'s All Part Of The Process!\n'
-                    'What Would You Like To Do Next?',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF424242),
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.shield, size: 20),
+                label: const Text(
+                  'Keep Current Phase',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 32),
-
-                  // Option 1: Keep this stage and continue
-                  _buildOptionCard(
-                    context,
-                    icon: '💪',
-                    title: 'Keep this stage and continue',
-                    subtitle: 'Learn from this and stay on track!',
-                    color: const Color(0xFF00897B),
-                    onTap: () {
-                      // TODO: API not implemented yet
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Continue with current plan'),
-                          backgroundColor: Color(0xFF00897B),
-                        ),
-                      );
-                    },
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            // Create New Quit Plan Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _handleCreateNewQuitPlan,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF00D09E),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 12),
-
-                  // Option 2: Remake this stage
-                  _buildOptionCard(
-                    context,
-                    icon: '🔄',
-                    title: 'Remake this stage',
-                    subtitle: 'Start this phase again with fresh energy',
-                    color: const Color(0xFF7CB342),
-                    onTap: () {
-                      // TODO: API not implemented yet
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Restart current stage'),
-                          backgroundColor: Color(0xFF7CB342),
-                        ),
-                      );
-                    },
+                  side: const BorderSide(
+                    color: Color(0xFF00D09E),
+                    width: 2,
                   ),
-                  const SizedBox(height: 12),
-
-                  // Option 3: Change Quit Plan
-                  _buildOptionCard(
-                    context,
-                    icon: '📋',
-                    title: 'Change Quit Plan',
-                    subtitle: 'Try a different approach that suits you better',
-                    color: const Color(0xFFFFA726),
-                    onTap: () {
-                      // TODO: API not implemented yet
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Create new quit plan'),
-                          backgroundColor: Color(0xFFFFA726),
-                        ),
-                      );
-                    },
+                ),
+                icon: const Icon(Icons.add_circle_outline, size: 20),
+                label: const Text(
+                  'Create New Quit Plan',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
+                ),
               ),
             ),
           ],
@@ -152,87 +169,5 @@ class SmokedAgainDialog extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildOptionCard(
-    BuildContext context, {
-    required String icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Icon circle
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    icon,
-                    style: const TextStyle(fontSize: 28),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // Text
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Arrow
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.white,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
+

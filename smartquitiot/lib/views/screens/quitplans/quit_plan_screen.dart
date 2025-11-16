@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/quit_plan_provider.dart';
+import '../../../providers/mission_refresh_provider.dart';
 import '../../../models/quit_phase.dart';
 import '../../../models/request/create_new_quit_plan_request.dart';
 import '../../../utils/phase_theme.dart';
@@ -65,6 +66,14 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(quitPlanViewModelApiProvider);
+
+    // Listen for quit plan refresh trigger
+    ref.listen(missionRefreshProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        print('🔄 [QuitPlanScreen] Refresh triggered - reloading quit plan...');
+        ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),

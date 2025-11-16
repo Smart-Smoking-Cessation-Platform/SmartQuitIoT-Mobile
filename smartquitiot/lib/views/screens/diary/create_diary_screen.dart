@@ -5,6 +5,7 @@ import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
 import 'package:SmartQuitIoT/providers/metrics_provider.dart';
 import 'package:SmartQuitIoT/providers/diary_refresh_provider.dart';
 import 'package:SmartQuitIoT/models/diary_record.dart';
+import 'package:SmartQuitIoT/models/diary_create_result.dart';
 import 'package:SmartQuitIoT/views/widgets/dialogs/smoked_again_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:health/health.dart';
@@ -24,6 +25,9 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   double moodLevel = 5.0;
   double confidenceLevel = 5.0;
   double anxietyLevel = 5.0;
+  
+  // Flag to track if we're waiting for diary creation result
+  bool _isWaitingForResult = false;
 
   // Health instance
   final Health _health = Health();
@@ -87,6 +91,39 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to diary record notifier state changes
+    ref.listen<AsyncValue<DiaryCreateResult?>>(
+      diaryRecordNotifierProvider,
+      (previous, next) {
+        // Only handle if we're waiting for a result and state changed from loading to data/error
+        if (!_isWaitingForResult) return;
+        
+        final previousResult = previous?.valueOrNull;
+        final nextResult = next.valueOrNull;
+        
+        // If we got a result and it's different from previous, handle it
+        if (nextResult != null && nextResult != previousResult) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _isWaitingForResult = false;
+              });
+              _handleDiaryResult(nextResult);
+            }
+          });
+        } else if (next.hasError && (previous == null || !previous.hasError)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _isWaitingForResult = false;
+              });
+              _handleDiaryError(next.error!);
+            }
+          });
+        }
+      },
+    );
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF8FFFE),
       appBar: AppBar(
@@ -998,106 +1035,127 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
       sleepDuration: sleepDuration,
     );
 
+    // Set flag to indicate we're waiting for result
+    setState(() {
+      _isWaitingForResult = true;
+    });
+
     await diaryNotifier.createDiaryRecord(request);
 
     if (!mounted) return;
 
+    // Fallback: check state immediately after await (in case listener didn't fire)
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+
     final state = ref.read(diaryRecordNotifierProvider);
-    state.whenOrNull(
-      data: (result) {
-        if (result == null) return;
+    final result = state.valueOrNull;
+    
+    // If we have a result and still waiting, process it
+    if (_isWaitingForResult && result != null) {
+      setState(() {
+        _isWaitingForResult = false;
+      });
+      _handleDiaryResult(result);
+    } else if (_isWaitingForResult && state.hasError) {
+      setState(() {
+        _isWaitingForResult = false;
+      });
+      _handleDiaryError(state.error!);
+    }
+  }
 
-        // Check if user smoked during quit plan (HTTP 209)
-        // if (result.isSmokedDuringQuitPlan) {
-        //   print(
-        //     '⚠️ [CreateDiary] User smoked during quit plan, showing dialog...',
-        //   );
+  void _handleDiaryResult(DiaryCreateResult result) {
+    // Check if user smoked during quit plan (HTTP 209)
+    if (result.isSmokedDuringQuitPlan) {
+      print(
+        '⚠️ [CreateDiary] User smoked during quit plan, showing dialog...',
+      );
 
-        //   // Trigger refreshes even for 209 response
-        //   ref.read(metricsRefreshProvider.notifier).refreshMetrics();
-        //   ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
-        //   ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+      // Trigger refreshes even for 209 response
+      ref.read(metricsRefreshProvider.notifier).refreshMetrics();
+      ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+      ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
 
-        //   if (!mounted) return;
+      if (!mounted) return;
 
-        //   // Show the "Smoked Again" dialog
-        //   showDialog(
-        //     context: context,
-        //     barrierDismissible: false,
-        //     builder: (context) => const SmokedAgainDialog(),
-        //   ).then((_) {
-        //     // After dialog is dismissed, navigate back
-        //     if (mounted) {
-        //       Navigator.of(context).pop();
-        //     }
-        //   });
-        //   return;
-        // }
-
-        // Normal success case (200/201)
-        if (result.isSuccess) {
-          // Trigger metrics refresh after successful diary creation
-          ref.read(metricsRefreshProvider.notifier).refreshMetrics();
-
-          // Trigger diary charts refresh to update analytics
-          ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
-
-          // Trigger diary history refresh to update history list
-          ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
-          print('✅ [CreateDiary] Triggered diary history refresh');
-
-          if (!mounted) return;
-
-          // Show success flushbar
-          Flushbar(
-            message: '🎉 Diary saved successfully!',
-            icon: const Icon(Icons.check_circle, size: 28, color: Colors.white),
-            margin: const EdgeInsets.all(16),
-            borderRadius: BorderRadius.circular(16),
-            backgroundColor: const Color(0xFF4CAF50),
-            duration: const Duration(seconds: 2),
-            flushbarPosition: FlushbarPosition.TOP,
-            forwardAnimationCurve: Curves.easeOutBack,
-            reverseAnimationCurve: Curves.easeIn,
-            boxShadows: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            onStatusChanged: (status) {
-              // Navigate back after flushbar is dismissed
-              if (status == FlushbarStatus.DISMISSED && mounted) {
-                Navigator.of(context).pop();
-              }
-            },
-          ).show(context);
+      // Show the "Smoked Again" dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const SmokedAgainDialog(),
+      ).then((_) {
+        // After dialog is dismissed, navigate back if still on this screen
+        if (mounted) {
+          Navigator.of(context).pop();
         }
-      },
-      error: (error, _) {
-        if (!mounted) return;
+      });
+      return;
+    }
 
-        // Show error flushbar
-        Flushbar(
-          message: error.toString(),
-          icon: const Icon(Icons.error_outline, size: 28, color: Colors.white),
-          margin: const EdgeInsets.all(16),
-          borderRadius: BorderRadius.circular(16),
-          backgroundColor: const Color(0xFFE53E3E),
-          duration: const Duration(seconds: 4),
-          flushbarPosition: FlushbarPosition.TOP,
-          forwardAnimationCurve: Curves.easeOutBack,
-          reverseAnimationCurve: Curves.easeIn,
-          boxShadows: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ).show(context);
-      },
-    );
+    // Normal success case (200/201)
+    if (result.isSuccess) {
+      // Trigger metrics refresh after successful diary creation
+      ref.read(metricsRefreshProvider.notifier).refreshMetrics();
+
+      // Trigger diary charts refresh to update analytics
+      ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+
+      // Trigger diary history refresh to update history list
+      ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+      print('✅ [CreateDiary] Triggered diary history refresh');
+
+      if (!mounted) return;
+
+      // Show success flushbar
+      Flushbar(
+        message: '🎉 Diary saved successfully!',
+        icon: const Icon(Icons.check_circle, size: 28, color: Colors.white),
+        margin: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(16),
+        backgroundColor: const Color(0xFF4CAF50),
+        duration: const Duration(seconds: 2),
+        flushbarPosition: FlushbarPosition.TOP,
+        forwardAnimationCurve: Curves.easeOutBack,
+        reverseAnimationCurve: Curves.easeIn,
+        boxShadows: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        onStatusChanged: (status) {
+          // Navigate back after flushbar is dismissed
+          if (status == FlushbarStatus.DISMISSED && mounted) {
+            Navigator.of(context).pop();
+          }
+        },
+      ).show(context);
+    }
+  }
+
+  void _handleDiaryError(Object error) {
+    if (!mounted) return;
+
+    // Show error flushbar
+    Flushbar(
+      message: error.toString(),
+      icon: const Icon(Icons.error_outline, size: 28, color: Colors.white),
+      margin: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(16),
+      backgroundColor: const Color(0xFFE53E3E),
+      duration: const Duration(seconds: 4),
+      flushbarPosition: FlushbarPosition.TOP,
+      forwardAnimationCurve: Curves.easeOutBack,
+      reverseAnimationCurve: Curves.easeIn,
+      boxShadows: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.15),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ).show(context);
   }
 }
