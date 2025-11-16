@@ -152,6 +152,36 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
                   ],
                 ),
               ),
+              // Reload button
+              IconButton(
+                onPressed: state.isLoading
+                    ? null
+                    : () {
+                        print('🔄 [QuitPlanCard] Manual reload triggered');
+                        ref
+                            .read(quitPlanHomepageViewModelProvider.notifier)
+                            .loadQuitPlanHomePage();
+                      },
+                icon: state.isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF00D09E),
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.refresh,
+                        color: Color(0xFF00D09E),
+                        size: 20,
+                      ),
+                tooltip: 'Reload data',
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
             ],
           ),
           const SizedBox(height: 16),
