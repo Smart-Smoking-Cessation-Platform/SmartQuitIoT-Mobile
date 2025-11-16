@@ -1,5 +1,7 @@
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
 import 'package:SmartQuitIoT/providers/websocket_provider.dart';
+import 'package:SmartQuitIoT/providers/membership_provider.dart';
+import 'package:SmartQuitIoT/providers/quit_plan_time_provider.dart';
 import 'package:SmartQuitIoT/utils/snackbar_helper.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_top_header.dart';
 import 'package:flutter/material.dart';
@@ -139,9 +141,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Builder(
                           builder: (context) {
                             // Debug: Print avatarUrl to check if it's loaded
-                            print('🖼️ [ProfileScreen] Avatar URL: ${user.avatarUrl}');
-                            print('🖼️ [ProfileScreen] Avatar URL isEmpty: ${user.avatarUrl.isEmpty}');
-                            
+                            print(
+                              '🖼️ [ProfileScreen] Avatar URL: ${user.avatarUrl}',
+                            );
+                            print(
+                              '🖼️ [ProfileScreen] Avatar URL isEmpty: ${user.avatarUrl.isEmpty}',
+                            );
+
                             return ProfileHeaderSection(
                               name: user.displayName,
                               status: 'Active Member', // You can customize this
@@ -190,17 +196,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: () async {
                           // Disconnect WebSocket before logout
                           try {
-                            final websocketManager = ref.read(websocketManagerProvider);
+                            final websocketManager = ref.read(
+                              websocketManagerProvider,
+                            );
                             await websocketManager.disconnect();
-                            debugPrint('✅ [ProfileScreen] WebSocket disconnected');
+                            debugPrint(
+                              '✅ [ProfileScreen] WebSocket disconnected',
+                            );
                           } catch (e) {
-                            debugPrint('❌ [ProfileScreen] WebSocket disconnect error: $e');
+                            debugPrint(
+                              '❌ [ProfileScreen] WebSocket disconnect error: $e',
+                            );
                           }
-                          
+
                           // Gọi logout trong ViewModel
                           await ref
                               .read(authViewModelProvider.notifier)
                               .logout();
+
+                          // Clear membership data
+                          ref
+                              .read(membershipViewModelProvider.notifier)
+                              .reset();
+                          ref.invalidate(membershipViewModelProvider);
+                          ref.invalidate(currentSubscriptionProvider);
+                          // Clear quit plan time data
+                          ref
+                              .read(quitPlanTimeViewModelProvider.notifier)
+                              .reset();
+                          ref.invalidate(quitPlanTimeViewModelProvider);
 
                           if (context.mounted) {
                             SnackBarHelper.showSuccess(

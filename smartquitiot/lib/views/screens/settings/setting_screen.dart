@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../providers/auth_provider.dart';
 import '../../../providers/websocket_provider.dart';
+import '../../../providers/membership_provider.dart';
+import '../../../providers/quit_plan_time_provider.dart';
 import '../../../../utils/snackbar_helper.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -217,6 +219,25 @@ class SettingsScreen extends ConsumerWidget {
                                     await ref
                                         .read(authViewModelProvider.notifier)
                                         .logout();
+
+                                    // Clear membership data
+                                    ref
+                                        .read(
+                                          membershipViewModelProvider.notifier,
+                                        )
+                                        .reset();
+                                    ref.invalidate(membershipViewModelProvider);
+                                    ref.invalidate(currentSubscriptionProvider);
+                                    // Clear quit plan time data
+                                    ref
+                                        .read(
+                                          quitPlanTimeViewModelProvider
+                                              .notifier,
+                                        )
+                                        .reset();
+                                    ref.invalidate(
+                                      quitPlanTimeViewModelProvider,
+                                    );
 
                                     if (context.mounted) {
                                       SnackBarHelper.showSuccess(

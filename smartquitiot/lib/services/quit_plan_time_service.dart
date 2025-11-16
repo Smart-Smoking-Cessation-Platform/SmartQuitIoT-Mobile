@@ -42,17 +42,64 @@ class QuitPlanTimeService {
 
   Future<DateTime> getStartTime() async {
     try {
-      final response = await _dio.get(baseUrl);
-      
-      if (response.statusCode == 200) {
-        final data = response.data as Map<String, dynamic>;
-        final startTimeStr = data['startTime'] as String;
-        return DateTime.parse(startTimeStr);
-      } else {
-        throw Exception('Failed to get start time: ${response.statusCode}');
+      // Check if token is available before making request
+      final token = await _authRepository.getAccessToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('No access token available. Please login again.');
       }
+
+      final response = await _dio.get(baseUrl);
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        // Handle different response formats
+        if (data is! Map<String, dynamic>) {
+          throw Exception(
+            'Invalid response format: expected Map but got ${data.runtimeType}',
+          );
+        }
+
+        final startTimeStr = data['startTime'];
+        if (startTimeStr == null) {
+          throw Exception('startTime field is missing in response');
+        }
+
+        if (startTimeStr is! String) {
+          throw Exception(
+            'startTime must be a String, but got ${startTimeStr.runtimeType}',
+          );
+        }
+
+        try {
+          return DateTime.parse(startTimeStr);
+        } catch (e) {
+          throw Exception('Failed to parse startTime "$startTimeStr": $e');
+        }
+      } else {
+        throw Exception(
+          'Failed to get start time: HTTP ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      // Handle Dio-specific errors
+      String errorMessage = 'Failed to load timer';
+      if (e.response != null) {
+        errorMessage = 'Failed to load timer: HTTP ${e.response?.statusCode}';
+        if (e.response?.statusCode == 401) {
+          errorMessage = 'Authentication failed. Please login again.';
+        } else if (e.response?.statusCode == 404) {
+          errorMessage = 'No quit plan found.';
+        }
+      } else if (e.type == DioExceptionType.connectionTimeout) {
+        errorMessage = 'Connection timeout. Please check your internet.';
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = 'Request timeout. Please try again.';
+      }
+      print('❌ [QuitPlanTimeService] DioError: $errorMessage - ${e.message}');
+      throw Exception(errorMessage);
     } catch (e) {
-      print('❌ Error getting start time: $e');
+      print('❌ [QuitPlanTimeService] Error getting start time: $e');
       rethrow;
     }
   }

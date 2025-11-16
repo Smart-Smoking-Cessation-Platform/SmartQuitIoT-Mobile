@@ -4,13 +4,10 @@ import '../models/state/auth_state.dart';
 import '../repositories/auth_repository.dart';
 import '../services/token_storage_service.dart';
 
-
-
 class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
 
   AuthViewModel(this._authRepository) : super(const AuthState());
-
 
   String? _decodeUsername(String? token) {
     if (token == null || token.isEmpty) return null;
@@ -21,7 +18,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
       return null;
     }
   }
-
 
   Future<bool> register({
     required String username,
@@ -64,10 +60,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
         error: null,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -109,7 +102,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
   Future<bool> login(String usernameOrEmail, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final loginResponse = await _authRepository.login(usernameOrEmail, password);
+      final loginResponse = await _authRepository.login(
+        usernameOrEmail,
+        password,
+      );
       final username = _decodeUsername(loginResponse.accessToken);
 
       state = state.copyWith(
@@ -153,19 +149,25 @@ class AuthViewModel extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    print('🚪 [AuthViewModel] Starting logout...');
     state = state.copyWith(isLoading: true, error: null);
     try {
+      // AuthRepository.logout() already handles clearing tokens
+      // No need to clear again here, but we do it as a safety measure
       await _authRepository.logout();
-      final tokenStorage = TokenStorageService();
-      await tokenStorage.clearTokens();
+
+      // Clear state immediately
       state = state.clearAuth();
+      print('✅ [AuthViewModel] Logout completed successfully');
     } catch (e) {
+      // Even if logout fails, clear state and tokens
+      print('⚠️ [AuthViewModel] Logout error (non-critical): $e');
       final tokenStorage = TokenStorageService();
       await tokenStorage.clearTokens();
       state = state.clearAuth();
+      print('✅ [AuthViewModel] State and tokens cleared despite error');
     }
   }
-
 
   void clearError() {
     if (state.error != null) {
@@ -176,4 +178,3 @@ class AuthViewModel extends StateNotifier<AuthState> {
   bool? get isFirstLogin => state.isFirstLogin;
   String? get username => state.username;
 }
-

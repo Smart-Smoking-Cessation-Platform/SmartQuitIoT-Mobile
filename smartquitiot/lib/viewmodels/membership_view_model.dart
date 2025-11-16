@@ -8,17 +8,14 @@ class MembershipViewModel extends StateNotifier<MembershipState> {
   final MembershipRepository _repository;
 
   MembershipViewModel({MembershipRepository? repository})
-      : _repository = repository ?? MembershipRepository(),
-        super(const MembershipState());
+    : _repository = repository ?? MembershipRepository(),
+      super(const MembershipState());
 
   Future<void> fetchMembershipPackages() async {
     state = state.copyWith(state: ViewState.loading);
     try {
       final packages = await _repository.fetchMembershipPackages();
-      state = state.copyWith(
-        state: ViewState.success,
-        packages: packages,
-      );
+      state = state.copyWith(state: ViewState.success, packages: packages);
     } catch (e) {
       state = state.copyWith(
         state: ViewState.error,
@@ -61,4 +58,8 @@ class MembershipViewModel extends StateNotifier<MembershipState> {
     }
   }
 
+  /// Reset membership state to initial state (used on logout)
+  void reset() {
+    state = const MembershipState();
+  }
 }

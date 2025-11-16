@@ -6,6 +6,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../../utils/snackbar_helper.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/achievement_provider.dart'; // Import achievement_provider
+import '../../../providers/membership_provider.dart';
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
@@ -181,6 +182,10 @@ class HomeHeader extends ConsumerWidget {
                   );
                   ref.invalidate(allAchievementsProvider);
                   ref.invalidate(homeAchievementsProvider);
+                  // Clear membership data
+                  ref.read(membershipViewModelProvider.notifier).reset();
+                  ref.invalidate(membershipViewModelProvider);
+                  ref.invalidate(currentSubscriptionProvider);
 
                   if (context.mounted) {
                     SnackBarHelper.showSuccess(context, 'Logout successfully!');

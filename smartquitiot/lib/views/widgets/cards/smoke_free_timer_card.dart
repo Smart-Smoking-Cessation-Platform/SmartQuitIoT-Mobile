@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:easy_localization/easy_localization.dart';
 import '../../../providers/quit_plan_time_provider.dart';
+import '../../../providers/auth_provider.dart';
 
 class SmokeFreeTimerCard extends ConsumerStatefulWidget {
   const SmokeFreeTimerCard({super.key});
@@ -14,13 +14,18 @@ class SmokeFreeTimerCard extends ConsumerStatefulWidget {
 class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
   Timer? _timer;
   DateTime _now = DateTime.now();
+  bool _hasInitialLoad = false;
 
   @override
   void initState() {
     super.initState();
-    // Load start time from API
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(quitPlanTimeViewModelProvider.notifier).loadStartTime();
+    // Load start time from API with a small delay to ensure token is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Wait a bit to ensure authentication token is ready after login
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        _loadTimerData();
+      }
     });
 
     // Update timer every second
@@ -33,6 +38,17 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
     });
   }
 
+  void _loadTimerData() {
+    if (_hasInitialLoad) return;
+
+    final authState = ref.read(authViewModelProvider);
+    // Only load if user is authenticated
+    if (authState.isAuthenticated) {
+      _hasInitialLoad = true;
+      ref.read(quitPlanTimeViewModelProvider.notifier).loadStartTime();
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -42,6 +58,16 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
   @override
   Widget build(BuildContext context) {
     final quitPlanTimeState = ref.watch(quitPlanTimeViewModelProvider);
+    final authState = ref.watch(authViewModelProvider);
+
+    // Auto-load when authentication becomes available
+    if (authState.isAuthenticated &&
+        !_hasInitialLoad &&
+        !quitPlanTimeState.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadTimerData();
+      });
+    }
 
     // Show loading spinner while loading
     if (quitPlanTimeState.isLoading) {
@@ -76,6 +102,8 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
     if (quitPlanTimeState.error != null) {
       return GestureDetector(
         onTap: () {
+          // Reset flag to allow retry
+          _hasInitialLoad = false;
           ref.read(quitPlanTimeViewModelProvider.notifier).refresh();
         },
         child: Container(
