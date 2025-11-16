@@ -452,16 +452,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
   Future<void> _refreshCoaches() async {
     if (_isRefreshing) return;
+    if (!mounted) return;
+    
     setState(() {
       _isRefreshing = true;
     });
 
-    final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(coachListStateProvider.notifier).refresh();
-      messenger.showSnackBar(const SnackBar(content: Text('Danh sách coach đã được cập nhật')));
+      
+      // Only show snackbar if widget is still mounted and route is still active
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(const SnackBar(content: Text('Danh sách coach đã được cập nhật')));
+      }
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Tải lại thất bại: $e')));
+      // Only show snackbar if widget is still mounted and route is still active
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(SnackBar(content: Text('Tải lại thất bại: $e')));
+      }
     } finally {
       if (mounted) {
         setState(() {

@@ -49,9 +49,9 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
   Widget build(BuildContext context) {
     final state = ref.watch(quitPlanHomepageViewModelProvider);
 
-    // Listen for mission refresh trigger
+    // Listen for mission refresh trigger (includes quit plan refresh)
     ref.listen(missionRefreshProvider, (previous, next) {
-      if (previous != next) {
+      if (previous != null && previous != next) {
         print('🔄 [QuitPlanCard] Refresh triggered - reloading quit plan...');
         ref
             .read(quitPlanHomepageViewModelProvider.notifier)
