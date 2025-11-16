@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:another_flushbar/flushbar.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
 import '../../../models/quit_phase.dart';
@@ -52,13 +53,14 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
 
   void _showSnack(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF00D09E),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    Flushbar(
+      message: message,
+      duration: const Duration(seconds: 3),
+      backgroundColor: isError ? Colors.redAccent : const Color(0xFF00D09E),
+      margin: const EdgeInsets.all(8),
+      borderRadius: BorderRadius.circular(8),
+      flushbarPosition: FlushbarPosition.TOP,
+    ).show(context);
   }
 
   @override
@@ -92,6 +94,13 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+            },
+            tooltip: 'Refresh Quit Plan',
+          ),
           IconButton(
             icon: const Icon(Icons.history, color: Colors.white),
             onPressed: () {
@@ -1469,7 +1478,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                     .keepPhase(quitPlanId: planId, phaseId: phaseId);
                 if (!mounted) return;
                 Navigator.of(context).pop();
-                _showSnack('Phase kept successfully. 🎯');
+                _showSnack('Phase kept successfully.');
                 // Refresh quit plan data
                 ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
               } catch (e) {
@@ -1507,7 +1516,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                     .redoPhase(phaseId: phaseId, anchorStart: formattedDate);
                 if (!mounted) return;
                 Navigator.of(context).pop();
-                _showSnack('Phase restarted from $formattedDate. 🔄');
+                _showSnack('Phase restarted from $formattedDate.');
                 // Refresh quit plan data
                 ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
               } catch (e) {
