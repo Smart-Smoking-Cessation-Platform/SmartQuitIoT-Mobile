@@ -1636,6 +1636,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                 if (!mounted) return;
                 Navigator.of(context).pop();
                 _showSnack('Phase kept successfully.');
+                // Wait 5 seconds for backend cron job to update data
+                await Future.delayed(const Duration(seconds: 5));
                 // Refresh quit plan data
                 ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
               } catch (e) {
