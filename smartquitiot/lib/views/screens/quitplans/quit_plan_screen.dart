@@ -275,10 +275,12 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
           final phases = data.phases!;
           // Sort phases: redo phases appear right after their failed phase
           final sortedPhases = _sortPhases(phases);
+          final isCompleted = _isQuitPlanCompleted(data, sortedPhases);
           return SingleChildScrollView(
             child: Column(
               children: [
                 _buildHeader(data),
+                if (isCompleted) _buildCongratulationsBanner(data),
                 _buildStats(sortedPhases),
                 _buildPhasesList(sortedPhases, data),
                 const SizedBox(height: 20),
@@ -2374,6 +2376,122 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
 
   bool _isFailedStatus(String? status) =>
       status != null && status.toUpperCase() == 'FAILED';
+
+  /// Check if quit plan is completed
+  bool _isQuitPlanCompleted(QuitPhase plan, List<QuitPhaseDetail> phases) {
+    // Check if plan status is COMPLETED
+    if (plan.status != null && plan.status!.toUpperCase() == 'COMPLETED') {
+      return true;
+    }
+
+    // Check if all phases are completed, especially the last Maintenance phase
+    if (phases.isEmpty) return false;
+
+    // Check if the last phase is Maintenance and completed
+    final lastPhase = phases.last;
+    final isLastPhaseMaintenance = (lastPhase.name ?? '')
+        .toLowerCase()
+        .contains('maintenance');
+    final isLastPhaseCompleted =
+        lastPhase.status != null &&
+        lastPhase.status!.toUpperCase() == 'COMPLETED';
+
+    if (isLastPhaseMaintenance && isLastPhaseCompleted) {
+      return true;
+    }
+
+    // Also check if all phases are completed
+    final allPhasesCompleted = phases.every(
+      (phase) =>
+          phase.status != null && phase.status!.toUpperCase() == 'COMPLETED',
+    );
+
+    return allPhasesCompleted;
+  }
+
+  /// Build congratulations banner when quit plan is completed
+  Widget _buildCongratulationsBanner(QuitPhase plan) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00D09E), Color(0xFF00B894)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00D09E).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Text('🎉', style: TextStyle(fontSize: 32)),
+              SizedBox(width: 8),
+              Text('🎆', style: TextStyle(fontSize: 28)),
+              SizedBox(width: 8),
+              Text('✨', style: TextStyle(fontSize: 24)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Congratulations!',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'You have successfully completed your quit plan!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.95),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            plan.name ?? 'Quit Plan',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.9),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'You are now smoke-free! Keep up the amazing work! 💪',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   String _formatBoolean(
     bool value, {
