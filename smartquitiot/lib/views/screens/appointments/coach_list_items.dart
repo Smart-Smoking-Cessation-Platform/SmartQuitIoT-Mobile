@@ -85,15 +85,79 @@ class CoachListItem extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
+    final initials = coach.name.isNotEmpty
+        ? coach.name.split(' ').map((n) => n[0]).take(2).join().toUpperCase()
+        : '?';
+    
     return Container(
       width: 80,
       height: 80,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        image: DecorationImage(
-          image: NetworkImage(coach.imageUrl),
-          fit: BoxFit.cover,
-        ),
+        color: const Color(0xFF00D09E).withOpacity(0.1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: coach.imageUrl.isNotEmpty && 
+               !coach.imageUrl.contains('example.com') &&
+               (coach.imageUrl.startsWith('http://') || coach.imageUrl.startsWith('https://'))
+            ? Image.network(
+                coach.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D09E).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00D09E),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D09E).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                        strokeWidth: 2,
+                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+                      ),
+                    ),
+                  );
+                },
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00D09E).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00D09E),
+                    ),
+                  ),
+                ),
+              ),
       ),
     );
   }
