@@ -112,7 +112,10 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
                     ref.refresh(remainingBookingProvider);
                   },
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     itemCount: coaches.length,
                     itemBuilder: (context, index) {
                       final coach = coaches[index];
@@ -120,8 +123,8 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
                         padding: const EdgeInsets.only(bottom: 12),
                         child: CoachListItem(
                           coach: _convertApiCoachToLocalCoach(coach),
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => CoachDetailScreen(
@@ -129,6 +132,8 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
                                 ),
                               ),
                             );
+                            // Refresh quota khi quay lại từ detail screen
+                            ref.refresh(remainingBookingProvider);
                           },
                         ),
                       );
@@ -141,7 +146,8 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
                   valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
                 ),
               ),
-              error: (error, stack) => _buildErrorState(error.toString(), viewModel),
+              error: (error, stack) =>
+                  _buildErrorState(error.toString(), viewModel),
             ),
           ),
         ],
@@ -181,7 +187,11 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
               const SizedBox(height: 12),
               Text(
                 'Booking quota',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -210,23 +220,37 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${r.used} used • ${r.allowed} allowed',
-                            style: TextStyle(color: Colors.grey.shade700)),
+                        Text(
+                          '${r.used} used • ${r.allowed} allowed',
+                          style: TextStyle(color: Colors.grey.shade700),
+                        ),
                         const SizedBox(height: 8),
                         if (r.periodStart != null && r.periodEnd != null) ...[
                           Text(
                             'Period',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${_formatDate(r.periodStart!)} → ${_formatDate(r.periodEnd!)}',
-                            style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              color: Colors.grey.shade800,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                         if (r.note != null) ...[
                           const SizedBox(height: 8),
-                          Text(r.note!, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          Text(
+                            r.note!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
                         ],
                       ],
                     ),
@@ -241,15 +265,20 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF00D09E),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                       onPressed: () {
                         Navigator.pop(ctx);
                         // TODO: navigate to subscription/manage screen nếu cần
                       },
-                      child: const Text('Manage subscription', style: TextStyle(color: Colors.white)),
+                      child: const Text(
+                        'Manage subscription',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -338,7 +367,7 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
       experience: 'Professional Coach',
       imageUrl: apiCoach.avatarUrl,
       bio:
-      'Professional coach with expertise in helping people achieve their health goals.',
+          'Professional coach with expertise in helping people achieve their health goals.',
     );
   }
 
@@ -404,12 +433,19 @@ class RemainingPill extends StatelessWidget {
                   children: [
                     Text(
                       'Bookings left',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade800,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${remaining.used} used • ${remaining.allowed} allowed',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
@@ -438,9 +474,18 @@ class RemainingPillLoading extends StatelessWidget {
       ),
       child: Row(
         children: const [
-          SizedBox(width: 44, height: 44, child: CircularProgressIndicator(strokeWidth: 2)),
+          SizedBox(
+            width: 44,
+            height: 44,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
           SizedBox(width: 10),
-          Expanded(child: Text('Loading booking quota...', style: TextStyle(fontSize: 13))),
+          Expanded(
+            child: Text(
+              'Loading booking quota...',
+              style: TextStyle(fontSize: 13),
+            ),
+          ),
         ],
       ),
     );
@@ -468,12 +513,15 @@ class RemainingPillError extends StatelessWidget {
           const Icon(Icons.error_outline, size: 32, color: Colors.redAccent),
           const SizedBox(width: 10),
           Expanded(
-            child: Text('Could not load booking info', style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+            child: Text(
+              'Could not load booking info',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFF00D09E)),
             onPressed: onRetry,
-          )
+          ),
         ],
       ),
     );

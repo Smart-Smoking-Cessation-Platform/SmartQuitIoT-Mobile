@@ -283,6 +283,12 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
   Widget _buildAppBar(CoachDetail? detail) {
     final title = detail?.fullName ?? widget.coach.name ?? 'Coach';
     final avatarUrl = detail?.avatarUrl ?? (widget.coach.imageUrl ?? '');
+    final initials = title.isNotEmpty
+        ? title.split(' ').map((n) => n[0]).take(2).join().toUpperCase()
+        : '?';
+    final isValidUrl = avatarUrl.isNotEmpty &&
+        !avatarUrl.contains('example.com') &&
+        (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'));
 
     return SliverAppBar(
       expandedHeight: 280,
@@ -307,15 +313,56 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
             ),
           ),
           child: Center(
-            child: CircleAvatar(
-              radius: 60,
-              backgroundImage: avatarUrl.isNotEmpty
-                  ? NetworkImage(avatarUrl)
-                  : null,
-              child: avatarUrl.isEmpty
-                  ? const Icon(Icons.person, size: 56, color: Colors.white)
-                  : null,
-            ),
+            child: isValidUrl
+                ? CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: ClipOval(
+                      child: Image.network(
+                        avatarUrl,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            child: Text(
+                              initials,
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            child: const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 3,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                : CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -682,6 +729,7 @@ import 'package:SmartQuitIoT/views/screens/appointments/time_slot_grid.dart';
 import '../../../../models/slot_available.dart';
 import '../../../../models/coach_detail.dart';
 import '../../../providers/coach_detail_provider.dart';
+import '../../../providers/booking_provider.dart';
 import 'custom_button.dart';
 import 'info_row.dart';
 import '../../../models/request/appointment_request.dart';
@@ -952,6 +1000,12 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
   Widget _buildAppBar(CoachDetail? detail) {
     final title = detail?.fullName ?? widget.coach.name ?? 'Coach';
     final avatarUrl = detail?.avatarUrl ?? (widget.coach.imageUrl ?? '');
+    final initials = title.isNotEmpty
+        ? title.split(' ').map((n) => n[0]).take(2).join().toUpperCase()
+        : '?';
+    final isValidUrl = avatarUrl.isNotEmpty &&
+        !avatarUrl.contains('example.com') &&
+        (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'));
 
     return SliverAppBar(
       expandedHeight: 280,
@@ -976,11 +1030,56 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
             ),
           ),
           child: Center(
-            child: CircleAvatar(
-              radius: 60,
-              backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-              child: avatarUrl.isEmpty ? const Icon(Icons.person, size: 56, color: Colors.white) : null,
-            ),
+            child: isValidUrl
+                ? CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: ClipOval(
+                      child: Image.network(
+                        avatarUrl,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            child: Text(
+                              initials,
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            child: const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 3,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                : CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -1260,6 +1359,9 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
         availableSlots.removeWhere((s) => s.slotId == slotId);
         selectedSlot = null;
       });
+
+      // Refresh remaining booking quota sau khi booking thành công
+      ref.refresh(remainingBookingProvider);
 
       // Hiện dialog xác nhận — **không chuyển tới màn rating**
       showDialog(
