@@ -13,6 +13,8 @@ import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import '../../../models/state/auth_state.dart';
 import '../../../utils/notification_helper.dart';
 import 'package:SmartQuitIoT/providers/achievement_provider.dart';
+import 'package:SmartQuitIoT/providers/quit_plan_time_provider.dart';
+import 'package:SmartQuitIoT/providers/membership_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -100,6 +102,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
         ref.invalidate(allAchievementsProvider);
         ref.invalidate(homeAchievementsProvider);
+        // Clear quit plan time data to ensure fresh state
+        ref.invalidate(quitPlanTimeViewModelProvider);
+        // Clear membership data to ensure fresh state
+        ref.invalidate(membershipViewModelProvider);
+        ref.invalidate(currentSubscriptionProvider);
 
         // WebSocket will be initialized by MainNavigationScreen
         debugPrint(

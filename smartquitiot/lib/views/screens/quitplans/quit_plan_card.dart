@@ -152,6 +152,36 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
                   ],
                 ),
               ),
+              // Reload button
+              IconButton(
+                onPressed: state.isLoading
+                    ? null
+                    : () {
+                        print('🔄 [QuitPlanCard] Manual reload triggered');
+                        ref
+                            .read(quitPlanHomepageViewModelProvider.notifier)
+                            .loadQuitPlanHomePage();
+                      },
+                icon: state.isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF00D09E),
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.refresh,
+                        color: Color(0xFF00D09E),
+                        size: 20,
+                      ),
+                tooltip: 'Reload data',
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -208,10 +238,13 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
 
     final quitPlan = state.quitPlan!;
     final phaseTheme = resolvePhaseTheme(quitPlan.name);
+    final isCompleted = _isQuitPlanCompleted(quitPlan);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Congratulations Banner
+        if (isCompleted) _buildCongratulationsBanner(quitPlan, phaseTheme),
         // Header
         Row(
           children: [
@@ -561,26 +594,6 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
           value: _formatDateTime(quitPlan.createdAt),
           theme: phaseTheme,
         ),
-      _buildMetaChip(
-        icon: Icons.shield,
-        label: 'Keep Phase',
-        value: _formatBoolean(
-          quitPlan.keepPhase,
-          trueLabel: 'Allowed',
-          falseLabel: 'Disabled',
-        ),
-        theme: phaseTheme,
-      ),
-      _buildMetaChip(
-        icon: Icons.refresh,
-        label: 'Redo',
-        value: _formatBoolean(
-          quitPlan.redo,
-          trueLabel: 'Available',
-          falseLabel: 'Unavailable',
-        ),
-        theme: phaseTheme,
-      ),
     ];
 
     return Wrap(spacing: 10, runSpacing: 10, children: chips);
@@ -918,14 +931,6 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
     return _toTitleCase(normalized);
   }
 
-  String _formatBoolean(
-    bool value, {
-    String trueLabel = 'Yes',
-    String falseLabel = 'No',
-  }) {
-    return value ? trueLabel : falseLabel;
-  }
-
   String _formatDateTime(String? dateTimeString) {
     if (dateTimeString == null || dateTimeString.isEmpty) {
       return 'N/A';
@@ -959,5 +964,117 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
               : word[0].toUpperCase() + word.substring(1).toLowerCase(),
         )
         .join(' ');
+  }
+
+  /// Check if quit plan is completed
+  bool _isQuitPlanCompleted(QuitPlanHomePage plan) {
+    // Check if plan status is COMPLETED
+    if (plan.status.toUpperCase() == 'COMPLETED') {
+      return true;
+    }
+
+    // Check if progress is 100% (all missions completed)
+    if (plan.progress >= 100.0) {
+      return true;
+    }
+
+    // Check if current phase is Maintenance and all missions are completed
+    final currentPhase = plan.currentPhaseDetail;
+    final isMaintenancePhase = currentPhase.name.toLowerCase().contains(
+      'maintenance',
+    );
+    final allMissionsCompleted =
+        currentPhase.missionCompleted >= currentPhase.totalMission &&
+        currentPhase.totalMission > 0;
+
+    if (isMaintenancePhase && allMissionsCompleted) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Build congratulations banner when quit plan is completed
+  Widget _buildCongratulationsBanner(QuitPlanHomePage plan, PhaseTheme theme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.primaryColor, theme.primaryColor.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.primaryColor.withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Text('🎉', style: TextStyle(fontSize: 28)),
+              SizedBox(width: 8),
+              Text('🎆', style: TextStyle(fontSize: 24)),
+              SizedBox(width: 8),
+              Text('✨', style: TextStyle(fontSize: 20)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Congratulations!',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'You have successfully completed your quit plan!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.95),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            plan.name,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withOpacity(0.9),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Text(
+              'You are now smoke-free! Keep up the amazing work! 💪',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

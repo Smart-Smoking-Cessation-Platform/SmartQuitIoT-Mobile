@@ -13,7 +13,6 @@ import 'dart:convert';
 class AuthRepository {
   final AuthService _authService;
   final TokenStorageService _tokenStorageService;
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   AuthRepository({
     AuthService? authService,
@@ -60,32 +59,46 @@ class AuthRepository {
         throw AuthException('Password cannot be empty');
       }
 
-      print('🔐 [AuthRepository] Logging in...');
+      print('🔐 [AuthRepository] Starting login process...');
+
+      // Clear any existing tokens first to ensure fresh login
+      print('🧹 [AuthRepository] Clearing any existing tokens before login...');
+      await _tokenStorageService.clearTokens();
+
       final loginRequest = LoginRequest(
         usernameOrEmail: usernameOrEmail.trim(),
         password: password,
       );
       final loginResponse = await _authService.login(loginRequest);
 
-      print('💾 [AuthRepository] Saving tokens...');
+      print('💾 [AuthRepository] Saving NEW tokens from server...');
       print(
-        '   Access Token: ${loginResponse.accessToken.substring(0, 20)}...',
+        '   New Access Token: ${loginResponse.accessToken.substring(0, 20)}...',
       );
+
+      // Save new tokens (this will overwrite any existing tokens)
       await _tokenStorageService.saveTokens(
         loginResponse.accessToken,
         loginResponse.refreshToken,
       );
-      print('✅ [AuthRepository] Tokens saved successfully!');
+      print('✅ [AuthRepository] New tokens saved successfully!');
 
-      // Verify tokens were saved
+      // Verify tokens were saved and are the new ones
       final savedToken = await _tokenStorageService.getAccessToken();
-      print(
-        '🔍 [AuthRepository] Verifying saved token: ${savedToken?.substring(0, 20)}...',
-      );
+      if (savedToken != null && savedToken == loginResponse.accessToken) {
+        print(
+          '✅ [AuthRepository] Token verification passed: ${savedToken.substring(0, 20)}...',
+        );
+      } else {
+        print('❌ [AuthRepository] WARNING: Token verification failed!');
+        throw AuthException('Failed to save access token properly');
+      }
 
       return loginResponse;
     } catch (e) {
       print('❌ [AuthRepository] Login failed: $e');
+      // Clear tokens on login failure to ensure clean state
+      await _tokenStorageService.clearTokens();
       if (e is AuthException) {
         rethrow;
       }
@@ -102,21 +115,61 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
+    print('🚪 [AuthRepository] Starting logout process...');
     try {
+      // Get access token before clearing
       final accessToken = await _tokenStorageService.getAccessToken();
-      if (accessToken != null) {
-        await _authService.logout(accessToken);
+
+      // Try to notify backend (non-blocking - we clear tokens regardless)
+      if (accessToken != null && accessToken.isNotEmpty) {
+        try {
+          print('📡 [AuthRepository] Notifying backend of logout...');
+          await _authService.logout(accessToken);
+          print('✅ [AuthRepository] Backend logout successful');
+        } catch (e) {
+          // Log but don't fail - we still need to clear local tokens
+          print('⚠️ [AuthRepository] Backend logout failed (non-critical): $e');
+        }
+      } else {
+        print(
+          '⚠️ [AuthRepository] No access token found, skipping backend logout',
+        );
       }
+
+      // ALWAYS clear tokens locally, regardless of backend response
+      print('🗑️ [AuthRepository] Clearing local tokens...');
       await _tokenStorageService.clearTokens();
+
+      // Verify tokens are actually cleared
+      final verifyAccessToken = await _tokenStorageService.getAccessToken();
+      final verifyRefreshToken = await _tokenStorageService.getRefreshToken();
+
+      if (verifyAccessToken == null && verifyRefreshToken == null) {
+        print('✅ [AuthRepository] Logout successful - all tokens cleared');
+      } else {
+        print('❌ [AuthRepository] WARNING: Tokens may not be fully cleared!');
+        // Force clear again
+        await _tokenStorageService.clearTokens();
+      }
     } catch (e) {
+      // Even if everything fails, ensure tokens are cleared
+      print('❌ [AuthRepository] Logout error: $e - Force clearing tokens...');
       await _tokenStorageService.clearTokens();
-      throw AuthException('Logout failed: ${e.toString()}');
+      // Don't throw - logout should always succeed in clearing local tokens
+      print('✅ [AuthRepository] Tokens cleared despite error');
     }
   }
 
   Future<LoginResponse> loginWithGoogle() async {
     try {
-      print('[AuthRepository] Step 1: Starting Google Sign-In...');
+      print('🔐 [AuthRepository] Starting Google Sign-In...');
+
+      // Clear any existing tokens first to ensure fresh login
+      print(
+        '🧹 [AuthRepository] Clearing any existing tokens before Google login...',
+      );
+      await _tokenStorageService.clearTokens();
+
       final GoogleSignInAccount googleUser = await GoogleSignIn.instance
           .authenticate(
             scopeHint: [
@@ -135,15 +188,27 @@ class AuthRepository {
       final responseData = await _authService.loginWithGoogle(idToken);
       final loginResponse = LoginResponse.fromJson(responseData);
 
+      print('💾 [AuthRepository] Saving NEW tokens from Google login...');
       await _tokenStorageService.saveTokens(
         loginResponse.accessToken,
         loginResponse.refreshToken,
       );
-      print('[AuthRepository] Login successful!');
+
+      // Verify tokens were saved
+      final savedToken = await _tokenStorageService.getAccessToken();
+      if (savedToken != null && savedToken == loginResponse.accessToken) {
+        print('✅ [AuthRepository] Google login successful - tokens verified!');
+      } else {
+        print('❌ [AuthRepository] WARNING: Token verification failed!');
+        throw AuthException('Failed to save access token properly');
+      }
+
       return loginResponse;
     } catch (e) {
-      print('[AuthRepository] ERROR during Google sign-in: $e');
+      print('❌ [AuthRepository] ERROR during Google sign-in: $e');
       await GoogleSignIn.instance.signOut();
+      // Clear tokens on failure
+      await _tokenStorageService.clearTokens();
       throw AuthException('Google login failed: ${e.toString()}');
     }
   }

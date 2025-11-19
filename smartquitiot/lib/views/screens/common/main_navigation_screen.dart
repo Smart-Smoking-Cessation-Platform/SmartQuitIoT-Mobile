@@ -17,6 +17,8 @@ import 'package:SmartQuitIoT/views/screens/missions/today_mission_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/community_trending_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/recent_news_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/diary_record_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/create_quit_plan_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/leaderboard_card.dart';
 
 import 'package:SmartQuitIoT/views/screens/coach_chat/chat_screen.dart';
 import 'package:SmartQuitIoT/views/screens/diary/diary_screen.dart';
@@ -288,7 +290,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               ),
 
               const AchievementsCard(),
+              const LeaderboardCard(),
 
+              const CreateQuitPlanCard(),
               // Smart Quit Plan feature - Always show, but protected
               _buildPremiumProtectedCard(
                 subscription,

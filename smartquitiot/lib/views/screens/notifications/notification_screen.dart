@@ -216,20 +216,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   }
 
   String _formatNotificationTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return DateFormat('MMM d, y').format(dateTime);
-    }
+    final localDateTime = dateTime.toLocal();
+    final datePart = DateFormat('EEE, dd MMM yyyy').format(localDateTime);
+    final timePart = DateFormat('HH:mm').format(localDateTime);
+    return '$datePart • $timePart';
   }
 
   @override
@@ -603,8 +593,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
         icon: _getNotificationIcon(notification.type),
         iconColor: _getNotificationColor(notification.type),
         title: notification.title,
-        subtitle:
-            '${notification.content} • ${_formatNotificationTime(notification.createdAt)}',
+        subtitle: notification.content,
+        metadata: _formatNotificationTime(notification.createdAt),
         isUnread: !notification.isRead,
         forceHideBadge: forceHideBadge,
         onTap: () => _onTapNotification(notification),

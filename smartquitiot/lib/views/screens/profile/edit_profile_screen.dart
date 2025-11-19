@@ -24,9 +24,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController dobController = TextEditingController();
-  
+
   // Reminder settings controllers
-  final TextEditingController morningReminderTimeController = TextEditingController();
+  final TextEditingController morningReminderTimeController =
+      TextEditingController();
   final TextEditingController quietStartController = TextEditingController();
   final TextEditingController quietEndController = TextEditingController();
 
@@ -160,7 +161,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final quietStart = quietStartController.text.trim();
     final quietEnd = quietEndController.text.trim();
 
-    if (morningTime.isNotEmpty || quietStart.isNotEmpty || quietEnd.isNotEmpty) {
+    if (morningTime.isNotEmpty ||
+        quietStart.isNotEmpty ||
+        quietEnd.isNotEmpty) {
       // Validate all reminder fields are filled if any is filled
       if (morningTime.isEmpty || quietStart.isEmpty || quietEnd.isEmpty) {
         _showFlushbar('Please fill all reminder time fields', Colors.orange);
@@ -178,7 +181,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (mounted) {
         final reminderError = ref.read(reminderSettingsViewModelProvider).error;
         if (reminderError != null) {
-          _showFlushbar('Error updating reminder settings: $reminderError', Colors.red);
+          _showFlushbar(
+            'Error updating reminder settings: $reminderError',
+            Colors.red,
+          );
           return;
         }
       }
@@ -228,10 +234,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       lastNameController.text = user.lastName;
       dobController.text = user.dob;
       avatarUrl = user.avatarUrl;
-      
+
       // Populate reminder settings
       if (user.morningReminderTime != null) {
-        morningReminderTimeController.text = _formatTimeFromApi(user.morningReminderTime);
+        morningReminderTimeController.text = _formatTimeFromApi(
+          user.morningReminderTime,
+        );
       }
       if (user.quietStart != null) {
         quietStartController.text = _formatTimeFromApi(user.quietStart);
@@ -276,13 +284,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.notifications_outlined,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {},
-                    ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
@@ -313,25 +315,25 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   fit: BoxFit.cover,
                                 )
                               : (avatarUrl != null && avatarUrl!.isNotEmpty)
-                                  ? _buildNetworkAvatar(formatAvatarUrl(avatarUrl!))
-                                  : Image.asset(
-                                      "lib/assets/images/profile.png",
+                              ? _buildNetworkAvatar(formatAvatarUrl(avatarUrl!))
+                              : Image.asset(
+                                  "lib/assets/images/profile.png",
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
                                       width: 100,
                                       height: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          width: 100,
-                                          height: 100,
-                                          color: Colors.grey[200],
-                                          child: const Icon(
-                                            Icons.person,
-                                            size: 50,
-                                            color: Colors.grey,
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                      color: Colors.grey[200],
+                                      child: const Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  },
+                                ),
                         ),
                       ),
                       Positioned(
@@ -498,7 +500,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               TextFormField(
                                 controller: morningReminderTimeController,
                                 readOnly: true,
-                                onTap: () => _selectTime(context, morningReminderTimeController),
+                                onTap: () => _selectTime(
+                                  context,
+                                  morningReminderTimeController,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: "Morning Reminder Time",
                                   hintText: "HH:mm",
@@ -511,7 +516,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   ),
                                 ),
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[0-9:]'),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 15),
@@ -520,7 +527,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               TextFormField(
                                 controller: quietStartController,
                                 readOnly: true,
-                                onTap: () => _selectTime(context, quietStartController),
+                                onTap: () =>
+                                    _selectTime(context, quietStartController),
                                 decoration: InputDecoration(
                                   labelText: "Quiet Start Time",
                                   hintText: "HH:mm",
@@ -533,7 +541,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   ),
                                 ),
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[0-9:]'),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 15),
@@ -542,7 +552,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               TextFormField(
                                 controller: quietEndController,
                                 readOnly: true,
-                                onTap: () => _selectTime(context, quietEndController),
+                                onTap: () =>
+                                    _selectTime(context, quietEndController),
                                 decoration: InputDecoration(
                                   labelText: "Quiet End Time",
                                   hintText: "HH:mm",
@@ -555,7 +566,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   ),
                                 ),
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[0-9:]'),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 25),
@@ -564,7 +577,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: (isUpdating || _isUploadingAvatar || isUpdatingReminder)
+                                  onPressed:
+                                      (isUpdating ||
+                                          _isUploadingAvatar ||
+                                          isUpdatingReminder)
                                       ? null
                                       : _updateProfile,
                                   style: ElevatedButton.styleFrom(
@@ -577,7 +593,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     ),
                                     disabledBackgroundColor: Colors.grey[400],
                                   ),
-                                  child: (isUpdating || _isUploadingAvatar || isUpdatingReminder)
+                                  child:
+                                      (isUpdating ||
+                                          _isUploadingAvatar ||
+                                          isUpdatingReminder)
                                       ? const Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
@@ -667,19 +686,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final uri = Uri.parse(url);
       final encodedUrl = uri.toString();
-      
+
       return Image.network(
         encodedUrl,
         width: 100,
         height: 100,
         fit: BoxFit.cover,
-        headers: {
-          'Accept': 'image/*',
-        },
+        headers: {'Accept': 'image/*'},
         errorBuilder: (context, error, stackTrace) {
           print('❌ [EditProfileScreen] Error loading avatar: $error');
           print('❌ [EditProfileScreen] URL: $url');
-          
+
           // Fallback: Try loading with http package
           return FutureBuilder<http.Response>(
             future: http.get(Uri.parse(url)),
@@ -697,7 +714,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                 );
               }
-              
+
               if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                 return Image.memory(
                   snapshot.data!.bodyBytes,
@@ -706,16 +723,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   fit: BoxFit.cover,
                 );
               }
-              
+
               return Container(
                 width: 100,
                 height: 100,
                 color: Colors.grey[200],
-                child: const Icon(
-                  Icons.person,
-                  size: 50,
-                  color: Colors.grey,
-                ),
+                child: const Icon(Icons.person, size: 50, color: Colors.grey),
               );
             },
           );
@@ -741,11 +754,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         width: 100,
         height: 100,
         color: Colors.grey[200],
-        child: const Icon(
-          Icons.person,
-          size: 50,
-          color: Colors.grey,
-        ),
+        child: const Icon(Icons.person, size: 50, color: Colors.grey),
       );
     }
   }

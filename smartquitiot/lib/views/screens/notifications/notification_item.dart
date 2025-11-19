@@ -12,6 +12,7 @@ class NotificationItem extends StatelessWidget {
   final String? progress;
   final bool isUnread;
   final bool forceHideBadge; // Hide badge even if isUnread (for Read tab)
+  final String? metadata;
 
   const NotificationItem({
     super.key,
@@ -26,6 +27,7 @@ class NotificationItem extends StatelessWidget {
     this.progress,
     this.isUnread = false,
     this.forceHideBadge = false,
+    this.metadata,
   });
 
   @override
@@ -162,6 +164,29 @@ class NotificationItem extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (metadata != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Colors.grey[500],
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            metadata!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  isUnread ? Colors.grey[700] : Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   // "Tap to mark as read" hint for unread notifications
                   // Hidden in Read tab via forceHideBadge
                   if (isUnread && !forceHideBadge) ...[
