@@ -26,12 +26,16 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   int selectedPhaseIndex = 0;
   int selectedDayIndex = 0;
   final Set<int> locallyCompletedMissionIds = <int>{};
-  final Set<int> _shownFailedPhaseDialogs =
-      <int>{}; // Track phases that already showed dialog
   final Set<int> _notifiedNewPhases =
       <int>{}; // Track new phases that already showed notification
   List<QuitPhaseDetail>?
   _previousPhases; // Track previous phases to detect new ones
+
+  int? _phaseActionInProgressId;
+  String? _phaseActionInProgressType;
+
+  static const String _phaseActionKeepKey = 'keep';
+  static const String _phaseActionRedoKey = 'redo';
 
   void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
     showDialog(
@@ -65,6 +69,122 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       borderRadius: BorderRadius.circular(8),
       flushbarPosition: FlushbarPosition.TOP,
     ).show(context);
+  }
+
+  void _setPhaseActionLoading(int? phaseId, String? actionKey) {
+    if (!mounted) return;
+    setState(() {
+      _phaseActionInProgressId = phaseId;
+      _phaseActionInProgressType = actionKey;
+    });
+  }
+
+  bool _isPhaseActionLoading(int? phaseId, String actionKey) {
+    return _phaseActionInProgressId == phaseId &&
+        _phaseActionInProgressType == actionKey;
+  }
+
+  bool get _hasPhaseActionInProgress =>
+      _phaseActionInProgressId != null && _phaseActionInProgressType != null;
+
+  Future<T> _withBlockingLoader<T>(
+    Future<T> Function() task, {
+    String message = 'Processing...',
+  }) async {
+    if (!mounted) {
+      return await task();
+    }
+
+    bool overlayOpen = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      barrierColor: Colors.black.withOpacity(0.35),
+      builder: (_) => WillPopScope(
+        onWillPop: () async => false,
+        child: _BlockingLoader(message: message),
+      ),
+    ).whenComplete(() {
+      overlayOpen = false;
+    });
+
+    try {
+      return await task();
+    } finally {
+      if (overlayOpen && mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+  }
+
+  Future<void> _handleKeepPhaseAction(
+    QuitPhase plan,
+    QuitPhaseDetail phase,
+  ) async {
+    final planId = plan.id;
+    final phaseId = phase.id;
+    if (planId == null || phaseId == null) {
+      _showSnack('Missing phase information.', isError: true);
+      return;
+    }
+
+    _setPhaseActionLoading(phaseId, _phaseActionKeepKey);
+
+    try {
+      await _withBlockingLoader(() async {
+        await ref
+            .read(quitPlanViewModelApiProvider.notifier)
+            .keepPhase(quitPlanId: planId, phaseId: phaseId);
+      });
+      if (!mounted) return;
+      _showSnack('Phase kept successfully.');
+      await Future.delayed(const Duration(seconds: 5));
+      ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+    } catch (e) {
+      _showSnack('Keep phase failed: ${_errorMessage(e)}', isError: true);
+    } finally {
+      _setPhaseActionLoading(null, null);
+    }
+  }
+
+  Future<void> _handleRedoPhaseAction(QuitPhaseDetail phase) async {
+    final phaseId = phase.id;
+    if (phaseId == null) {
+      _showSnack('Missing phase information.', isError: true);
+      return;
+    }
+
+    final now = DateTime.now();
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(const Duration(days: 365)),
+      helpText: 'Choose restart date',
+    );
+
+    if (selectedDate == null) {
+      return;
+    }
+
+    final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
+    _setPhaseActionLoading(phaseId, _phaseActionRedoKey);
+
+    try {
+      await _withBlockingLoader(() async {
+        await ref
+            .read(quitPlanViewModelApiProvider.notifier)
+            .redoPhase(phaseId: phaseId, anchorStart: formattedDate);
+      });
+      if (!mounted) return;
+      _showSnack('Phase restarted from $formattedDate.');
+      ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+    } catch (e) {
+      _showSnack('Redo phase failed: ${_errorMessage(e)}', isError: true);
+    } finally {
+      _setPhaseActionLoading(null, null);
+    }
   }
 
   /// Check if there's a new phase created after a failed phase (redo scenario)
@@ -195,8 +315,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     ref.listen(missionRefreshProvider, (previous, next) {
       if (previous != null && previous != next) {
         print('🔄 [QuitPlanScreen] Refresh triggered - reloading quit plan...');
-        // Reset failed phase dialogs when refreshing to allow re-showing if phase is still failed
-        _shownFailedPhaseDialogs.clear();
         ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
       }
     });
@@ -502,6 +620,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
             ? (completedMissions / totalMissions)
             : 0.0;
         final phasePercent = (phaseProgress * 100).toInt();
+        final shouldShowFailedActions =
+            _isFailedStatus(phase.status) && !(phase.keepPhase ?? false);
+        final shouldShowKeptBanner =
+            _isFailedStatus(phase.status) && (phase.keepPhase ?? false);
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -632,6 +754,23 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                   ),
                 ),
               ),
+              if (isExpanded && shouldShowFailedActions) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: _buildFailedPhaseActionsInline(
+                    plan,
+                    phase,
+                    phaseTheme,
+                  ),
+                ),
+              ] else if (shouldShowKeptBanner) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: _buildKeptPhaseBanner(phaseTheme),
+                ),
+              ],
               if (isExpanded) _buildPhaseDetails(plan, phase, phaseTheme),
             ],
           ),
@@ -646,48 +785,12 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     PhaseTheme theme,
   ) {
     final days = phase.details ?? [];
-    final isFailed = _isFailedStatus(phase.status);
-    final phaseId = phase.id ?? -1;
-
-    // Always show banner when phase failed
-    final shouldShowBanner = isFailed;
-
-    // Get all phases to check if new phase exists after failed phase
-    final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
-    List<QuitPhaseDetail> allPhases = [];
-    quitPhaseState.when(
-      data: (quitPhase) {
-        if (quitPhase != null && quitPhase.phases != null) {
-          allPhases = quitPhase.phases!;
-        }
-      },
-      loading: () {},
-      error: (_, __) {},
-    );
-
-    // Check if there's a new phase after this failed phase (redo scenario)
-    final hasNewPhaseAfterFailed = _hasNewPhaseAfterFailed(phase, allPhases);
-
-    // Auto-show dialog when phase failed for the first time (when phase is expanded)
-    // BUT only if there's no new phase created after it (no redo happened)
-    if (isFailed &&
-        phaseId != -1 &&
-        !_shownFailedPhaseDialogs.contains(phaseId) &&
-        !hasNewPhaseAfterFailed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_shownFailedPhaseDialogs.contains(phaseId)) {
-          _shownFailedPhaseDialogs.add(phaseId);
-          _showFailedPhaseDialog(plan, phase, theme);
-        }
-      });
-    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (shouldShowBanner) _buildFailedPhaseBanner(plan, phase, theme),
           if ((phase.reason ?? '').isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.all(12),
@@ -931,7 +1034,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
 
             const SizedBox(height: 12),
             if (selectedDayIndex < days.length)
-              _buildMissionsList(days[selectedDayIndex].missions ?? [], theme),
+              _buildMissionsList(days[selectedDayIndex], theme),
           ],
         ],
       ),
@@ -962,7 +1065,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     });
   }
 
-  Widget _buildMissionsList(List<QuitMissionItem> missions, PhaseTheme theme) {
+  Widget _buildMissionsList(QuitDay day, PhaseTheme theme) {
+    final missions = day.missions ?? [];
     if (missions.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(20),
@@ -970,26 +1074,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       );
     }
 
-    // Get the current selected day to check if it's today and if all missions are completed
-    final quitPhaseState = ref.read(quitPlanViewModelApiProvider);
-    String? selectedDayDate;
-    quitPhaseState.when(
-      data: (quitPhase) {
-        if (quitPhase != null &&
-            quitPhase.phases != null &&
-            selectedPhaseIndex < quitPhase.phases!.length) {
-          final currentPhase = quitPhase.phases![selectedPhaseIndex];
-          final days = currentPhase.details ?? [];
-          if (selectedDayIndex < days.length) {
-            selectedDayDate = days[selectedDayIndex].date;
-          }
-        }
-      },
-      loading: () {},
-      error: (error, stack) {},
-    );
-
-    final isSelectedDayToday = _isToday(selectedDayDate);
+    final isSelectedDayToday = _isToday(day.date);
     final allMissionsCompleted = _areAllMissionsCompleted(missions);
     final showCongratulations = isSelectedDayToday && allMissionsCompleted;
 
@@ -1355,36 +1440,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       );
     }
 
-    if (phase.keepPhase != null) {
-      chips.add(
-        _buildInfoChip(
-          icon: Icons.shield,
-          label: 'Keep Phase',
-          value: _formatBoolean(
-            phase.keepPhase!,
-            trueLabel: 'Allowed',
-            falseLabel: 'Disabled',
-          ),
-          theme: theme,
-        ),
-      );
-    }
-
-    if (phase.redo != null) {
-      chips.add(
-        _buildInfoChip(
-          icon: Icons.refresh,
-          label: 'Redo',
-          value: _formatBoolean(
-            phase.redo!,
-            trueLabel: 'Available',
-            falseLabel: 'Unavailable',
-          ),
-          theme: theme,
-        ),
-      );
-    }
-
     if (chips.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -1439,53 +1494,125 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
-  Widget _buildFailedPhaseBanner(
+  Widget _buildFailedPhaseActionsInline(
     QuitPhase plan,
     QuitPhaseDetail phase,
     PhaseTheme theme,
   ) {
+    final phaseId = phase.id;
+    final keepLoading = _isPhaseActionLoading(phaseId, _phaseActionKeepKey);
+    final redoLoading = _isPhaseActionLoading(phaseId, _phaseActionRedoKey);
+    final actionsDisabled = _hasPhaseActionInProgress || phaseId == null;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.redAccent.withOpacity(0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Text('😞', style: TextStyle(fontSize: 20)),
-              SizedBox(width: 8),
-              Text(
-                'Oh no! Phase failed',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.redAccent,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.error_outline, color: Colors.redAccent),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Phase failed',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.redAccent.shade400,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Choose how you want to continue your quit journey.',
+                      style: TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Action required',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.redAccent.shade400,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'This phase did not meet the exit criteria. You can choose to keep your progress or restart with a new anchor date.',
-            style: TextStyle(fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              onPressed: () => _showFailedPhaseDialog(plan, phase, theme),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.center,
+            runAlignment: WrapAlignment.center,
+            children: [
+              _buildActionCard(
+                title: 'Keep Phase',
+                description: 'Preserve all missions and continue',
+                icon: Icons.layers_outlined,
+                color: const Color(0xFF10B981),
+                onTap: actionsDisabled
+                    ? null
+                    : () => _handleKeepPhaseAction(plan, phase),
+                isLoading: keepLoading,
+                theme: theme,
               ),
-              icon: const Icon(Icons.build),
-              label: const Text('Review options'),
-            ),
+              _buildActionCard(
+                title: 'Redo Phase',
+                description: 'Restart with a fresh anchor date',
+                icon: Icons.restart_alt,
+                color: const Color(0xFF0EA5E9),
+                onTap: actionsDisabled
+                    ? null
+                    : () => _handleRedoPhaseAction(phase),
+                isLoading: redoLoading,
+                theme: theme,
+              ),
+              _buildActionCard(
+                title: 'New Plan',
+                description: 'Start a brand new quit journey',
+                icon: Icons.auto_awesome,
+                color: const Color(0xFF8B5CF6),
+                onTap: _hasPhaseActionInProgress
+                    ? null
+                    : () => _showCreateNewPlanDialog(theme),
+                isLoading: false,
+                theme: theme,
+              ),
+            ],
           ),
         ],
       ),
@@ -1493,109 +1620,85 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   }
 
   Widget _buildActionCard({
-    required IconData icon,
     required String title,
     required String description,
+    required IconData icon,
     required Color color,
     required VoidCallback? onTap,
     required bool isLoading,
     required PhaseTheme theme,
-    bool isPrimary = false,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: isLoading ? null : onTap,
-        borderRadius: BorderRadius.circular(16),
+    final effectiveBorderColor = isLoading
+        ? Colors.grey.shade300
+        : color.withOpacity(0.4);
+    final titleColor = color;
+    final descriptionColor = color.withOpacity(0.75);
+
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isLoading ? 0.6 : 1,
         child: Container(
+          width: 260,
+          constraints: const BoxConstraints(minHeight: 130),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isLoading ? Colors.grey.shade300 : color.withOpacity(0.3),
-              width: 1.5,
-            ),
-            boxShadow: isLoading
-                ? []
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                      spreadRadius: 0,
-                    ),
-                  ],
+            border: Border.all(color: effectiveBorderColor, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.12),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon in circular background
               Container(
-                width: 48,
-                height: 48,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
-                  color: isLoading
-                      ? Colors.grey.shade200
-                      : color.withOpacity(0.12),
-                  shape: BoxShape.circle,
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                child: isLoading
-                    ? Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
+                child: Center(
+                  child: isLoading
+                      ? SizedBox(
+                          width: 26,
+                          height: 26,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
                             valueColor: AlwaysStoppedAnimation<Color>(color),
                           ),
-                        ),
-                      )
-                    : Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isLoading
-                            ? Colors.grey.shade400
-                            : Colors.black87,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: isLoading
-                            ? Colors.grey.shade400
-                            : Colors.black54,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
+                        )
+                      : Icon(icon, color: color, size: 26),
                 ),
               ),
-              if (!isLoading)
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: color,
-                    size: 14,
-                  ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: titleColor,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: descriptionColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -1603,336 +1706,43 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
-  Future<void> _showFailedPhaseDialog(
-    QuitPhase plan,
-    QuitPhaseDetail phase,
-    PhaseTheme theme,
-  ) async {
-    final planId = plan.id;
-    final phaseId = phase.id;
-    if (planId == null || phaseId == null) {
-      _showSnack('Missing phase information.', isError: true);
-      return;
-    }
-
-    String? processingAction;
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> setProcessing(String? action) async {
-              setDialogState(() {
-                processingAction = action;
-              });
-            }
-
-            Future<void> handleKeepPhase() async {
-              await setProcessing('keep');
-              try {
-                await ref
-                    .read(quitPlanViewModelApiProvider.notifier)
-                    .keepPhase(quitPlanId: planId, phaseId: phaseId);
-                if (!mounted) return;
-                Navigator.of(context).pop();
-                _showSnack('Phase kept successfully.');
-                // Wait 5 seconds for backend cron job to update data
-                await Future.delayed(const Duration(seconds: 5));
-                // Refresh quit plan data
-                ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
-              } catch (e) {
-                await setProcessing(null);
-                _showSnack(
-                  'Keep phase failed: ${_errorMessage(e)}',
-                  isError: true,
-                );
-              }
-            }
-
-            Future<void> handleRedoPhase() async {
-              await setProcessing('redo');
-              final now = DateTime.now();
-              final selectedDate = await showDatePicker(
-                context: context,
-                initialDate: now,
-                firstDate: DateTime(now.year, now.month, now.day),
-                lastDate: now.add(const Duration(days: 365)),
-                helpText: 'Choose restart date',
-              );
-
-              if (selectedDate == null) {
-                await setProcessing(null);
-                return;
-              }
-
-              final formattedDate = DateFormat(
-                'yyyy-MM-dd',
-              ).format(selectedDate);
-
-              try {
-                await ref
-                    .read(quitPlanViewModelApiProvider.notifier)
-                    .redoPhase(phaseId: phaseId, anchorStart: formattedDate);
-                if (!mounted) return;
-                Navigator.of(context).pop();
-                _showSnack('Phase restarted from $formattedDate.');
-                // Refresh quit plan data
-                ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
-              } catch (e) {
-                await setProcessing(null);
-                _showSnack(
-                  'Redo phase failed: ${_errorMessage(e)}',
-                  isError: true,
-                );
-              }
-            }
-
-            Future<void> handleCreateNewPlan() async {
-              await setProcessing('create');
-              Navigator.of(
-                context,
-              ).pop(); // Close the failed phase dialog first
-
-              // Show create new plan dialog
-              if (!mounted) return;
-              await _showCreateNewPlanDialog(theme);
-              await setProcessing(null);
-            }
-
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: 400,
-                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+  Widget _buildKeptPhaseBanner(PhaseTheme theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.primaryColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.primaryColor.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withOpacity(0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.done_all, color: theme.primaryColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Phase kept',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                      spreadRadius: 0,
-                    ),
-                  ],
+                SizedBox(height: 4),
+                Text(
+                  'Continue with your saved progress. Actions are no longer needed.',
+                  style: TextStyle(fontSize: 12),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Section - White background
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 16, 18),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(24),
-                          topRight: Radius.circular(24),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEEAEA),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(
-                              Icons.warning_amber_rounded,
-                              color: Colors.redAccent[700],
-                              size: 26,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Phase Failed',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Choose your next action',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black54,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.close_rounded,
-                                color: Colors.black54,
-                                size: 18,
-                              ),
-                            ),
-                            onPressed: processingAction == null
-                                ? () => Navigator.of(context).pop()
-                                : null,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Content Section with scroll
-                    Flexible(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Info Message
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE3F2FD),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFF90CAF9,
-                                  ).withOpacity(0.4),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFF2196F3,
-                                      ).withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.info_outline_rounded,
-                                      color: Color(0xFF1976D2),
-                                      size: 18,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'This phase did not meet the exit criteria. Select an option below to continue your journey.',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.blue.shade900,
-                                        height: 1.4,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            // Action Options
-                            // Keep Phase Option
-                            _buildActionCard(
-                              icon: Icons.shield_outlined,
-                              title: 'Keep Phase',
-                              description:
-                                  'Preserve your current progress and continue',
-                              color: const Color(0xFF00D09E),
-                              onTap: processingAction == null
-                                  ? handleKeepPhase
-                                  : null,
-                              isLoading: processingAction == 'keep',
-                              theme: theme,
-                            ),
-                            const SizedBox(height: 12),
-                            // Redo Phase Option
-                            _buildActionCard(
-                              icon: Icons.refresh_outlined,
-                              title: 'Redo Phase',
-                              description:
-                                  'Restart this phase with a new anchor date',
-                              color: const Color(0xFF3B82F6),
-                              onTap: processingAction == null
-                                  ? handleRedoPhase
-                                  : null,
-                              isLoading: processingAction == 'redo',
-                              theme: theme,
-                            ),
-                            const SizedBox(height: 12),
-                            // Create New Plan Option
-                            _buildActionCard(
-                              icon: Icons.add_circle_outline,
-                              title: 'Create New Plan',
-                              description:
-                                  'Start fresh with a completely new quit plan',
-                              color: theme.primaryColor,
-                              onTap: processingAction == null
-                                  ? handleCreateNewPlan
-                                  : null,
-                              isLoading: processingAction == 'create',
-                              theme: theme,
-                              isPrimary: true,
-                            ),
-                            const SizedBox(height: 18),
-                            // Cancel Button
-                            Center(
-                              child: TextButton(
-                                onPressed: processingAction == null
-                                    ? () => Navigator.of(context).pop()
-                                    : null,
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 28,
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2003,9 +1813,11 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                   quitPlanName: nameController.text.trim(),
                 );
 
-                await ref
-                    .read(quitPlanViewModelProvider.notifier)
-                    .createNewPlan(request);
+                await _withBlockingLoader(() async {
+                  await ref
+                      .read(quitPlanViewModelProvider.notifier)
+                      .createNewPlan(request);
+                }, message: 'Creating quit plan...');
 
                 if (!mounted) return;
 
@@ -2493,12 +2305,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
-  String _formatBoolean(
-    bool value, {
-    String trueLabel = 'Yes',
-    String falseLabel = 'No',
-  }) => value ? trueLabel : falseLabel;
-
   String _formatDateTime(String? dateTime) {
     if (dateTime == null || dateTime.isEmpty) return 'N/A';
     try {
@@ -2659,9 +2465,11 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
           triggered: formMetricData.triggered,
         );
 
-        final response = await ref
-            .read(formMetricViewModelProvider.notifier)
-            .updateFormMetric(request: request);
+        final response = await _withBlockingLoader(() async {
+          return await ref
+              .read(formMetricViewModelProvider.notifier)
+              .updateFormMetric(request: request);
+        }, message: 'Saving form metric...');
 
         if (response != null && mounted) {
           _showSnack('Form metric created successfully! ✅');
@@ -2677,5 +2485,48 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
         }
       }
     }
+  }
+}
+
+class _BlockingLoader extends StatelessWidget {
+  final String message;
+
+  const _BlockingLoader({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.75),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 42,
+                height: 42,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

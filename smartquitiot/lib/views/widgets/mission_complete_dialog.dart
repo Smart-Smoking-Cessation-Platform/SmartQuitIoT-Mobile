@@ -25,7 +25,8 @@ class MissionCompleteDialog extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<MissionCompleteDialog> createState() => _MissionCompleteDialogState();
+  ConsumerState<MissionCompleteDialog> createState() =>
+      _MissionCompleteDialogState();
 }
 
 class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
@@ -38,7 +39,7 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(missionCompleteViewModelProvider.notifier).reset();
     });
-    
+
     // Check if mission requires triggers
     if (MissionTriggers.requiresTriggers(widget.missionCode)) {
       _canComplete = false;
@@ -54,22 +55,59 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
     }
   }
 
+  Future<T> _withBlockingLoader<T>(
+    Future<T> Function() task, {
+    String message = 'Processing...',
+  }) async {
+    if (!mounted) {
+      return await task();
+    }
+
+    bool overlayOpen = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      barrierColor: Colors.black.withOpacity(0.35),
+      builder: (_) => WillPopScope(
+        onWillPop: () async => false,
+        child: _MissionBlockingLoader(message: message),
+      ),
+    ).whenComplete(() {
+      overlayOpen = false;
+    });
+
+    try {
+      return await task();
+    } finally {
+      if (overlayOpen && mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+  }
+
   Future<void> _completeMission() async {
-    final requiresTriggers = MissionTriggers.requiresTriggers(widget.missionCode);
-    
-    final success = await ref.read(missionCompleteViewModelProvider.notifier).completeMission(
-      phaseId: widget.phaseId,
-      phaseDetailMissionId: widget.phaseDetailMissionId,
-      requiresTriggers: requiresTriggers,
+    final requiresTriggers = MissionTriggers.requiresTriggers(
+      widget.missionCode,
     );
+
+    final success = await _withBlockingLoader<bool>(() async {
+      return await ref
+          .read(missionCompleteViewModelProvider.notifier)
+          .completeMission(
+            phaseId: widget.phaseId,
+            phaseDetailMissionId: widget.phaseDetailMissionId,
+            requiresTriggers: requiresTriggers,
+          );
+    }, message: 'Submitting mission...');
 
     if (success && mounted) {
       // Trigger refresh for today missions
       ref.read(missionRefreshProvider.notifier).refreshTodayMissions();
-      
+
       // Close current dialog
       Navigator.of(context).pop();
-      
+
       // Show success dialog
       showDialog(
         context: context,
@@ -87,7 +125,9 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(missionCompleteViewModelProvider);
-    final requiresTriggers = MissionTriggers.requiresTriggers(widget.missionCode);
+    final requiresTriggers = MissionTriggers.requiresTriggers(
+      widget.missionCode,
+    );
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -174,7 +214,7 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
                 ],
               ),
             ),
-            
+
             // Trigger Selection (if required)
             if (requiresTriggers) ...[
               const SizedBox(height: 20),
@@ -200,15 +240,16 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         state.error!,
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 12,
-                        ),
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
                       ),
                     ),
                   ],
@@ -223,7 +264,9 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: state.isLoading ? null : () => Navigator.of(context).pop(),
+                    onPressed: state.isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       side: BorderSide(color: Colors.grey[300]!),
@@ -243,7 +286,9 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: (state.isLoading || !_canComplete) ? null : _completeMission,
+                    onPressed: (state.isLoading || !_canComplete)
+                        ? null
+                        : _completeMission,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00D09E),
                       foregroundColor: Colors.white,
@@ -259,7 +304,9 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Text(
@@ -278,5 +325,47 @@ class _MissionCompleteDialogState extends ConsumerState<MissionCompleteDialog> {
       ),
     );
   }
+}
 
+class _MissionBlockingLoader extends StatelessWidget {
+  final String message;
+
+  const _MissionBlockingLoader({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.75),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 42,
+                height: 42,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
