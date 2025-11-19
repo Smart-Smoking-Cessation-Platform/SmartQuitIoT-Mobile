@@ -1055,6 +1055,20 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     }
   }
 
+  bool _isPastOrToday(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return false;
+    try {
+      final date = DateTime.parse(dateString);
+      final targetDate = DateTime(date.year, date.month, date.day);
+      final today = DateTime.now();
+      final todayDate = DateTime(today.year, today.month, today.day);
+      return targetDate.isBefore(todayDate) ||
+          targetDate.isAtSameMomentAs(todayDate);
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Check if all missions for a day are completed
   bool _areAllMissionsCompleted(List<QuitMissionItem> missions) {
     if (missions.isEmpty) return false;
@@ -1075,6 +1089,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     }
 
     final isSelectedDayToday = _isToday(day.date);
+    final isDayAvailableForCompletion = _isPastOrToday(day.date);
     final allMissionsCompleted = _areAllMissionsCompleted(missions);
     final showCongratulations = isSelectedDayToday && allMissionsCompleted;
 
@@ -1188,7 +1203,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: isSelectedDayToday
+                      onPressed: isDayAvailableForCompletion
                           ? () {
                               final quitPhaseState = ref.read(
                                 quitPlanViewModelApiProvider,
@@ -1213,7 +1228,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                             }
                           : null,
                       style: TextButton.styleFrom(
-                        backgroundColor: isSelectedDayToday
+                        backgroundColor: isDayAvailableForCompletion
                             ? theme.primaryColor
                             : Colors.grey,
                         foregroundColor: Colors.white,
@@ -1226,7 +1241,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                         ),
                       ),
                       child: Text(
-                        isSelectedDayToday
+                        isDayAvailableForCompletion
                             ? 'Complete Mission'
                             : 'Not Available Yet',
                       ),

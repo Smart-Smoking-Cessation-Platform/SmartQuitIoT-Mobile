@@ -1048,6 +1048,20 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     }
   }
 
+  bool _isPastOrToday(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return false;
+    try {
+      final date = DateTime.parse(dateString);
+      final targetDate = DateTime(date.year, date.month, date.day);
+      final today = DateTime.now();
+      final todayDate = DateTime(today.year, today.month, today.day);
+      return targetDate.isBefore(todayDate) ||
+          targetDate.isAtSameMomentAs(todayDate);
+    } catch (_) {
+      return false;
+    }
+  }
+
   bool _areAllMissionsCompleted(List<QuitMissionItem> missions) {
     if (missions.isEmpty) return false;
     return missions.every((mission) {
@@ -1071,6 +1085,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     }
 
     final isSelectedDayToday = _isToday(day.date);
+    final isDayAvailableForCompletion = _isPastOrToday(day.date);
     final allMissionsCompleted = _areAllMissionsCompleted(missions);
     final showCongratulations = isSelectedDayToday && allMissionsCompleted;
 
@@ -1184,11 +1199,11 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: isSelectedDayToday && phase.id != null
+                      onPressed: isDayAvailableForCompletion && phase.id != null
                           ? () => _showMissionCompleteDialog(mission, phase.id!)
                           : null,
                       style: TextButton.styleFrom(
-                        backgroundColor: isSelectedDayToday
+                        backgroundColor: isDayAvailableForCompletion
                             ? theme.primaryColor
                             : Colors.grey,
                         foregroundColor: Colors.white,
@@ -1201,7 +1216,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                         ),
                       ),
                       child: Text(
-                        isSelectedDayToday
+                        isDayAvailableForCompletion
                             ? 'Complete Mission'
                             : 'Not Available Yet',
                       ),
