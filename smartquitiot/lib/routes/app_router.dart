@@ -10,6 +10,7 @@ import 'package:SmartQuitIoT/views/screens/posts/post_list_screen.dart';
 import 'package:SmartQuitIoT/views/screens/posts/my_posts_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
 import 'package:SmartQuitIoT/views/screens/profile/edit_profile_screen.dart';
+import 'package:SmartQuitIoT/views/screens/quitplans/create_quit_plan_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -85,6 +86,10 @@ final GoRouter appRouter = GoRouter(
         }
         return PostDetailScreen(postId: id);
       },
+    ),
+    GoRoute(
+      path: '/quit-plan/create',
+      builder: (context, state) => const CreateQuitPlanScreen(),
     ),
 
     GoRoute(
