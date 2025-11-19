@@ -58,14 +58,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.notifications_outlined,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),

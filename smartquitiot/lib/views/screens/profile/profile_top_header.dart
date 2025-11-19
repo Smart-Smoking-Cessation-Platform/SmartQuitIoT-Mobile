@@ -4,9 +4,8 @@ import 'package:go_router/go_router.dart';
 // ---------------- Header (Back + Notification) ----------------
 class ProfileTopHeader extends StatelessWidget {
   final VoidCallback? onBackTap;
-  final VoidCallback? onNotificationTap;
 
-  const ProfileTopHeader({super.key, this.onBackTap, this.onNotificationTap});
+  const ProfileTopHeader({super.key, this.onBackTap});
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +28,7 @@ class ProfileTopHeader extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-            onPressed: onNotificationTap,
-          ),
+          const SizedBox(width: 48),
         ],
       ),
     );

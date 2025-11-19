@@ -168,13 +168,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      ProfileMenuItem(
-                        icon: Icons.person_outline,
-                        title: 'My Coach',
-                        iconColor: const Color(0xFF0984E3),
-                        onTap: () {},
-                      ),
-                      const SizedBox(height: 12),
                       // ProfileMenuItem(
                       //   icon: Icons.settings_outlined,
                       //   title: 'Setting',
