@@ -324,67 +324,251 @@ class _FormMetricDetailScreenState
     }
 
     Color getScoreColor() {
-      if (score <= 2) return Colors.green;
-      if (score <= 4) return Colors.lightGreen;
-      if (score <= 6) return const Color(0xFF00D09E);
-      if (score <= 8) return Colors.deepOrange;
-      return Colors.red;
+      if (score <= 2) return const Color(0xFF22C55E);
+      if (score <= 4) return const Color(0xFF16A34A);
+      if (score <= 6) return const Color(0xFFFBBF24);
+      if (score <= 8) return const Color(0xFFF97316);
+      return const Color(0xFFEF4444);
+    }
+
+    String getScoreMessage() {
+      if (score <= 2) return 'Minimal nicotine dependence';
+      if (score <= 4) return 'Mild dependence – great time to quit';
+      if (score <= 6) return 'Consider structured coaching';
+      if (score <= 8) return 'Needs consistent intervention';
+      return 'Urgent support recommended';
+    }
+
+    final normalizedScore = (score.clamp(0, 10) / 10).toDouble();
+    final themeColor = getScoreColor();
+    final dependencyLevel = getDependencyLevel();
+
+    Widget buildQuickStat({
+      required String title,
+      required String value,
+      required IconData icon,
+    }) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 18, color: themeColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, themeColor.withOpacity(0.2)],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: themeColor.withOpacity(0.18),
+            blurRadius: 25,
+            offset: const Offset(0, 18),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Text(
-            'FTND Score',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'FTND Overview',
+                        style: TextStyle(
+                          color: const Color(0xFF0F172A).withOpacity(0.7),
+                          fontSize: 14,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: themeColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: themeColor.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bolt_rounded,
+                              size: 16,
+                              color: themeColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$dependencyLevel dependency',
+                              style: TextStyle(
+                                color: themeColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        getScoreMessage(),
+                        style: TextStyle(
+                          color: const Color(0xFF0F172A).withOpacity(0.75),
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Container(
+                  width: 110,
+                  height: 110,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: themeColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(80),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: double.infinity,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 10,
+                          value: normalizedScore,
+                          backgroundColor: Colors.white,
+                          valueColor: AlwaysStoppedAnimation(themeColor),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$score',
+                            style: TextStyle(
+                              color: themeColor,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '/10',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '$score',
-            style: TextStyle(
-              color: getScoreColor(),
-              fontSize: 64,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 24),
+            Text(
+              'Current score impact',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: getScoreColor().withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: getScoreColor().withOpacity(0.3),
-                width: 1,
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: LinearProgressIndicator(
+                value: normalizedScore,
+                minHeight: 10,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation(themeColor),
               ),
             ),
-            child: Text(
-              '${getDependencyLevel()} Dependency',
-              style: TextStyle(
-                color: getScoreColor(),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Calm',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                ),
+                Text(
+                  'Critical',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                buildQuickStat(
+                  title: 'Status',
+                  value: dependencyLevel,
+                  icon: Icons.trending_up,
+                ),
+                const SizedBox(width: 12),
+                buildQuickStat(
+                  title: 'Recommendation',
+                  value: getScoreMessage(),
+                  icon: Icons.auto_fix_high,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -407,20 +591,22 @@ class _FormMetricDetailScreenState
     required Color color,
     bool isHighlight = false,
   }) {
+    final valueColor = isHighlight ? color : const Color(0xFF0F172A);
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isHighlight ? color.withOpacity(0.1) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isHighlight ? color : Colors.grey.shade300,
-          width: isHighlight ? 2 : 1,
+          color: isHighlight ? color.withOpacity(0.25) : Colors.grey.shade200,
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -429,8 +615,15 @@ class _FormMetricDetailScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Icon(icon, color: color, size: 28),
           ),
@@ -441,7 +634,11 @@ class _FormMetricDetailScreenState
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -449,7 +646,7 @@ class _FormMetricDetailScreenState
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: isHighlight ? color : Colors.black87,
+                    color: valueColor,
                   ),
                 ),
               ],
@@ -465,17 +662,21 @@ class _FormMetricDetailScreenState
     required String title,
     required bool value,
   }) {
+    final accentColor = value
+        ? const Color(0xFFEF4444)
+        : const Color(0xFF22C55E);
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -484,29 +685,34 @@ class _FormMetricDetailScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: value
-                  ? Colors.red.withOpacity(0.1)
-                  : Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            child: Icon(
-              icon,
-              color: value ? Colors.red : Colors.green,
-              size: 28,
-            ),
+            child: Icon(icon, color: accentColor, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(fontSize: 15, color: Colors.black87),
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF0F172A),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: value ? Colors.red : Colors.green,
-              borderRadius: BorderRadius.circular(20),
+              color: accentColor,
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Text(
               value ? 'Yes' : 'No',
@@ -530,16 +736,16 @@ class _FormMetricDetailScreenState
     final displayColor = value ? const Color(0xFF00D09E) : Colors.orange;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -548,8 +754,15 @@ class _FormMetricDetailScreenState
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: displayColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: displayColor.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Icon(icon, color: displayColor, size: 28),
           ),
@@ -560,7 +773,7 @@ class _FormMetricDetailScreenState
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 15, color: Colors.black87),
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -578,7 +791,7 @@ class _FormMetricDetailScreenState
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: displayColor,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(
               value ? Icons.wb_sunny : Icons.schedule,
@@ -599,9 +812,20 @@ class _FormMetricDetailScreenState
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.3), width: 1),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, color.withOpacity(0.08)],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: color.withOpacity(0.2), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

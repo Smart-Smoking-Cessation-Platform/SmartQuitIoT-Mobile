@@ -610,6 +610,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
             _isFailedStatus(phase.status) && !(phase.keepPhase ?? false);
         final shouldShowKeptBanner =
             _isFailedStatus(phase.status) && (phase.keepPhase ?? false);
+        final hasPhaseMeta = (phase.createdAt ?? '').isNotEmpty;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -707,7 +708,10 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      _buildPhaseInfoChips(phase, phaseTheme),
+                      if (hasPhaseMeta) ...[
+                        _buildPhaseInfoChips(phase, phaseTheme),
+                        const SizedBox(height: 12),
+                      ],
                       // Progress bar giai đoạn
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -2236,12 +2240,6 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     );
   }
 
-  String _formatBoolean(
-    bool value, {
-    String trueLabel = 'Yes',
-    String falseLabel = 'No',
-  }) => value ? trueLabel : falseLabel;
-
   String _formatDateTime(String? dateTime) {
     if (dateTime == null || dateTime.isEmpty) return 'N/A';
     try {
@@ -2321,44 +2319,11 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
       );
     }
 
-    if (phase.keepPhase != null) {
-      chips.add(
-        _buildInfoChip(
-          icon: Icons.shield,
-          label: 'Keep Phase',
-          value: _formatBoolean(
-            phase.keepPhase!,
-            trueLabel: 'Allowed',
-            falseLabel: 'Disabled',
-          ),
-          theme: theme,
-        ),
-      );
-    }
-
-    if (phase.redo != null) {
-      chips.add(
-        _buildInfoChip(
-          icon: Icons.refresh,
-          label: 'Redo',
-          value: _formatBoolean(
-            phase.redo!,
-            trueLabel: 'Available',
-            falseLabel: 'Unavailable',
-          ),
-          theme: theme,
-        ),
-      );
-    }
-
     if (chips.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-      child: Wrap(spacing: 10, runSpacing: 10, children: chips),
-    );
+    return Wrap(spacing: 10, runSpacing: 10, children: chips);
   }
 
   Widget _buildInfoChip({

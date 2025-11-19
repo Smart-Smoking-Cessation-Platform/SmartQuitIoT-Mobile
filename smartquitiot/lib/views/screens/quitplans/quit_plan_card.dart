@@ -594,26 +594,6 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
           value: _formatDateTime(quitPlan.createdAt),
           theme: phaseTheme,
         ),
-      _buildMetaChip(
-        icon: Icons.shield,
-        label: 'Keep Phase',
-        value: _formatBoolean(
-          quitPlan.keepPhase,
-          trueLabel: 'Allowed',
-          falseLabel: 'Disabled',
-        ),
-        theme: phaseTheme,
-      ),
-      _buildMetaChip(
-        icon: Icons.refresh,
-        label: 'Redo',
-        value: _formatBoolean(
-          quitPlan.redo,
-          trueLabel: 'Available',
-          falseLabel: 'Unavailable',
-        ),
-        theme: phaseTheme,
-      ),
     ];
 
     return Wrap(spacing: 10, runSpacing: 10, children: chips);
@@ -949,14 +929,6 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
     if (status.isEmpty) return 'Unknown';
     final normalized = status.replaceAll('_', ' ').toLowerCase();
     return _toTitleCase(normalized);
-  }
-
-  String _formatBoolean(
-    bool value, {
-    String trueLabel = 'Yes',
-    String falseLabel = 'No',
-  }) {
-    return value ? trueLabel : falseLabel;
   }
 
   String _formatDateTime(String? dateTimeString) {
