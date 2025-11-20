@@ -28,21 +28,14 @@ class TimeSlot {
   final String time;
   final bool available;
 
-  TimeSlot({
-    required this.time,
-    required this.available,
-  });
+  TimeSlot({required this.time, required this.available});
 }
 
 class CoachListItem extends StatelessWidget {
   final Coach coach;
   final VoidCallback onTap;
 
-  const CoachListItem({
-    super.key,
-    required this.coach,
-    required this.onTap,
-  });
+  const CoachListItem({super.key, required this.coach, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +46,10 @@ class CoachListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
             offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
@@ -90,6 +84,17 @@ class CoachListItem extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF00D09E).withOpacity(0.2),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00D09E).withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
         image: DecorationImage(
           image: NetworkImage(coach.imageUrl),
           fit: BoxFit.cover,
@@ -109,28 +114,34 @@ class CoachListItem extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
+              letterSpacing: 0.2,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             coach.specialty,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
-          RatingDisplay(
-            rating: coach.rating,
-            reviews: coach.reviews,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            coach.experience,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF6366F1),
-              fontWeight: FontWeight.w500,
+          RatingDisplay(rating: coach.rating, reviews: coach.reviews),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00D09E).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              coach.experience,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF00D09E),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

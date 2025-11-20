@@ -1,4 +1,4 @@
-﻿{
+{
   "app_title": "Smart Quit",
   "welcome": "Chào mừng, {}!",
   "login": "Đăng nhập",
@@ -52,6 +52,7 @@
   "days": "Ngày",
   "hours": "Giờ",
   "minutes": "Phút",
+  "seconds": "Giây",
   "coach_card": {
     "title": "Cần hỗ trợ?",
     "subtitle": "Đặt lịch tư vấn với huấn luyện viên"

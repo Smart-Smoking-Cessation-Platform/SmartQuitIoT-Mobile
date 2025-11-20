@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
+import 'package:SmartQuitIoT/providers/diary_refresh_provider.dart';
 import 'package:SmartQuitIoT/models/diary_history.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +19,14 @@ class _DiaryHistoryScreenState extends ConsumerState<DiaryHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for diary refresh trigger to auto-refresh history
+    ref.listen(diaryRefreshProvider, (previous, next) {
+      if (previous != next) {
+        print('🔄 [DiaryHistory] Refresh triggered, invalidating provider...');
+        ref.invalidate(diaryHistoryProvider);
+      }
+    });
+
     final diaryHistoryAsync = ref.watch(diaryHistoryProvider);
 
     return Scaffold(

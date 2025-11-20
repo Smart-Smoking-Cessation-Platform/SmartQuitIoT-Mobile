@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'dart:async';
 import '../../../models/request/create_quit_plan_request.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
+import '../../../providers/achievement_refresh_provider.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 import '../../../utils/notification_helper.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/common/page_indicator.dart';
@@ -30,7 +33,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _cigarettesPerPackController =
       TextEditingController();
   final TextEditingController _quitPlanNameController = TextEditingController();
-  final TextEditingController _nicotineAmountController = TextEditingController();
+  final TextEditingController _nicotineAmountController =
+      TextEditingController();
 
   // Options
   int? _selectedFirstCigaretteOptionMinutes;
@@ -44,6 +48,43 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // Validation flag
   bool _submitted = false;
   bool _isCreatingPlan = false;
+  String _loadingMessage = 'Creating your quit plan...';
+
+  // Progress tracking
+  double _creationProgress = 0.0;
+  int _currentStep = 0;
+  final List<String> _steps = [
+    'Analyzing your smoking habits',
+    'Creating personalized missions',
+    'Building quit phases',
+    'Finalizing your plan',
+  ];
+
+  // Tips rotation
+  final List<String> _quitTips = [
+    'Tip: Drinking water helps reduce cravings',
+    'Did you know? Your sense of taste improves within 48 hours',
+    'Tip: Deep breathing exercises can help manage stress',
+    'After 2 weeks, your circulation begins to improve',
+    'Tip: Keep your hands busy to avoid reaching for cigarettes',
+    'Your risk of heart attack begins to drop after 24 hours',
+    'Tip: Exercise releases endorphins that reduce cravings',
+    'Within 3 months, your lung function improves by 30%',
+  ];
+  int _currentTipIndex = 0;
+  Timer? _tipTimer;
+
+  // Motivational messages
+  final List<String> _motivationalMessages = [
+    'Every journey begins with a single step',
+    'You\'re stronger than your cravings',
+    'Building your personalized roadmap to freedom',
+    'Your healthier life starts here',
+    'Creating a smoke-free future for you',
+    'Igniting your path to wellness',
+  ];
+  int _currentMotivationalIndex = 0;
+  Timer? _motivationalTimer;
 
   // First cigarette options
   final Map<String, int> firstCigaretteOptions = {
@@ -84,21 +125,63 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     });
 
-    // Format nicotine amount with thousand separator
-    _nicotineAmountController.addListener(() {
-      final text = _nicotineAmountController.text.replaceAll(',', '');
-      if (text.isEmpty) return;
-      final number = double.tryParse(text);
-      if (number != null) {
-        final formatted = NumberFormat('#,###.##', 'en_US').format(number);
-        if (formatted != _nicotineAmountController.text) {
-          _nicotineAmountController.value = TextEditingValue(
-            text: formatted,
-            selection: TextSelection.collapsed(offset: formatted.length),
-          );
-        }
+    // Note: Nicotine amount doesn't need formatting - it's a small decimal number
+    // Allow direct decimal input without interference
+  }
+
+  @override
+  void dispose() {
+    _tipTimer?.cancel();
+    _motivationalTimer?.cancel();
+    _pageController.dispose();
+    _smokeAvgController.dispose();
+    _yearsController.dispose();
+    _moneyController.dispose();
+    _cigarettesPerPackController.dispose();
+    _quitPlanNameController.dispose();
+    _nicotineAmountController.dispose();
+    super.dispose();
+  }
+
+  void _startTipRotation() {
+    _tipTimer?.cancel();
+    _tipTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted && _isCreatingPlan) {
+        setState(() {
+          _currentTipIndex = (_currentTipIndex + 1) % _quitTips.length;
+        });
       }
     });
+
+    // Start motivational message rotation
+    _motivationalTimer?.cancel();
+    _motivationalTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted && _isCreatingPlan) {
+        setState(() {
+          _currentMotivationalIndex =
+              (_currentMotivationalIndex + 1) % _motivationalMessages.length;
+        });
+      }
+    });
+  }
+
+  void _animateProgress(double from, double to, String message) {
+    setState(() => _loadingMessage = message);
+
+    // Smooth animation
+    const steps = 20;
+    const stepDuration = Duration(milliseconds: 50);
+    final increment = (to - from) / steps;
+
+    for (int i = 0; i <= steps; i++) {
+      Future.delayed(stepDuration * i, () {
+        if (mounted && _isCreatingPlan) {
+          setState(() {
+            _creationProgress = from + (increment * i);
+          });
+        }
+      });
+    }
   }
 
   /// Validate and return first error page index, -1 if no error
@@ -125,6 +208,246 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     return -1; // no error
+  }
+
+  Widget _buildLoadingWidget() {
+    return Column(
+      children: [
+        // Animated motivational message at top
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 800),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.8, end: 1.0).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Text(
+            _motivationalMessages[_currentMotivationalIndex],
+            key: ValueKey<int>(_currentMotivationalIndex),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        // Enhanced circular progress with gradient
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF00D09E).withOpacity(0.3),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer glow
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularProgressIndicator(
+                  value: _creationProgress,
+                  strokeWidth: 8,
+                  backgroundColor: Colors.grey[200],
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF00D09E),
+                  ),
+                ),
+              ),
+              // Inner circle with gradient
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF00D09E).withOpacity(0.1),
+                      const Color(0xFF00D09E).withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${(_creationProgress * 100).toInt()}%',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00D09E),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Creating',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        // Step indicator
+        Text(
+          'Step ${_currentStep + 1} of ${_steps.length}',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Current step message with animation
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          child: Text(
+            _loadingMessage,
+            key: ValueKey<String>(_loadingMessage),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF00D09E),
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Linear progress with steps
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            children: List.generate(_steps.length, (index) {
+              final isCompleted = index < _currentStep;
+              final isCurrent = index == _currentStep;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isCompleted
+                            ? const Color(0xFF00D09E)
+                            : isCurrent
+                            ? const Color(0xFF00D09E).withOpacity(0.3)
+                            : Colors.grey[300],
+                      ),
+                      child: isCompleted
+                          ? const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            )
+                          : isCurrent
+                          ? Center(
+                              child: SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF00D09E),
+                                      ),
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _steps[index],
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isCurrent
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: isCompleted || isCurrent
+                              ? Colors.black87
+                              : Colors.grey[400],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Tips container
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00D09E).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF00D09E).withOpacity(0.3)),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.3),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              _quitTips[_currentTipIndex],
+              key: ValueKey<int>(_currentTipIndex),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+                color: Colors.black87,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -228,7 +551,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         controller: _smokeAvgController,
                         hintText: 'Enter number of cigarettes',
                         keyboardType: TextInputType.number,
-                        errorText: _submitted && _smokeAvgController.text.isEmpty
+                        errorText:
+                            _submitted && _smokeAvgController.text.isEmpty
                             ? 'You must enter a value'
                             : null,
                       ),
@@ -265,10 +589,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         question: 'Amount of nicotine per cigarette (mg)',
                         controller: _nicotineAmountController,
                         hintText: 'Enter nicotine amount (e.g., 1.2)',
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         errorText:
-                            _submitted &&
-                                _nicotineAmountController.text.isEmpty
+                            _submitted && _nicotineAmountController.text.isEmpty
                             ? 'You must enter a value'
                             : null,
                       ),
@@ -414,21 +739,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                       // Submit
                       _isCreatingPlan
-                          ? Column(
-                              children: [
-                                const CircularProgressIndicator(
-                                  color: Color(0xFF00D09E),
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Creating your quit plan...',
-                                  style: TextStyle(
-                                    color: Color(0xFF00D09E),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            )
+                          ? _buildLoadingWidget()
                           : PrimaryButton(
                               text: 'Finish',
                               onPressed: () async {
@@ -476,13 +787,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   smokeWhenSick: _smokeEvenSick!,
                                   interests: _selectedInterests,
                                   amountOfNicotinePerCigarettes: double.parse(
-                                    _nicotineAmountController.text.replaceAll(',', ''),
+                                    _nicotineAmountController.text.replaceAll(
+                                      ',',
+                                      '',
+                                    ),
                                   ),
                                 );
 
                                 // Show flushbar immediately when button is clicked
                                 Flushbar(
-                                  message: "Creating your quit plan, it may take time. Please wait...",
+                                  message:
+                                      "Creating your quit plan, it may take time. Please wait...",
                                   duration: const Duration(seconds: 3),
                                   backgroundColor: const Color(0xFF00D09E),
                                   margin: const EdgeInsets.all(8),
@@ -496,24 +811,99 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                                 setState(() {
                                   _isCreatingPlan = true;
+                                  _currentStep = 0;
+                                  _creationProgress = 0.0;
+                                  _currentTipIndex = 0;
+                                  _loadingMessage = _steps[0];
                                 });
 
+                                // Start tip rotation
+                                _startTipRotation();
+
                                 try {
-                                  await ref
+                                  // Call API and start animation in parallel
+                                  print(
+                                    '📞 [OnboardingScreen] Calling API to create quit plan...',
+                                  );
+
+                                  // Start API call (will await later)
+                                  final apiCallFuture = ref
                                       .read(quitPlanViewModelProvider.notifier)
                                       .createPlan(request);
 
                                   print(
-                                    '✅ [OnboardingScreen] Quit plan created successfully',
+                                    '🎬 [OnboardingScreen] Starting animation while API processes...',
                                   );
 
-                                  // Give backend time to initialize phase and missions (75 seconds)
-                                  print(
-                                    '⏳ [OnboardingScreen] Waiting 75 seconds for backend to initialize phase and missions...',
-                                  );
+                                  // Step 1: Analyzing (0-25%) - 45s
+                                  _animateProgress(0, 0.25, _steps[0]);
                                   await Future.delayed(
-                                    const Duration(seconds: 75),
+                                    const Duration(seconds: 8),
                                   );
+
+                                  // Step 2: Creating missions (25-50%) - 50s
+                                  if (_isCreatingPlan && mounted) {
+                                    setState(() => _currentStep = 1);
+                                    _animateProgress(0.25, 0.50, _steps[1]);
+                                    print(
+                                      '📝 [OnboardingScreen] Creating missions and phases...',
+                                    );
+                                  }
+                                  await Future.delayed(
+                                    const Duration(seconds: 8),
+                                  );
+
+                                  // Step 3: Building phases (50-75%) - 55s
+                                  if (_isCreatingPlan && mounted) {
+                                    setState(() => _currentStep = 2);
+                                    _animateProgress(0.50, 0.75, _steps[2]);
+                                    print(
+                                      '⏰ [OnboardingScreen] Building phases...',
+                                    );
+                                  }
+                                  await Future.delayed(
+                                    const Duration(seconds: 8),
+                                  );
+
+                                  // Step 4: Finalizing (75-100%) - 50s
+                                  if (_isCreatingPlan && mounted) {
+                                    setState(() => _currentStep = 3);
+                                    _animateProgress(0.75, 1.0, _steps[3]);
+                                    print(
+                                      '🔧 [OnboardingScreen] Finalizing plan...',
+                                    );
+                                  }
+                                  await Future.delayed(
+                                    const Duration(seconds: 8),
+                                  );
+
+                                  // NOW await API call to ensure it completes
+                                  print(
+                                    '⏳ [OnboardingScreen] Ensuring API call completes...',
+                                  );
+                                  await apiCallFuture;
+                                  print(
+                                    '✅ [OnboardingScreen] API call completed successfully!',
+                                  );
+
+                                  // Complete
+                                  if (mounted) {
+                                    setState(() {
+                                      _creationProgress = 1.0;
+                                      _loadingMessage =
+                                          'Quit plan ready!\nLoading your dashboard...';
+                                    });
+                                    print(
+                                      '✨ [OnboardingScreen] Quit plan ready!',
+                                    );
+                                  }
+                                  await Future.delayed(
+                                    const Duration(seconds: 8),
+                                  );
+
+                                  // Stop timers
+                                  _tipTimer?.cancel();
+                                  _motivationalTimer?.cancel();
 
                                   // Show success notification
                                   if (mounted) {
@@ -532,23 +922,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     ).show(context);
                                   }
 
-                                  // Trigger refresh for quit plan and missions cards
+                                  // Refresh ALL providers to load new data
                                   print(
-                                    '🔄 [OnboardingScreen] Backend ready, triggering cards refresh...',
+                                    '🔄 [OnboardingScreen] Refreshing all providers with new data...',
                                   );
+
+                                  // Refresh quit plan homepage (for quit plan card)
+                                  await ref
+                                      .read(
+                                        quitPlanHomepageViewModelProvider
+                                            .notifier,
+                                      )
+                                      .refreshQuitPlan();
+                                  print('✅ Quit plan homepage refreshed');
+
+                                  // Trigger mission refresh (for mission cards)
                                   ref
                                       .read(missionRefreshProvider.notifier)
                                       .refreshAll();
+                                  print('✅ Mission refresh triggered');
+
+                                  // Trigger achievement refresh (for achievement cards)
+                                  ref
+                                      .read(achievementRefreshProvider.notifier)
+                                      .refreshAchievements();
+                                  print('✅ Achievement refresh triggered');
+
+                                  // Small delay to ensure providers update
+                                  await Future.delayed(
+                                    const Duration(seconds: 2),
+                                  );
 
                                   print(
-                                    '🚀 [OnboardingScreen] Navigating to main screen...',
+                                    '🚀 [OnboardingScreen] Navigating to main screen with fresh data...',
                                   );
 
                                   setState(() {
                                     _isCreatingPlan = false;
                                   });
 
-                                  // Navigate immediately, cards sẽ tự retry nếu chưa sẵn sàng
+                                  // Navigate immediately
                                   if (mounted) {
                                     context.go('/main');
                                   }
@@ -556,6 +969,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   print(
                                     '❌ [OnboardingScreen] Error creating quit plan: $e',
                                   );
+
+                                  _tipTimer?.cancel();
 
                                   setState(() {
                                     _isCreatingPlan = false;

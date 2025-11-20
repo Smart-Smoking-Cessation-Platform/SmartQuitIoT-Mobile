@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/models/home_metrics.dart';
 import 'package:SmartQuitIoT/models/health_recovery.dart';
+import 'package:SmartQuitIoT/models/home_health_recovery.dart';
 import 'package:SmartQuitIoT/repositories/metrics_repository.dart';
 import 'package:SmartQuitIoT/services/metrics_service.dart';
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
@@ -25,15 +26,32 @@ final homeMetricsProvider = FutureProvider<HomeMetrics>((ref) async {
 });
 
 // Health Recoveries Provider
-final healthRecoveriesProvider = FutureProvider<HealthRecoveryResponse>((ref) async {
+final healthRecoveriesProvider = FutureProvider<HealthRecoveryResponse>((
+  ref,
+) async {
+  // Listen for refresh trigger
+  ref.watch(metricsRefreshProvider);
+
   final repository = ref.read(metricsRepositoryProvider);
   return await repository.getHealthRecoveries();
 });
 
-// Refresh Provider for metrics (similar to diary refresh)
-final metricsRefreshProvider = StateNotifierProvider<MetricsRefreshNotifier, int>((ref) {
-  return MetricsRefreshNotifier();
+// Home Health Recovery Provider
+final homeHealthRecoveryProvider = FutureProvider<HomeHealthRecovery>((
+  ref,
+) async {
+  // Listen for refresh trigger
+  ref.watch(metricsRefreshProvider);
+
+  final repository = ref.read(metricsRepositoryProvider);
+  return await repository.getHomeHealthRecovery();
 });
+
+// Refresh Provider for metrics (similar to diary refresh)
+final metricsRefreshProvider =
+    StateNotifierProvider<MetricsRefreshNotifier, int>((ref) {
+      return MetricsRefreshNotifier();
+    });
 
 class MetricsRefreshNotifier extends StateNotifier<int> {
   MetricsRefreshNotifier() : super(0);

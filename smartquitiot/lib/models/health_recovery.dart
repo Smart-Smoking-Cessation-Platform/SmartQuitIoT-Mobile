@@ -8,12 +8,31 @@ class HealthRecoveryResponse {
   });
 
   factory HealthRecoveryResponse.fromJson(Map<String, dynamic> json) {
-    return HealthRecoveryResponse(
-      healthRecoveries: (json['healthRecoveries'] as List<dynamic>? ?? [])
+    try {
+      print('🔍 [HealthRecovery] Parsing response with keys: ${json.keys}');
+      
+      final healthRecoveries = (json['healthRecoveries'] as List<dynamic>? ?? [])
           .map((item) => HealthRecovery.fromJson(item))
-          .toList(),
-      metrics: DetailedMetrics.fromJson(json['metrics'] ?? {}),
-    );
+          .toList();
+      
+      print('✅ [HealthRecovery] Parsed ${healthRecoveries.length} health recoveries');
+      
+      final metricsJson = json['metrics'];
+      print('🔍 [HealthRecovery] Metrics data: ${metricsJson != null ? "present" : "null"}');
+      
+      final metrics = DetailedMetrics.fromJson(metricsJson ?? {});
+      
+      print('✅ [HealthRecovery] Parsed metrics successfully');
+      
+      return HealthRecoveryResponse(
+        healthRecoveries: healthRecoveries,
+        metrics: metrics,
+      );
+    } catch (e, stack) {
+      print('❌ [HealthRecovery] Parsing error: $e');
+      print('🧩 [HealthRecovery] Stack: $stack');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -143,8 +162,13 @@ class DetailedMetrics {
   });
 
   factory DetailedMetrics.fromJson(Map<String, dynamic> json) {
-    // Helper to safely convert num to int
-    int toInt(dynamic value) => (value ?? 0) is int ? value : (value ?? 0).toInt();
+    // Helper to safely convert num to int, always returns int (never null)
+    int toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      return int.tryParse(value.toString()) ?? 0;
+    }
     
     return DetailedMetrics(
       id: toInt(json['id']),

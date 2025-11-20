@@ -76,3 +76,23 @@ final allPostsFutureProvider = FutureProvider.family<List<Post>, String?>((
   final state = ref.read(postViewModelProvider);
   return state.posts;
 });
+
+/// My Posts Provider (reads from state)
+final myPostsProvider = Provider<List<Post>>((ref) {
+  final state = ref.watch(postViewModelProvider);
+  return state.myPosts;
+});
+
+/// Post Refresh Provider - trigger refresh after creating post
+final postRefreshProvider = StateNotifierProvider<PostRefreshNotifier, int>((ref) {
+  return PostRefreshNotifier();
+});
+
+class PostRefreshNotifier extends StateNotifier<int> {
+  PostRefreshNotifier() : super(0);
+
+  void refreshPosts() {
+    print('🔄 [PostRefreshNotifier] Triggering posts refresh...');
+    state++;
+  }
+}

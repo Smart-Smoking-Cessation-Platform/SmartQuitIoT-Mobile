@@ -9,7 +9,6 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 // Services & Providers
-import 'package:SmartQuitIoT/providers/membership_provider.dart';
 import 'package:SmartQuitIoT/services/token_storage_service.dart';
 import 'package:SmartQuitIoT/services/app_token_manager.dart';
 
@@ -76,9 +75,35 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   Future<void> _handleDeepLink(Uri uri) async {
     final router = appRouter;
+    final host = uri.host;
     final path = uri.pathSegments.join('/');
     final params = uri.queryParameters;
 
+    // Handle achievement deep link
+    if (host == 'achievement') {
+      debugPrint('🏆 Achievement notification received');
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Navigate to main screen (achievement tab)
+      router.go('/main');
+
+      // Show snackbar to inform user
+      if (rootNavigatorKey.currentContext != null &&
+          rootNavigatorKey.currentContext!.mounted) {
+        ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
+          const SnackBar(
+            content: Text(
+              '🎉 New achievement unlocked! Check your achievements.',
+            ),
+            backgroundColor: Color(0xFF00D09E),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Payment deep link handling
     final code = params['code'] ?? '';
     final id = params['id'] ?? '';
     final cancel = params['cancel']?.toLowerCase() == 'true';
@@ -98,42 +123,25 @@ class _MyAppState extends ConsumerState<MyApp> {
     final body = {
       'code': code,
       'id': id,
-      'cancel': cancel,
+      'cancel': cancel.toString(), // Convert bool to string
       'status': statusStr,
-      'orderCode': orderCodeNum,
+      'orderCode': orderCodeNum.toString(), // Convert int to string
     };
 
     debugPrint('🔗 Deep link received: $uri');
-    debugPrint('➡︎ Sending process body: $body');
+    debugPrint('📦 Payment params: $body');
 
-    showDialog(
-      context: rootNavigatorKey.currentContext!,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    try {
-      await ref
-          .read(membershipViewModelProvider.notifier)
-          .processPaymentResult(body);
-    } catch (e) {
-      debugPrint('Error processing payment result: $e');
-    }
-
-    if (rootNavigatorKey.currentContext!.mounted) {
-      Navigator.of(rootNavigatorKey.currentContext!).pop();
-    }
-
-    if (cancel) {
+    // Navigate directly to success/cancel screen, API will be called in the screen
+    if (cancel || path.contains('failed')) {
+      debugPrint('❌ [DeepLink] Payment cancelled/failed, navigating to cancel screen');
       router.go('/payment/cancel', extra: body);
     } else if (membershipStatus == 'AVAILABLE') {
+      debugPrint('✅ [DeepLink] Payment successful, navigating to success screen');
+      // Pass payment params to success screen which will call API
       router.go('/payment/success', extra: body);
     } else {
-      ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
-        SnackBar(content: Text('Payment failed for order: $orderCodeNum')),
-      );
+      debugPrint('⚠️ [DeepLink] Unknown payment status, navigating to cancel screen');
+      router.go('/payment/cancel', extra: body);
     }
   }
 

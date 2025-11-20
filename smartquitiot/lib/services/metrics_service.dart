@@ -9,8 +9,8 @@ class MetricsService {
   late final String baseUrl;
 
   MetricsService(this._authRepository) {
-    baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://192.168.110.64:8080';
-    
+    baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+
     // Setup Dio interceptors
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -18,7 +18,7 @@ class MetricsService {
           final token = await _authRepository.getAccessToken();
           print('🔑 Metrics API Token: $token');
           print('📡 Metrics Request to: ${options.uri}');
-          
+
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -37,7 +37,7 @@ class MetricsService {
         },
       ),
     );
-    
+
     _dio.options.baseUrl = baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 30);
@@ -52,5 +52,10 @@ class MetricsService {
   /// Get detailed health recovery metrics
   Future<Response> getHealthRecoveries() async {
     return await _dio.get('/metrics/health-data');
+  }
+
+  /// Get home screen health recovery data
+  Future<Response> getHomeHealthRecovery() async {
+    return await _dio.get('/metrics/home-screen-health-recovery');
   }
 }

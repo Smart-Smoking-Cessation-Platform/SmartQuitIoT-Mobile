@@ -9,7 +9,7 @@ class CoachRepository {
   final http.Client _client;
   final TokenStorageService _tokenService = TokenStorageService();
   final String _baseUrl =
-      dotenv.env['API_COACH_URL'] ?? 'http://10.0.2.2:8080/api/coaches';
+      '${dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080'}/coaches';
 
   CoachRepository({http.Client? client}) : _client = client ?? http.Client();
 
@@ -24,13 +24,41 @@ class CoachRepository {
   }
 
   /// Lấy danh sách coaches
-  Future<CoachListResponse> getCoaches() async {
+  /// Nếu force=true sẽ thêm query param timestamp để tránh cache/proxy trả dữ liệu cũ
+  Future<CoachListResponse> getCoaches({bool force = false}) async {
     try {
       final headers = await _getHeaders();
-      final response = await _client.get(Uri.parse(_baseUrl), headers: headers);
+      String url = _baseUrl;
+      if (force) {
+        final ts = DateTime.now().millisecondsSinceEpoch;
+        url = '$_baseUrl?_t=$ts';
+      }
+
+      // Debug: in url + headers
+      // ignore: avoid_print
+      print('[CoachRepository] GET $url');
+      // ignore: avoid_print
+      print('[CoachRepository] headers: $headers');
+
+      final response = await _client.get(Uri.parse(url), headers: headers);
+
+      // Debug: in status + body
+      // ignore: avoid_print
+      print('[CoachRepository] status=${response.statusCode} body=${response.body}');
+
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        return CoachListResponse.fromJson(jsonData);
+        final dynamic jsonData = json.decode(response.body);
+
+        // Try to normalize to shape expected by CoachListResponse.fromJson
+        if (jsonData is List) {
+          // server returned plain list -> wrap into expected envelope
+          final wrapped = {'success': true, 'data': jsonData};
+          return CoachListResponse.fromJson(wrapped);
+        } else if (jsonData is Map<String, dynamic>) {
+          return CoachListResponse.fromJson(jsonData);
+        } else {
+          throw const CoachException('Invalid response structure from server');
+        }
       } else if (response.statusCode == 401) {
         throw const CoachException(
           'Unauthorized: Invalid or expired token',
@@ -51,7 +79,7 @@ class CoachRepository {
     }
   }
 
-  /// Lấy thông tin chi tiết của 1 coach
+  /// Lấy thông tin chi tiết của 1 coach (không đổi)
   Future<Coach> getCoachById(int id) async {
     try {
       final headers = await _getHeaders();

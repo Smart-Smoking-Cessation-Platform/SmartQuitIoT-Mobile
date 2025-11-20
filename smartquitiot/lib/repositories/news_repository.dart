@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../models/news.dart';
 import '../models/news_detail.dart';
 import '../services/news_service.dart';
@@ -9,7 +10,7 @@ class NewsRepository {
   final AuthRepository _authRepository;
 
   NewsRepository({NewsService? newsService, AuthRepository? authRepository})
-    : _newsService = newsService ?? NewsService(),
+    : _newsService = newsService ?? NewsService(dio: Dio()),
       _authRepository = authRepository ?? AuthRepository();
 
   Future<List<News>> getLatestNews({int limit = 5}) async {

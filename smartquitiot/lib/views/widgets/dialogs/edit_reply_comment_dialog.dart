@@ -7,11 +7,13 @@ import 'package:SmartQuitIoT/models/post_media.dart';
 import 'package:SmartQuitIoT/providers/post_provider.dart';
 import 'package:SmartQuitIoT/services/cloudinary_service.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 /// Dialog for editing or replying to comments
 class EditReplyCommentDialog extends ConsumerStatefulWidget {
   final int postId;
-  final PostComment? comment; // If provided, this is an edit. If null, this is a reply.
+  final PostComment?
+  comment; // If provided, this is an edit. If null, this is a reply.
   final int? parentId; // For replies
 
   const EditReplyCommentDialog({
@@ -31,9 +33,12 @@ class _EditReplyCommentDialogState
   final TextEditingController _contentController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
   final CloudinaryService _cloudinaryService = CloudinaryService();
-  
+
   List<PostMedia> _selectedMedia = [];
   bool _isUploading = false;
+  bool _isSubmitting = false; // Guard to prevent double submission
+  bool _hasClosedModal = false; // Guard to prevent double modal close
+  int _apiCallCount = 0; // Track number of API calls
 
   @override
   void initState() {
@@ -88,10 +93,7 @@ class _EditReplyCommentDialogState
                 const SizedBox(height: 12),
                 const Text(
                   'Attached Media:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -100,12 +102,16 @@ class _EditReplyCommentDialogState
                   children: _selectedMedia.asMap().entries.map((entry) {
                     final index = entry.key;
                     final media = entry.value;
+                    final isVideo = media.mediaType == 'VIDEO';
                     return Stack(
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            media.mediaUrl,
+                            // Use thumbnail for videos if available
+                            isVideo && media.thumbnailUrl != null
+                                ? media.thumbnailUrl!
+                                : media.mediaUrl,
                             width: 60,
                             height: 60,
                             fit: BoxFit.cover,
@@ -119,7 +125,7 @@ class _EditReplyCommentDialogState
                             },
                           ),
                         ),
-                        if (media.mediaType == 'VIDEO')
+                        if (isVideo)
                           Positioned.fill(
                             child: Container(
                               decoration: BoxDecoration(
@@ -178,12 +184,21 @@ class _EditReplyCommentDialogState
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _isUploading ? null : _submitComment,
+          onPressed: (_isUploading || _isSubmitting) ? null : _submitComment,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF00D09E),
             foregroundColor: Colors.white,
           ),
-          child: Text(_isEditing ? 'Update' : 'Post'),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(_isEditing ? 'Update' : 'Post'),
         ),
       ],
     );
@@ -274,18 +289,67 @@ class _EditReplyCommentDialogState
 
       if (file != null) {
         String uploadUrl;
+        String? thumbnailUrl; // Store thumbnail URL for videos
+        
         if (mediaType == 'IMAGE') {
+          print('📸 [EditReplyCommentDialog] Uploading image...');
           uploadUrl = await _cloudinaryService.uploadImage(File(file.path));
+          print('✅ [EditReplyCommentDialog] Image uploaded: $uploadUrl');
         } else {
+          print('🎥 [EditReplyCommentDialog] Uploading video...');
           uploadUrl = await _cloudinaryService.uploadVideo(File(file.path));
+          print('✅ [EditReplyCommentDialog] Video uploaded: $uploadUrl');
+
+          // Generate and upload thumbnail for video
+          print('🖼️ [EditReplyCommentDialog] Generating video thumbnail...');
+          try {
+            final thumbnailData = await VideoThumbnail.thumbnailData(
+              video: file.path,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 300,
+              quality: 85,
+            );
+
+            if (thumbnailData != null) {
+              // Save thumbnail to temporary file
+              final tempDir = Directory.systemTemp;
+              final thumbnailFile = File(
+                '${tempDir.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              );
+              await thumbnailFile.writeAsBytes(thumbnailData);
+              print(
+                '💾 [EditReplyCommentDialog] Thumbnail saved to: ${thumbnailFile.path}',
+              );
+
+              // Upload thumbnail to Cloudinary
+              thumbnailUrl = await _cloudinaryService.uploadImage(
+                thumbnailFile,
+              );
+              print(
+                '✅ [EditReplyCommentDialog] Thumbnail uploaded: $thumbnailUrl',
+              );
+
+              // Clean up temp file
+              await thumbnailFile.delete();
+              print('🗑️ [EditReplyCommentDialog] Temp thumbnail file deleted');
+            }
+          } catch (e) {
+            print(
+              '⚠️ [EditReplyCommentDialog] Failed to generate thumbnail: $e',
+            );
+            // Continue without thumbnail - video will still work
+          }
         }
 
         setState(() {
-          _selectedMedia.add(PostMedia(
-            id: 0,
-            mediaUrl: uploadUrl,
-            mediaType: mediaType,
-          ));
+          _selectedMedia.add(
+            PostMedia(
+              id: 0,
+              mediaUrl: uploadUrl,
+              mediaType: mediaType,
+              thumbnailUrl: thumbnailUrl, // ✅ Pass thumbnail URL
+            ),
+          );
         });
 
         if (mounted) {
@@ -318,10 +382,19 @@ class _EditReplyCommentDialogState
   }
 
   Future<void> _submitComment() async {
+    // Prevent double submission
+    if (_isSubmitting) {
+      print(
+        '⚠️ [EditReplyCommentDialog] Already submitting, ignoring duplicate call',
+      );
+      return;
+    }
+
     final content = _contentController.text.trim();
-    if (content.isEmpty) {
+    // Allow submission if either content OR media exists
+    if (content.isEmpty && _selectedMedia.isEmpty) {
       Flushbar(
-        message: 'Please enter some text',
+        message: 'Please enter text or add media',
         icon: const Icon(Icons.warning, color: Colors.white),
         backgroundColor: Colors.orange,
         duration: const Duration(seconds: 2),
@@ -331,58 +404,155 @@ class _EditReplyCommentDialogState
       return;
     }
 
+    setState(() {
+      _isSubmitting = true;
+      _apiCallCount++;
+    });
+
+    print(
+      '📝 [EditReplyCommentDialog] Submitting ${_isEditing
+          ? "edit"
+          : _isReplying
+          ? "reply"
+          : "comment"}...',
+    );
+    print('🔢 [EditReplyCommentDialog] API Call Count: $_apiCallCount');
+    print('📦 [EditReplyCommentDialog] PostId: ${widget.postId}');
+    print('📦 [EditReplyCommentDialog] ParentId: ${widget.parentId}');
+    print('📦 [EditReplyCommentDialog] Is Reply: $_isReplying');
+    print('📦 [EditReplyCommentDialog] Content length: ${content.length}');
+    print('📦 [EditReplyCommentDialog] Media count: ${_selectedMedia.length}');
+
+    if (_apiCallCount > 1) {
+      print(
+        '⚠️⚠️⚠️ [EditReplyCommentDialog] DUPLICATE API CALL DETECTED! Count: $_apiCallCount',
+      );
+    }
+
     try {
       if (_isEditing) {
         // Update existing comment
-        await ref.read(commentViewModelProvider.notifier).updateComment(
+        print('✏️ [EditReplyCommentDialog] Calling updateComment API...');
+        await ref
+            .read(commentViewModelProvider.notifier)
+            .updateComment(
               commentId: widget.comment!.id,
               content: content,
               media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
             );
 
-        if (mounted) {
-          Navigator.pop(context, true);
-          Flushbar(
-            message: 'Comment updated successfully!',
-            icon: const Icon(Icons.check_circle, color: Colors.white),
-            backgroundColor: const Color(0xFF00D09E),
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(8),
-            borderRadius: BorderRadius.circular(8),
-          ).show(context);
+        print('✅ [EditReplyCommentDialog] Comment updated successfully');
+
+        if (!_hasClosedModal) {
+          _hasClosedModal = true; // Set flag first to prevent race conditions
+          print(
+            '🚪 [EditReplyCommentDialog] Closing modal with success=true (edit)',
+          );
+
+          // Always pop first, then update state if mounted
+          Navigator.of(context).pop(true); // Parent will show Flushbar
+
+          // Update state after pop (safe even if unmounted)
+          if (mounted) {
+            try {
+              setState(() => _isSubmitting = false);
+            } catch (e) {
+              print(
+                '⚠️ [EditReplyCommentDialog] setState error after pop (safe to ignore): $e',
+              );
+            }
+          }
         }
       } else {
         // Create new comment or reply
-        await ref.read(commentViewModelProvider.notifier).createComment(
+        print('📝 [EditReplyCommentDialog] Calling createComment API...');
+        print(
+          '📦 [EditReplyCommentDialog] Content: "${content.substring(0, content.length > 50 ? 50 : content.length)}..."',
+        );
+        print(
+          '🎬 [EditReplyCommentDialog] Media count: ${_selectedMedia.length}',
+        );
+        if (_selectedMedia.isNotEmpty) {
+          for (var i = 0; i < _selectedMedia.length; i++) {
+            print(
+              '🖼️ [EditReplyCommentDialog] Media[$i]: ${_selectedMedia[i].mediaType} - ${_selectedMedia[i].mediaUrl.substring(0, 80)}...',
+            );
+          }
+        }
+
+        // Call API
+        await ref
+            .read(commentViewModelProvider.notifier)
+            .createComment(
               postId: widget.postId,
               content: content,
               parentId: widget.parentId,
               media: _selectedMedia.isNotEmpty ? _selectedMedia : null,
             );
 
-        if (mounted) {
-          Navigator.pop(context, true);
-          Flushbar(
-            message: widget.parentId != null
-                ? 'Reply posted successfully!'
-                : 'Comment posted successfully!',
-            icon: const Icon(Icons.check_circle, color: Colors.white),
-            backgroundColor: const Color(0xFF00D09E),
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(8),
-            borderRadius: BorderRadius.circular(8),
-          ).show(context);
+        print(
+          '✅ [EditReplyCommentDialog] Comment ${widget.parentId != null ? "reply" : "root"} created successfully',
+        );
+        print(
+          '🔍 [EditReplyCommentDialog] _hasClosedModal before check: $_hasClosedModal',
+        );
+        print('🔍 [EditReplyCommentDialog] mounted: $mounted');
+
+        // ALWAYS pop on success, no matter what
+        if (!_hasClosedModal) {
+          _hasClosedModal = true;
+          print(
+            '🚪 [EditReplyCommentDialog] Closing modal with success=true (reply/create)',
+          );
+
+          // Pop with success=true so parent can refresh
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(true);
+            print('✅ [EditReplyCommentDialog] Dialog popped successfully');
+          } else {
+            print('⚠️ [EditReplyCommentDialog] Cannot pop - no route to pop');
+          }
+
+          // Clean up state after pop
+          if (mounted) {
+            try {
+              setState(() => _isSubmitting = false);
+            } catch (e) {
+              print('⚠️ [EditReplyCommentDialog] setState error after pop: $e');
+            }
+          }
+        } else {
+          print(
+            '⚠️⚠️⚠️ [EditReplyCommentDialog] Modal ALREADY CLOSED before success! This should not happen!',
+          );
+          print(
+            '🔍 [EditReplyCommentDialog] API Call Count was: $_apiCallCount',
+          );
         }
       }
     } catch (e) {
+      print('❌ [EditReplyCommentDialog] Error submitting comment: $e');
+      print('📊 [EditReplyCommentDialog] Error type: ${e.runtimeType}');
+      print('🧩 [EditReplyCommentDialog] Stack trace: ${StackTrace.current}');
+
       if (mounted) {
+        setState(() => _isSubmitting = false);
+
+        // Show error message
         Flushbar(
-          message: 'Error: $e',
+          message: 'Failed to post comment. Please try again.',
           icon: const Icon(Icons.error_outline, color: Colors.white),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 4),
           margin: const EdgeInsets.all(8),
           borderRadius: BorderRadius.circular(8),
+          mainButton: TextButton(
+            onPressed: () {
+              // User can dismiss error and try again
+              Navigator.of(context, rootNavigator: true).pop();
+            },
+            child: const Text('OK', style: TextStyle(color: Colors.white)),
+          ),
         ).show(context);
       }
     }

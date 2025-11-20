@@ -1,29 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:SmartQuitIoT/services/token_storage_service.dart';
+import 'package:SmartQuitIoT/providers/auth_provider.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  final TokenStorageService _tokenStorage = TokenStorageService();
-
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToNext();
+    _checkAuthAndNavigate();
   }
 
-  Future<void> _navigateToNext() async {
+  Future<void> _checkAuthAndNavigate() async {
+    // Đợi một chút để hiển thị splash screen
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    // ✅ Tạm thời luôn chuyển đến welcome
+    // Clear tokens khi app restart để đảm bảo user phải login lại
+    // Điều này đảm bảo app luôn bắt đầu từ login khi restart
+    final authViewModel = ref.read(authViewModelProvider.notifier);
+    await authViewModel.clearAuthOnRestart();
+
+    if (!mounted) return;
+
+    // Luôn chuyển đến welcome screen khi app restart
     context.go('/welcome');
   }
 

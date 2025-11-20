@@ -87,17 +87,7 @@ class _CoachRatingScreenState extends State<CoachRatingScreen> {
   Widget _buildCoachHeader() {
     return Column(
       children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: NetworkImage(widget.coach.imageUrl),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
+        _buildAvatarWithFallback(widget.coach.imageUrl, widget.coach.name),
         const SizedBox(height: 16),
         Text(
           widget.coach.name,
@@ -116,6 +106,86 @@ class _CoachRatingScreenState extends State<CoachRatingScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAvatarWithFallback(String imageUrl, String name) {
+    final initials = name.isNotEmpty
+        ? name.split(' ').map((n) => n[0]).take(2).join().toUpperCase()
+        : '?';
+    final isValidUrl = imageUrl.isNotEmpty &&
+        !imageUrl.contains('example.com') &&
+        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF00D09E).withOpacity(0.1),
+      ),
+      child: isValidUrl
+          ? ClipOval(
+              child: Image.network(
+                imageUrl,
+                width: 100,
+                height: 100,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF00D09E).withOpacity(0.15),
+                    ),
+                    child: Center(
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00D09E),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF00D09E).withOpacity(0.15),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                        strokeWidth: 2,
+                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            )
+          : Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF00D09E).withOpacity(0.15),
+              ),
+              child: Center(
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF00D09E),
+                  ),
+                ),
+              ),
+            ),
     );
   }
 

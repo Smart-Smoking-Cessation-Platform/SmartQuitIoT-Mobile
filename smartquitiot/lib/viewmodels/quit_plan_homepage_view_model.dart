@@ -5,7 +5,8 @@ import '../repositories/quit_plan_homepage_repository.dart';
 class QuitPlanHomepageViewModel extends StateNotifier<QuitPlanHomepageState> {
   final QuitPlanHomepageRepository _quitPlanHomepageRepository;
 
-  QuitPlanHomepageViewModel(this._quitPlanHomepageRepository) : super(const QuitPlanHomepageState());
+  QuitPlanHomepageViewModel(this._quitPlanHomepageRepository)
+    : super(const QuitPlanHomepageState());
 
   /// Load quit plan home page data
   Future<void> loadQuitPlanHomePage() async {
@@ -15,7 +16,7 @@ class QuitPlanHomepageViewModel extends StateNotifier<QuitPlanHomepageState> {
     try {
       print('📞 [QuitPlanHomepageViewModel] Calling repository...');
       final quitPlan = await _quitPlanHomepageRepository.getQuitPlanHomePage();
-      
+
       print('✅ [QuitPlanHomepageViewModel] Quit plan received from repository');
       print('📋 [QuitPlanHomepageViewModel] Plan details:');
       print('   - ID: ${quitPlan.id}');
@@ -25,24 +26,28 @@ class QuitPlanHomepageViewModel extends StateNotifier<QuitPlanHomepageState> {
       print('   - Progress: ${quitPlan.progress}%');
       print('   - Current Phase: ${quitPlan.currentPhaseDetail.name}');
       print('   - Day Index: ${quitPlan.currentPhaseDetail.dayIndex}');
-      
-      state = state.copyWith(
-        quitPlan: quitPlan,
-        isLoading: false,
-        error: null,
-      );
-      
+
+      state = state.copyWith(quitPlan: quitPlan, isLoading: false, error: null);
+
       print('✅ [QuitPlanHomepageViewModel] State updated successfully');
       print('📊 [QuitPlanHomepageViewModel] hasQuitPlan: ${state.hasQuitPlan}');
     } catch (e, st) {
       final errorString = e.toString();
-      print('🔥 [QuitPlanHomepageViewModel] Load quit plan error: $errorString');
+      print(
+        '🔥 [QuitPlanHomepageViewModel] Load quit plan error: $errorString',
+      );
       print('🧩 [QuitPlanHomepageViewModel] Stack trace: $st');
-      
+
       // Handle 400 as empty state for new users without quit plan
-      if (errorString.contains('status: 400') || errorString.contains('Bad request (400)') || errorString.contains('not found')) {
-        print('ℹ️ [QuitPlanHomepageViewModel] Detected 400 error - treating as empty state');
-        print('💡 [QuitPlanHomepageViewModel] This likely means user has no quit plan yet');
+      if (errorString.contains('status: 400') ||
+          errorString.contains('Bad request (400)') ||
+          errorString.contains('not found')) {
+        print(
+          'ℹ️ [QuitPlanHomepageViewModel] Detected 400 error - treating as empty state',
+        );
+        print(
+          '💡 [QuitPlanHomepageViewModel] This likely means user has no quit plan yet',
+        );
         state = state.copyWith(
           quitPlan: null,
           isLoading: false,
@@ -51,11 +56,10 @@ class QuitPlanHomepageViewModel extends StateNotifier<QuitPlanHomepageState> {
         print('✅ [QuitPlanHomepageViewModel] State set to empty (no error)');
       } else {
         // Real errors (network, server, etc.)
-        print('❌ [QuitPlanHomepageViewModel] Real error detected, showing error state');
-        state = state.copyWith(
-          isLoading: false,
-          error: errorString,
+        print(
+          '❌ [QuitPlanHomepageViewModel] Real error detected, showing error state',
         );
+        state = state.copyWith(isLoading: false, error: errorString);
       }
     }
   }
@@ -69,14 +73,25 @@ class QuitPlanHomepageViewModel extends StateNotifier<QuitPlanHomepageState> {
   void clearError() {
     state = state.copyWith(error: null);
   }
+
+  /// Clear/reset quit plan data (call when user logs out)
+  void clear() {
+    print('🧹 [QuitPlanHomepageViewModel] Clearing quit plan data');
+    state = const QuitPlanHomepageState();
+  }
 }
 
 // Riverpod providers
-final quitPlanHomepageRepositoryProvider = Provider<QuitPlanHomepageRepository>((ref) {
-  return QuitPlanHomepageRepository();
-});
+final quitPlanHomepageRepositoryProvider = Provider<QuitPlanHomepageRepository>(
+  (ref) {
+    return QuitPlanHomepageRepository();
+  },
+);
 
-final quitPlanHomepageViewModelProvider = StateNotifierProvider<QuitPlanHomepageViewModel, QuitPlanHomepageState>((ref) {
-  final repository = ref.watch(quitPlanHomepageRepositoryProvider);
-  return QuitPlanHomepageViewModel(repository);
-});
+final quitPlanHomepageViewModelProvider =
+    StateNotifierProvider<QuitPlanHomepageViewModel, QuitPlanHomepageState>((
+      ref,
+    ) {
+      final repository = ref.watch(quitPlanHomepageRepositoryProvider);
+      return QuitPlanHomepageViewModel(repository);
+    });

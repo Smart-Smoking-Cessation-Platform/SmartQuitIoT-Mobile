@@ -55,6 +55,8 @@ class _MediaViewerDialogState extends State<MediaViewerDialog> {
       _videoController = VideoPlayerController.networkUrl(Uri.parse(url));
       await _videoController!.initialize();
       await _videoController!.setLooping(true);
+      // Set default volume to 1.0 (unmuted)
+      await _videoController!.setVolume(1.0);
       await _videoController!.play();
       
       setState(() {
@@ -99,7 +101,26 @@ class _MediaViewerDialogState extends State<MediaViewerDialog> {
         actions: [
           if (widget.mediaList[_currentIndex].mediaType == 'VIDEO' &&
               _videoController != null &&
-              _isVideoInitialized)
+              _isVideoInitialized) ...[
+            // Volume control
+            IconButton(
+              icon: Icon(
+                _videoController!.value.volume > 0
+                    ? Icons.volume_up
+                    : Icons.volume_off,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                setState(() {
+                  if (_videoController!.value.volume > 0) {
+                    _videoController!.setVolume(0);
+                  } else {
+                    _videoController!.setVolume(1.0);
+                  }
+                });
+              },
+            ),
+            // Play/Pause control
             IconButton(
               icon: Icon(
                 _videoController!.value.isPlaying
@@ -117,6 +138,7 @@ class _MediaViewerDialogState extends State<MediaViewerDialog> {
                 });
               },
             ),
+          ],
         ],
       ),
       body: PageView.builder(
@@ -216,18 +238,61 @@ class _MediaViewerDialogState extends State<MediaViewerDialog> {
                     size: 64,
                   ),
                 ),
-              // Video controls at bottom
+              // Video controls at bottom with time display
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: VideoProgressIndicator(
-                  _videoController!,
-                  allowScrubbing: true,
-                  colors: const VideoProgressColors(
-                    playedColor: Color(0xFF00D09E),
-                    bufferedColor: Colors.grey,
-                    backgroundColor: Colors.white24,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Time display
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _formatDuration(_videoController!.value.position),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              _formatDuration(_videoController!.value.duration),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Progress bar
+                      VideoProgressIndicator(
+                        _videoController!,
+                        allowScrubbing: true,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        colors: const VideoProgressColors(
+                          playedColor: Color(0xFF00D09E),
+                          bufferedColor: Colors.grey,
+                          backgroundColor: Colors.white24,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -236,5 +301,12 @@ class _MediaViewerDialogState extends State<MediaViewerDialog> {
         ),
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
   }
 }

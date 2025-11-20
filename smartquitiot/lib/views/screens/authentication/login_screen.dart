@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:SmartQuitIoT/views/screens/authentication/enhanced_auth_header.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/token_storage_service.dart';
 import 'package:SmartQuitIoT/views/widgets/inputs/custom_text_field.dart';
@@ -12,6 +12,9 @@ import 'package:SmartQuitIoT/views/widgets/forms/auth_divider.dart';
 import 'package:SmartQuitIoT/views/widgets/buttons/social_login_buttons.dart';
 import '../../../models/state/auth_state.dart';
 import '../../../utils/notification_helper.dart';
+import 'package:SmartQuitIoT/providers/achievement_provider.dart';
+import 'package:SmartQuitIoT/providers/quit_plan_time_provider.dart';
+import 'package:SmartQuitIoT/providers/membership_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -26,6 +29,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _password = TextEditingController();
   bool _obscure = true;
   bool _isFormValid = false;
+  bool _isNavigating = false;
 
   @override
   void dispose() {
@@ -73,12 +77,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.read(authViewModelProvider.notifier).clearError();
       }
 
-      // Đăng nhập thành công
-      if (next.isAuthenticated && previous?.isAuthenticated == false) {
+      // Đăng nhập thành công (handle cả previous = null và previous.isAuthenticated = false)
+      if (next.isAuthenticated && (previous?.isAuthenticated != true)) {
+        setState(() {
+          _isNavigating = true;
+        });
+
+        // Show success notification
         NotificationHelper.showTopNotification(
           context,
-          title: 'Success',
-          message: 'Login successful!',
+          title: '🎉 Success',
+          message: 'Login successful! Redirecting...',
         );
 
         final tokenStorage = TokenStorageService();
@@ -87,7 +96,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           next.refreshToken ?? '',
         );
 
-        await Future.delayed(const Duration(seconds: 1));
+        // Clear cached data from previous user
+        debugPrint(
+          '🔄 [LoginScreen] Clearing cached data from previous user...',
+        );
+        ref.invalidate(allAchievementsProvider);
+        ref.invalidate(homeAchievementsProvider);
+        // Clear quit plan time data to ensure fresh state
+        ref.invalidate(quitPlanTimeViewModelProvider);
+        // Clear membership data to ensure fresh state
+        ref.invalidate(membershipViewModelProvider);
+        ref.invalidate(currentSubscriptionProvider);
+
+        // WebSocket will be initialized by MainNavigationScreen
+        debugPrint(
+          'ℹ️ [LoginScreen] WebSocket will be initialized after navigation',
+        );
+
+        // Wait 2 seconds with spinner visible
+        await Future.delayed(const Duration(seconds: 2));
         if (!mounted) return;
 
         final isFirstLogin = next.isFirstLogin ?? false;
@@ -96,6 +123,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         } else {
           context.go('/main');
         }
+
+        setState(() {
+          _isNavigating = false;
+        });
       }
     });
 
@@ -109,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AuthHeader(title: 'hello'.tr(), height: 120),
+              ProfessionalAuthHeader(title: 'hello'.tr(), height: 200),
               const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -152,7 +183,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 32),
 
                       /// Nút login
-                      authState.isLoading
+                      (authState.isLoading || _isNavigating)
                           ? const Center(
                               child: CircularProgressIndicator(
                                 color: greenColor,

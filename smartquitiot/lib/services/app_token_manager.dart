@@ -1,10 +1,7 @@
 // services/app_token_manager.dart
 import 'package:flutter/material.dart';
-import 'token_storage_service.dart';
 
 class AppTokenManager with WidgetsBindingObserver {
-  final TokenStorageService _tokenService = TokenStorageService();
-
   AppTokenManager._privateConstructor();
 
   static final AppTokenManager instance = AppTokenManager._privateConstructor();
@@ -26,15 +23,26 @@ class AppTokenManager with WidgetsBindingObserver {
   // }
 
   /// Lifecycle observer
+  ///
+  /// IMPORTANT: Tokens are preserved when app goes to background.
+  /// This allows users to:
+  /// - Switch to another app and come back without needing to login again
+  /// - Keep their session active when app is in background
+  ///
+  /// Tokens are ONLY cleared when:
+  /// - User explicitly logs out
+  /// - App is completely terminated (killed by OS) - tokens are still preserved
+  ///   and will be checked on next app start via SplashScreen
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // ❌ DISABLED: Do NOT clear tokens on lifecycle changes!
     // This causes users to be logged out when app goes to background
     // Tokens should only be cleared on explicit logout
-    
+
     // Log lifecycle changes for debugging
     debugPrint('[AppTokenManager] App lifecycle changed to: $state');
-    
+    debugPrint('[AppTokenManager] Tokens preserved - user stays logged in');
+
     // if (state == AppLifecycleState.inactive ||
     //     state == AppLifecycleState.detached) {
     //   _tokenService.clearTokens();

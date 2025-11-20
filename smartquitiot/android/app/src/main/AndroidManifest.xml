@@ -23,6 +23,9 @@
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
     <uses-permission android:name="android.permission.BODY_SENSORS"/>
 
+    <!-- ==================== Quyền thông báo ==================== -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <!-- Health Connect: READ -->
     <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
@@ -75,7 +78,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep link handler -->
+            <!-- Deep link handler for payment -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -83,6 +86,17 @@
                 <data
                         android:scheme="smartquit"
                         android:host="payment"
+                        android:pathPrefix="/" />
+            </intent-filter>
+
+            <!-- Deep link handler for achievement notifications -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                        android:scheme="smartquit"
+                        android:host="achievement"
                         android:pathPrefix="/" />
             </intent-filter>
 

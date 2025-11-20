@@ -9,10 +9,10 @@ import '../models/request/register_request.dart';
 import '../models/response/register_response.dart';
 
 class AuthService {
-  static final String _baseUrl =
-      dotenv.env['API_AUTH_URL'] ?? 'http://10.0.2.2:8080/api/auth';
-  static final String _accountsBaseUrl =
-      dotenv.env['API_ACCOUNTS_URL'] ?? 'http://10.0.2.2:8080/api/accounts';
+  static final String _apiBaseUrl =
+      dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+  static final String _baseUrl = '$_apiBaseUrl/auth';
+  static final String _accountsBaseUrl = '$_apiBaseUrl/accounts';
   static const Duration _timeout = Duration(seconds: 30);
 
   /// Register a new user

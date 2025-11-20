@@ -1,17 +1,32 @@
 // lib/views/screens/settings/settings_screen.dart
 import 'package:SmartQuitIoT/views/screens/appointments/appointments_screen.dart';
-import 'package:SmartQuitIoT/views/screens/notifications/notification_screen.dart';
-import 'package:SmartQuitIoT/views/screens/profile/profile_screen.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
 
 import '../../../providers/auth_provider.dart';
-import '../../../../utils/snackbar_helper.dart';
+import '../../../providers/websocket_provider.dart';
+import '../../../providers/membership_provider.dart';
+import '../../../providers/quit_plan_time_provider.dart';
+import '../../../providers/notification_provider.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 3,
+      lineLength: 75,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,7 +54,7 @@ class SettingsScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => context.pop(),
                       icon: const Icon(
                         Icons.arrow_back,
                         color: Colors.white,
@@ -57,14 +72,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.notifications_outlined,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
@@ -88,12 +96,7 @@ class SettingsScreen extends ConsumerWidget {
                         icon: Icons.person_outline,
                         title: 'Profile',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileScreen(),
-                            ),
-                          );
+                          context.push('/profile');
                         },
                       ),
                       _buildSettingItem(
@@ -111,20 +114,29 @@ class SettingsScreen extends ConsumerWidget {
                       _buildSettingItem(
                         icon: Icons.analytics_outlined,
                         title: 'Change smoking data',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.notifications_outlined,
-                        title: 'Notifications',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NotificationsScreen(),
-                            ),
-                          );
+                          context.go('/form-metric-detail');
                         },
                       ),
+                      _buildSettingItem(
+                        icon: Icons.menu_book_outlined,
+                        title: 'Guide',
+                        onTap: () {
+                          context.push('/guide');
+                        },
+                      ),
+                      // _buildSettingItem(
+                      //   icon: Icons.notifications_outlined,
+                      //   title: 'Notifications',
+                      //   onTap: () {
+                      //     Navigator.push(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => const NotificationsScreen(),
+                      //       ),
+                      //     );
+                      //   },
+                      // ),
                       _buildSettingItem(
                         icon: Icons.card_membership_outlined,
                         title: 'Membership',
@@ -136,44 +148,44 @@ class SettingsScreen extends ConsumerWidget {
                     ]),
                     const SizedBox(height: 15),
                     _buildSettingsSection([
-                      _buildSettingItem(
-                        icon: Icons.psychology_outlined,
-                        title: 'Advice',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.medical_services_outlined,
-                        title: 'Nicotine replacement therapy',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.vape_free_outlined,
-                        title: 'E-cigs/vapes',
-                        onTap: () {},
-                      ),
+                      // _buildSettingItem(
+                      //   icon: Icons.psychology_outlined,
+                      //   title: 'Advice',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.medical_services_outlined,
+                      //   title: 'Nicotine replacement therapy',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.vape_free_outlined,
+                      //   title: 'E-cigs/vapes',
+                      //   onTap: () {},
+                      // ),
                     ]),
                     const SizedBox(height: 15),
                     _buildSettingsSection([
-                      _buildSettingItem(
-                        icon: Icons.support_agent_outlined,
-                        title: 'Customer support',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.favorite_border,
-                        title: 'Our philosophy',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.flag_outlined,
-                        title: 'Our mission',
-                        onTap: () {},
-                      ),
-                      _buildSettingItem(
-                        icon: Icons.help_outline,
-                        title: 'FAQ',
-                        onTap: () {},
-                      ),
+                      // _buildSettingItem(
+                      //   icon: Icons.support_agent_outlined,
+                      //   title: 'Customer support',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.favorite_border,
+                      //   title: 'Our philosophy',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.flag_outlined,
+                      //   title: 'Our mission',
+                      //   onTap: () {},
+                      // ),
+                      // _buildSettingItem(
+                      //   icon: Icons.help_outline,
+                      //   title: 'FAQ',
+                      //   onTap: () {},
+                      // ),
 
                       // 🔥 Log out button có GoRouter + Snackbar
                       _buildSettingItem(
@@ -195,16 +207,80 @@ class SettingsScreen extends ConsumerWidget {
                                 TextButton(
                                   onPressed: () async {
                                     Navigator.pop(dialogContext);
+
+                                    // Disconnect WebSocket before logout
+                                    try {
+                                      final websocketManager = ref.read(
+                                        websocketManagerProvider,
+                                      );
+                                      await websocketManager.disconnect();
+                                      _logger.i(
+                                        '✅ [SettingsScreen] WebSocket disconnected',
+                                      );
+                                    } catch (e) {
+                                      _logger.e(
+                                        '❌ [SettingsScreen] WebSocket disconnect error: $e',
+                                      );
+                                    }
+
                                     await ref
                                         .read(authViewModelProvider.notifier)
                                         .logout();
 
+                                    // Clear membership data
+                                    ref
+                                        .read(
+                                          membershipViewModelProvider.notifier,
+                                        )
+                                        .reset();
+                                    ref.invalidate(membershipViewModelProvider);
+                                    ref.invalidate(currentSubscriptionProvider);
+                                    // Clear quit plan time data
+                                    ref
+                                        .read(
+                                          quitPlanTimeViewModelProvider
+                                              .notifier,
+                                        )
+                                        .reset();
+                                    ref.invalidate(
+                                      quitPlanTimeViewModelProvider,
+                                    );
+                                    // Clear notification data
+                                    ref.invalidate(
+                                      notificationViewModelProvider,
+                                    );
+                                    ref.invalidate(unreadCountProvider);
+                                    // Clear quit plan data
+                                    ref
+                                        .read(
+                                          quitPlanHomepageViewModelProvider
+                                              .notifier,
+                                        )
+                                        .clear();
+                                    ref.invalidate(
+                                      quitPlanHomepageViewModelProvider,
+                                    );
+
                                     if (context.mounted) {
-                                      SnackBarHelper.showSuccess(
-                                        context,
-                                        'Logout successfully!',
-                                      );
+                                      // Navigate to login immediately
                                       context.go('/login');
+
+                                      // Show flushbar after navigation
+                                      Flushbar(
+                                        message: 'Logout successfully!',
+                                        backgroundColor: const Color(
+                                          0xFF00D09E,
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                        flushbarPosition: FlushbarPosition.TOP,
+                                        margin: const EdgeInsets.all(8),
+                                        borderRadius: BorderRadius.circular(8),
+                                        icon: const Icon(
+                                          Icons.check_circle,
+                                          size: 28,
+                                          color: Colors.white,
+                                        ),
+                                      ).show(context);
                                     }
                                   },
                                   child: const Text(

@@ -5,7 +5,10 @@ import 'token_storage_service.dart';
 
 class MembershipApiService {
   final TokenStorageService _tokenStorageService = TokenStorageService();
-  final String _baseUrl = dotenv.env['API_MEMBERSHIP_URL'] ?? 'http://10.0.2.2:8080/api/membership-packages';
+  final String _apiBaseUrl =
+      dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
+  late final String _baseUrl = '$_apiBaseUrl/membership-packages';
+
   Future<http.Response> getMembershipPackages() async {
     final uri = Uri.parse(_baseUrl);
     try {
@@ -60,11 +63,18 @@ class MembershipApiService {
   Future<http.Response> processPayment(Map<String, dynamic> body) async {
     final uri = Uri.parse('$_baseUrl/process');
     try {
+      print('🌐 [MembershipService] Calling processPayment API...');
+      print('🔗 [MembershipService] URL: $uri');
+      print('📦 [MembershipService] Body: $body');
+      
       final accessToken = await _tokenStorageService.getAccessToken();
 
       if (accessToken == null) {
+        print('❌ [MembershipService] No access token found');
         throw Exception('No access token found — user not logged in');
       }
+
+      print('🔑 [MembershipService] Token: ${accessToken.substring(0, 20)}...');
 
       final response = await http.post(
         uri,
@@ -73,18 +83,25 @@ class MembershipApiService {
           'Authorization': 'Bearer $accessToken',
         },
         body: json.encode(body),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('⏰ [MembershipService] Request timeout after 30 seconds');
+          throw Exception('Request timeout - please check your internet connection');
+        },
       );
+      
+      print('📊 [MembershipService] Response status: ${response.statusCode}');
       return response;
     } catch (e) {
-      print('❌ Network error processing payment: $e');
+      print('❌ [MembershipService] Network error processing payment: $e');
       rethrow;
     }
   }
 
   Future<http.Response> getCurrentSubscription() async {
-    final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8080';
-    final uri = Uri.parse('$baseUrl/api/membership-subscriptions/current');
-    
+    final uri = Uri.parse('$_apiBaseUrl/membership-subscriptions/current');
+
     try {
       final accessToken = await _tokenStorageService.getAccessToken();
 
@@ -105,23 +122,19 @@ class MembershipApiService {
 
       print('📊 [MembershipService] Response Status: ${response.statusCode}');
       if (response.statusCode == 200) {
-        print('✅ [MembershipService] Successfully fetched current subscription');
+        print(
+          '✅ [MembershipService] Successfully fetched current subscription',
+        );
       } else {
         print('❌ [MembershipService] Failed: ${response.body}');
       }
 
       return response;
     } catch (e) {
-      print('❌ [MembershipService] Network error fetching current subscription: $e');
+      print(
+        '❌ [MembershipService] Network error fetching current subscription: $e',
+      );
       rethrow;
     }
   }
 }
-
-
-
-
-
-
-
-

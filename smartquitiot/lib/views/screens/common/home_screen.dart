@@ -13,6 +13,7 @@ import 'package:SmartQuitIoT/views/widgets/cards/community_trending_card.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/recent_news_card.dart';
 import 'package:SmartQuitIoT/views/screens/ai_chat/ai_chat_welcome_screen.dart';
 import 'package:SmartQuitIoT/views/widgets/cards/diary_record_card.dart';
+import 'package:SmartQuitIoT/views/widgets/cards/form_metric_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -36,9 +37,10 @@ class HomeScreen extends StatelessWidget {
               AchievementsCard(),
               QuitPlanCard(),
               TodayMissionCard(),
+              FormMetricCard(),
               // AnalysisCard(),
               CommunityTrendingCard(),
-             
+
               RecentNewsCard(),
             ],
           ),
