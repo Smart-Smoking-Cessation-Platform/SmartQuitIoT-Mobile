@@ -128,8 +128,8 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
                         padding: const EdgeInsets.only(bottom: 12),
                         child: CoachListItem(
                           coach: _convertApiCoachToLocalCoach(coach),
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => CoachDetailScreen(
@@ -137,6 +137,8 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
                                 ),
                               ),
                             );
+                            // Refresh quota khi quay lại từ detail screen
+                            ref.refresh(remainingBookingProvider);
                           },
                         ),
                       );
