@@ -25,7 +25,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   double moodLevel = 5.0;
   double confidenceLevel = 5.0;
   double anxietyLevel = 5.0;
-  
+
   // Flag to track if we're waiting for diary creation result
   bool _isWaitingForResult = false;
 
@@ -92,38 +92,38 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   @override
   Widget build(BuildContext context) {
     // Listen to diary record notifier state changes
-    ref.listen<AsyncValue<DiaryCreateResult?>>(
-      diaryRecordNotifierProvider,
-      (previous, next) {
-        // Only handle if we're waiting for a result and state changed from loading to data/error
-        if (!_isWaitingForResult) return;
-        
-        final previousResult = previous?.valueOrNull;
-        final nextResult = next.valueOrNull;
-        
-        // If we got a result and it's different from previous, handle it
-        if (nextResult != null && nextResult != previousResult) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _isWaitingForResult = false;
-              });
-              _handleDiaryResult(nextResult);
-            }
-          });
-        } else if (next.hasError && (previous == null || !previous.hasError)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _isWaitingForResult = false;
-              });
-              _handleDiaryError(next.error!);
-            }
-          });
-        }
-      },
-    );
-    
+    ref.listen<AsyncValue<DiaryCreateResult?>>(diaryRecordNotifierProvider, (
+      previous,
+      next,
+    ) {
+      // Only handle if we're waiting for a result and state changed from loading to data/error
+      if (!_isWaitingForResult) return;
+
+      final previousResult = previous?.valueOrNull;
+      final nextResult = next.valueOrNull;
+
+      // If we got a result and it's different from previous, handle it
+      if (nextResult != null && nextResult != previousResult) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _isWaitingForResult = false;
+            });
+            _handleDiaryResult(nextResult);
+          }
+        });
+      } else if (next.hasError && (previous == null || !previous.hasError)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _isWaitingForResult = false;
+            });
+            _handleDiaryError(next.error!);
+          }
+        });
+      }
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FFFE),
       appBar: AppBar(
@@ -1050,7 +1050,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
 
     final state = ref.read(diaryRecordNotifierProvider);
     final result = state.valueOrNull;
-    
+
     // If we have a result and still waiting, process it
     if (_isWaitingForResult && result != null) {
       setState(() {
@@ -1068,9 +1068,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
   void _handleDiaryResult(DiaryCreateResult result) {
     // Check if user smoked during quit plan (HTTP 209)
     if (result.isSmokedDuringQuitPlan) {
-      print(
-        '⚠️ [CreateDiary] User smoked during quit plan, showing dialog...',
-      );
+      print('⚠️ [CreateDiary] User smoked during quit plan, showing dialog...');
 
       // Trigger refreshes even for 209 response
       ref.read(metricsRefreshProvider.notifier).refreshMetrics();

@@ -5,6 +5,8 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:go_router/go_router.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../models/request/create_new_quit_plan_request.dart';
+import '../common/full_screen_loader.dart';
+import '../../../routes/app_router.dart';
 
 class CreateNewQuitPlanDialog extends ConsumerStatefulWidget {
   const CreateNewQuitPlanDialog({super.key});
@@ -111,22 +113,22 @@ class _CreateNewQuitPlanDialogState
       quitPlanName: _quitPlanNameController.text.trim(),
     );
 
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
-        ),
-      ),
+    // Close this dialog first
+    Navigator.of(context).pop();
+
+    // Get root context for showing loader after dialog is closed
+    final rootContext = rootNavigatorKey.currentContext;
+    if (rootContext == null) return;
+
+    // Show full screen loader (AI will take time to create the plan)
+    FullScreenLoader.show(
+      rootContext,
+      message: 'AI is creating your quit plan...\nPlease wait a moment',
     );
 
     try {
       // Create new plan
       await ref.read(quitPlanViewModelProvider.notifier).createNewPlan(request);
-
-      if (!mounted) return;
 
       // Wait a bit for state to update
       await Future.delayed(const Duration(milliseconds: 100));
@@ -134,27 +136,32 @@ class _CreateNewQuitPlanDialogState
       // Check state
       final state = ref.read(quitPlanViewModelProvider);
 
+      // Hide loader FIRST before showing messages or navigating
+      if (rootContext.mounted) {
+        FullScreenLoader.hide(rootContext);
+        // Wait a bit longer to ensure loader is fully hidden before next actions
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+
       if (state.hasError) {
-        Navigator.of(context).pop(); // Close loading
-        Flushbar(
-          message: state.error.toString(),
-          icon: const Icon(Icons.error_outline, color: Colors.white),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-          margin: const EdgeInsets.all(8),
-          borderRadius: BorderRadius.circular(12),
-          flushbarPosition: FlushbarPosition.TOP,
-        ).show(context);
+        if (rootContext.mounted) {
+          Flushbar(
+            message: state.error.toString(),
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(12),
+            flushbarPosition: FlushbarPosition.TOP,
+          ).show(rootContext);
+        }
       } else if (state.hasValue && state.value != null) {
         // Success
-        Navigator.of(context).pop(); // Close loading
-        Navigator.of(context).pop(); // Close create dialog
-
         // Refresh quit plan data
         ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
 
         // Show success message
-        if (mounted) {
+        if (rootContext.mounted) {
           Flushbar(
             message: 'New quit plan created successfully! 🎉',
             icon: const Icon(Icons.check_circle, color: Colors.white),
@@ -163,38 +170,47 @@ class _CreateNewQuitPlanDialogState
             margin: const EdgeInsets.all(16),
             borderRadius: BorderRadius.circular(12),
             flushbarPosition: FlushbarPosition.TOP,
-          ).show(context);
+          ).show(rootContext);
         }
 
-        // Navigate to main
-        if (mounted) {
-          context.go('/main');
+        // Navigate to main after a small delay
+        if (rootContext.mounted) {
+          await Future.delayed(const Duration(milliseconds: 100));
+          if (rootContext.mounted) {
+            rootContext.go('/main');
+          }
         }
       } else {
         // Still loading or unknown state
-        Navigator.of(context).pop(); // Close loading
-        Flushbar(
-          message: 'Failed to create quit plan',
-          icon: const Icon(Icons.error_outline, color: Colors.white),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-          margin: const EdgeInsets.all(8),
-          borderRadius: BorderRadius.circular(12),
-          flushbarPosition: FlushbarPosition.TOP,
-        ).show(context);
+        if (rootContext.mounted) {
+          Flushbar(
+            message: 'Failed to create quit plan',
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(12),
+            flushbarPosition: FlushbarPosition.TOP,
+          ).show(rootContext);
+        }
       }
     } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading
-      Flushbar(
-        message: 'Failed to create quit plan: ${e.toString()}',
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-        margin: const EdgeInsets.all(8),
-        borderRadius: BorderRadius.circular(12),
-        flushbarPosition: FlushbarPosition.TOP,
-      ).show(context);
+      // Hide loader in case of error
+      if (rootContext.mounted) {
+        FullScreenLoader.hide(rootContext);
+        await Future.delayed(const Duration(milliseconds: 200));
+        if (rootContext.mounted) {
+          Flushbar(
+            message: 'Failed to create quit plan: ${e.toString()}',
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(12),
+            flushbarPosition: FlushbarPosition.TOP,
+          ).show(rootContext);
+        }
+      }
     }
   }
 
@@ -413,4 +429,3 @@ class _CreateNewQuitPlanDialogState
     );
   }
 }
-
