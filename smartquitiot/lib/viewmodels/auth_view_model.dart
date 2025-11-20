@@ -1,11 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:logger/logger.dart';
 import '../models/state/auth_state.dart';
 import '../repositories/auth_repository.dart';
 import '../services/token_storage_service.dart';
 
 class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
+  final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 3,
+      lineLength: 75,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
 
   AuthViewModel(this._authRepository) : super(const AuthState());
 
@@ -149,7 +160,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    print('🚪 [AuthViewModel] Starting logout...');
+    _logger.i('🚪 [AuthViewModel] Starting logout...');
     state = state.copyWith(isLoading: true, error: null);
     try {
       // AuthRepository.logout() already handles clearing tokens
@@ -158,14 +169,47 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
       // Clear state immediately
       state = state.clearAuth();
-      print('✅ [AuthViewModel] Logout completed successfully');
+      _logger.i('✅ [AuthViewModel] Logout completed successfully');
     } catch (e) {
       // Even if logout fails, clear state and tokens
-      print('⚠️ [AuthViewModel] Logout error (non-critical): $e');
+      _logger.w('⚠️ [AuthViewModel] Logout error (non-critical): $e');
       final tokenStorage = TokenStorageService();
       await tokenStorage.clearTokens();
       state = state.clearAuth();
-      print('✅ [AuthViewModel] State and tokens cleared despite error');
+      _logger.i('✅ [AuthViewModel] State and tokens cleared despite error');
+    }
+  }
+
+  /// Helper method to verify tokens are cleared after logout
+  Future<bool> verifyTokensCleared() async {
+    final tokenStorage = TokenStorageService();
+    final accessToken = await tokenStorage.getAccessToken();
+    final refreshToken = await tokenStorage.getRefreshToken();
+    final isCleared = accessToken == null && refreshToken == null;
+    if (!isCleared) {
+      _logger.w('⚠️ [AuthViewModel] WARNING: Tokens still exist after logout!');
+      _logger.w('   Access token: ${accessToken != null ? "EXISTS" : "NULL"}');
+      _logger.w(
+        '   Refresh token: ${refreshToken != null ? "EXISTS" : "NULL"}',
+      );
+    }
+    return isCleared;
+  }
+
+  /// Clear authentication data when app restarts
+  /// This ensures app always starts from login screen when restarted
+  Future<void> clearAuthOnRestart() async {
+    _logger.i('🔄 [AuthViewModel] Clearing auth data on app restart...');
+    try {
+      await _authRepository.clearAuthData();
+      state = state.clearAuth();
+      _logger.i('✅ [AuthViewModel] Auth data cleared on restart');
+    } catch (e) {
+      _logger.w('⚠️ [AuthViewModel] Error clearing auth on restart: $e');
+      // Force clear even if there's an error
+      final tokenStorage = TokenStorageService();
+      await tokenStorage.clearTokens();
+      state = state.clearAuth();
     }
   }
 

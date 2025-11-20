@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'coach_detail_screen.dart';
 import 'coach_list_items.dart';
 import '../../../providers/coach_provider.dart';
@@ -63,7 +64,11 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
         centerTitle: true,
         title: const Text(
           'Choose a Coach',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),

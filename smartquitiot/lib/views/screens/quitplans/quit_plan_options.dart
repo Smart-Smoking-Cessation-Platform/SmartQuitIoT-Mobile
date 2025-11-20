@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:SmartQuitIoT/views/screens/missions/suggested_mission_screen.dart';
 
 class QuitPlanOptionsScreen extends StatelessWidget {
@@ -142,16 +143,7 @@ class QuitPlanOptionsScreen extends StatelessWidget {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Creating new plan...'),
-              backgroundColor: color,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
+          context.push('/quit-plan/create');
         }
       },
       child: Container(

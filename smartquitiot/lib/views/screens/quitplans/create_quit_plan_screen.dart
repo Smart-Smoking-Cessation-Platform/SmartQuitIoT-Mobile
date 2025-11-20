@@ -337,7 +337,7 @@ class _FullScreenLoadingBarrier extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: Container(
+      child: Material(
         color: Colors.black.withOpacity(0.4),
         child: const Center(
           child: Column(
@@ -352,12 +352,12 @@ class _FullScreenLoadingBarrier extends StatelessWidget {
               ),
               SizedBox(height: 16),
               Text(
-                'Creating your quit plan...',
+                'Create Quit Plan',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                   letterSpacing: 0.1,
                 ),
               ),

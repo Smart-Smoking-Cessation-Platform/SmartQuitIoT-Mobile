@@ -1,6 +1,7 @@
 // lib/views/screens/appointments/appointments_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:another_flushbar/flushbar.dart';
 import '../../../models/appointment.dart';
 import '../../../services/appointment_service.dart';
 import '../../../services/token_storage_service.dart';
@@ -57,7 +58,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       final tokenService = TokenStorageService();
       final token = await tokenService.getAccessToken();
       if (token == null || token.isEmpty) {
-        throw Exception('Bạn chưa đăng nhập.');
+        throw Exception('You are not logged in.');
       }
 
       final service = AppointmentService();
@@ -159,7 +160,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     }
 
     return _appointments.where((a) {
-      final s = a.runtimeStatus.trim().toUpperCase();
+      final s = (a.runtimeStatus ?? '').trim().toUpperCase();
       return aliases.contains(s);
     }).toList();
   }
@@ -194,9 +195,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final tokenService = TokenStorageService();
     final token = await tokenService.getAccessToken();
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bạn chưa đăng nhập hoặc token hết hạn')),
-      );
+      Flushbar(
+        message: 'You are not logged in or token has expired',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -204,36 +211,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.3),
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
-                strokeWidth: 3,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Preparing meeting...',
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -256,9 +234,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     } catch (e, st) {
       debugPrint('[Join] requestJoinToken failed: $e\n$st');
       Navigator.pop(context); // remove loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể lấy token vào phòng: $e')),
-      );
+      Flushbar(
+        message: 'Cannot get token to join room: $e',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     }
   }
 
@@ -453,9 +437,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final tokenService = TokenStorageService();
     final token = await tokenService.getAccessToken();
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập.')));
+      Flushbar(
+        message: 'You are not logged in.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -480,36 +470,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.3),
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
-                strokeWidth: 3,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Submitting rating...',
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -529,17 +490,29 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       });
 
       Navigator.pop(context); // remove loading
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Thank your feedback!')));
+      Flushbar(
+        message: 'Thank you for your feedback!',
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     } catch (e, st) {
       try {
         Navigator.pop(context);
       } catch (_) {}
       debugPrint('[Rate] failed: $e\n$st');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Can not send feedback: ${e.toString()}')),
-      );
+      Flushbar(
+        message: 'Cannot send feedback: ${e.toString()}',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -615,9 +588,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final tokenService = TokenStorageService();
     final token = await tokenService.getAccessToken();
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập.')));
+      Flushbar(
+        message: 'You are not logged in.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -625,36 +604,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.3),
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
-                strokeWidth: 3,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Cancelling appointment...',
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
     try {
       final svc = AppointmentService();
@@ -663,9 +613,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
       Navigator.pop(context); // remove loading
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Hủy lịch thành công')));
+      Flushbar(
+        message: 'Appointment cancelled successfully',
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
 
       // refresh list from server (safer than local mutation)
       await _fetchAppointments();
@@ -674,138 +630,34 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         Navigator.pop(context);
       } catch (_) {}
       debugPrint('[Cancel] failed: $e\n$st');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Không thể hủy lịch: $e')));
+      Flushbar(
+        message: 'Cannot cancel appointment: $e',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     }
   }
 
   Widget _buildList(List<Appointment> list) {
-    if (_loading) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null)
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
-              strokeWidth: 3,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading appointments...',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            ),
-          ],
-        ),
+        child: Text(_error!, style: const TextStyle(color: Colors.red)),
       );
-    }
-
-    if (_error != null) {
-      return RefreshIndicator(
-        onRefresh: _fetchAppointments,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-            Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.error_outline_rounded,
-                    size: 64,
-                    color: Colors.red.shade300,
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.red.shade700,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _fetchAppointments,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Retry'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryGreen,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
 
     if (list.isEmpty) {
       return RefreshIndicator(
         onRefresh: _fetchAppointments,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-            Center(
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryGreen.withOpacity(0.1),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.event_busy_rounded,
-                      size: 64,
-                      color: Colors.grey.shade400,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'No appointments',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 48),
-                    child: Text(
-                      'You don\'t have any appointments in this category yet',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          children: const [
+            SizedBox(height: 60),
+            Center(child: Text('No appointments')),
+            SizedBox(height: 60),
           ],
         ),
       );
@@ -818,9 +670,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           child: SizedBox(
             height: constraints.maxHeight,
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, i) {
                 final a = list[i];
                 DateTime? dateParsed;
@@ -842,13 +694,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
                 final canJoin = _isWithinJoinWindow(a);
 
-                final isCancelled = a.runtimeStatus.toUpperCase().contains(
-                  'CANCEL',
-                );
+                final isCancelled = (a.runtimeStatus ?? '')
+                    .toUpperCase()
+                    .contains('CANCEL');
 
                 // determine if this appointment is in Completed state
                 final isCompleted =
-                    a.runtimeStatus.toUpperCase() == 'COMPLETED';
+                    (a.runtimeStatus ?? '').toUpperCase() == 'COMPLETED';
 
                 // prefer server-provided flag if available, else fall back to client-side _ratedMap
                 final hasRated = (a.hasRated != null)
@@ -858,31 +710,21 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                     _isSubmitting &&
                     _submittingRatingAppointmentId == a.appointmentId;
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
                     color: cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isCancelled
-                          ? Colors.grey.shade200
-                          : primaryGreen.withOpacity(0.1),
-                      width: 1,
-                    ),
+                    borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: isCancelled
-                            ? Colors.black.withOpacity(0.03)
-                            : primaryGreen.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 0,
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                       onTap: () => _showAppointmentDetail(
                         context,
                         a,
@@ -890,53 +732,30 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                         timeLabel,
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 14,
+                        ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             // avatar + ghost on cancelled
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: isCancelled
-                                    ? null
-                                    : LinearGradient(
-                                        colors: [
-                                          primaryGreen.withOpacity(0.15),
-                                          primaryGreen.withOpacity(0.25),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                color: isCancelled
-                                    ? Colors.grey.shade100
-                                    : null,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: isCancelled
-                                        ? Colors.transparent
-                                        : primaryGreen.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: CircleAvatar(
-                                radius: 30,
-                                backgroundColor: Colors.transparent,
-                                child: Text(
-                                  initials,
-                                  style: TextStyle(
-                                    color: isCancelled
-                                        ? Colors.grey.shade600
-                                        : primaryGreen,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: isCancelled
+                                  ? Colors.grey.shade200
+                                  : mintBg,
+                              child: Text(
+                                initials,
+                                style: TextStyle(
+                                  color: isCancelled
+                                      ? Colors.grey.shade600
+                                      : primaryGreen,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 12),
                             // content column: make it flexible to avoid overflow
                             Expanded(
                               child: Column(
@@ -948,28 +767,25 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
                                       color: isCancelled
                                           ? Colors.grey.shade600
                                           : Colors.black87,
                                       decoration: isCancelled
                                           ? TextDecoration.lineThrough
                                           : TextDecoration.none,
-                                      letterSpacing: -0.3,
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      Icon(
-                                        Icons.calendar_today_rounded,
-                                        size: 16,
-                                        color: isCancelled
-                                            ? Colors.grey.shade400
-                                            : primaryGreen.withOpacity(0.7),
+                                      const Icon(
+                                        Icons.calendar_today,
+                                        size: 14,
+                                        color: Colors.grey,
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           dateLabel,
@@ -977,26 +793,22 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: isCancelled
-                                                ? Colors.grey.shade500
-                                                : Colors.black87,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
+                                                ? Colors.grey
+                                                : Colors.black54,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      Icon(
-                                        Icons.access_time_rounded,
-                                        size: 16,
-                                        color: isCancelled
-                                            ? Colors.grey.shade400
-                                            : primaryGreen.withOpacity(0.7),
+                                      const Icon(
+                                        Icons.access_time,
+                                        size: 14,
+                                        color: Colors.grey,
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           timeLabel,
@@ -1004,125 +816,90 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: isCancelled
-                                                ? Colors.grey.shade500
-                                                : Colors.black87,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
+                                                ? Colors.grey
+                                                : Colors.black54,
                                           ),
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isCancelled
-                                              ? Colors.grey.shade100
-                                              : primaryGreen.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        ),
+                                      Flexible(
                                         child: Text(
                                           'Slot ${a.slotId}',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: isCancelled
-                                                ? Colors.grey.shade600
-                                                : primaryGreen,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
+                                                ? Colors.grey.shade500
+                                                : Colors.black45,
+                                            fontSize: 12,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 8),
                                   Text(
-                                    'ID: ${a.appointmentId}',
+                                    'Appointment ID: ${a.appointmentId}',
                                     style: TextStyle(
-                                      color: Colors.grey.shade400,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black26,
+                                      fontSize: 12,
                                     ),
                                   ),
+                                  // show cancelled detail if cancelled (small red text)
+                                  if (isCancelled) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _cancelledLine(a),
+                                      style: TextStyle(
+                                        color: Colors.red.shade700,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             // right column: responsive controls
                             ConstrainedBox(
                               constraints: const BoxConstraints(
-                                minWidth: 100,
+                                minWidth: 90,
                                 maxWidth: 140,
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  _statusChip(a.runtimeStatus),
-                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 36,
+                                    child: Center(
+                                      child: _statusChip(a.runtimeStatus),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
                                   // Completed => show Rate button (if not rated) OR disabled "Rated"
                                   if (isCompleted && !isCancelled) ...[
                                     hasRated
-                                        ? Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 10,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade200,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.check_circle_rounded,
-                                                  size: 16,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                                const SizedBox(width: 6),
-                                                const Text(
-                                                  'Rated',
-                                                  style: TextStyle(
-                                                    color: Colors.black54,
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ],
+                                        ? ElevatedButton(
+                                            onPressed: null,
+                                            child: const Text('Rated'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.grey.shade300,
+                                              foregroundColor: Colors.white,
+                                              minimumSize: const Size(90, 36),
                                             ),
                                           )
                                         : isSubmittingThis
-                                        ? Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 10,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: primaryGreen,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: primaryGreen
-                                                      .withOpacity(0.3),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
+                                        ? ElevatedButton(
+                                            onPressed: null,
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const SizedBox(
-                                                  width: 14,
-                                                  height: 14,
+                                              children: const [
+                                                SizedBox(
+                                                  width: 16,
+                                                  height: 16,
                                                   child: CircularProgressIndicator(
                                                     strokeWidth: 2,
                                                     valueColor:
@@ -1131,89 +908,68 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                                         >(Colors.white),
                                                   ),
                                                 ),
-                                                const SizedBox(width: 8),
-                                                const Text(
-                                                  'Submitting',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
+                                                SizedBox(width: 8),
+                                                Text('Submitting'),
                                               ],
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              minimumSize: const Size(90, 36),
+                                              backgroundColor: primaryGreen,
                                             ),
                                           )
                                         : ElevatedButton(
                                             onPressed: () => _onRatePressed(a),
+                                            child: const Text('Rate'),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: primaryGreen,
-                                              foregroundColor: Colors.white,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 10,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                              elevation: 2,
-                                              shadowColor: primaryGreen
-                                                  .withOpacity(0.3),
-                                            ),
-                                            child: const Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.star_rounded,
-                                                  size: 16,
-                                                ),
-                                                SizedBox(width: 6),
-                                                Text(
-                                                  'Rate',
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ],
+                                              minimumSize: const Size(90, 36),
                                             ),
                                           ),
                                   ]
                                   // Join button only if not cancelled, status IN_PROGRESS and within window
                                   else if (!isCancelled &&
-                                      a.runtimeStatus.toUpperCase().contains(
+                                      a.runtimeStatus != null &&
+                                      a.runtimeStatus!.toUpperCase().contains(
                                         'IN_PROGRESS',
                                       ) &&
                                       canJoin)
                                     ElevatedButton.icon(
                                       onPressed: () => _onJoinPressed(a),
                                       icon: const Icon(
-                                        Icons.video_call_rounded,
-                                        size: 18,
+                                        Icons.video_call,
+                                        size: 16,
                                       ),
-                                      label: const Text(
-                                        'Join',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
+                                      label: const Text('Join'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: primaryGreen,
-                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(80, 36),
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 10,
+                                          horizontal: 8,
+                                          vertical: 6,
                                         ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
+                                      ),
+                                    )
+                                  // Pending: show Cancel button
+                                  else if (!isCancelled &&
+                                      a.runtimeStatus != null &&
+                                      a.runtimeStatus!.toUpperCase().contains(
+                                        'PENDING',
+                                      ))
+                                    SizedBox(
+                                      width: 110,
+                                      height: 36,
+                                      child: ElevatedButton(
+                                        onPressed: () => _onCancelPressed(a),
+                                        child: const Text('Cancel'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red.shade200,
+                                          foregroundColor: Colors.red.shade900,
+                                          minimumSize: const Size(80, 36),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
-                                        ),
-                                        elevation: 2,
-                                        shadowColor: primaryGreen.withOpacity(
-                                          0.3,
                                         ),
                                       ),
                                     )
@@ -1226,11 +982,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                         timeLabel,
                                       ),
                                       icon: Icon(
-                                        Icons.chevron_right_rounded,
+                                        Icons.chevron_right,
                                         color: isCancelled
                                             ? Colors.grey.shade400
-                                            : Colors.grey.shade600,
-                                        size: 28,
+                                            : Colors.grey,
                                       ),
                                     ),
                                 ],
@@ -1259,63 +1014,56 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
   Widget _statusChip(String? status) {
     final s = (status ?? '').toUpperCase();
-    Color bgColor;
-    Color textColor;
-    IconData icon;
+    Color color;
     String text;
     switch (s) {
       case 'PENDING':
-        bgColor = Colors.orange.shade50;
-        textColor = Colors.orange.shade700;
-        icon = Icons.pending_rounded;
+        color = Colors.orange.shade700;
         text = 'Pending';
         break;
       case 'IN_PROGRESS':
       case 'INPROGRESS':
       case 'IN PROGRESS':
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade700;
-        icon = Icons.play_circle_outline_rounded;
+        color = Colors.blue.shade700;
         text = 'In progress';
         break;
       case 'COMPLETED':
-        bgColor = Colors.green.shade50;
-        textColor = Colors.green.shade700;
-        icon = Icons.check_circle_outline_rounded;
+        color = Colors.green.shade600;
         text = 'Completed';
         break;
       case 'CANCELLED':
       case 'CANCELED':
-        bgColor = Colors.red.shade50;
-        textColor = Colors.red.shade700;
-        icon = Icons.cancel_outlined;
+        color = Colors.red.shade600;
         text = 'Cancelled';
         break;
       default:
-        bgColor = Colors.grey.shade100;
-        textColor = Colors.grey.shade700;
-        icon = Icons.help_outline_rounded;
+        color = Colors.grey;
         text = s.isEmpty ? 'Unknown' : s;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: textColor.withOpacity(0.2), width: 1),
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: textColor),
+          const Icon(Icons.circle, size: 8, color: Colors.white),
           const SizedBox(width: 6),
           Text(
             text,
-            style: TextStyle(
-              color: textColor,
+            style: const TextStyle(
+              color: Colors.white,
               fontWeight: FontWeight.w600,
-              fontSize: 11,
-              letterSpacing: 0.2,
+              fontSize: 12,
             ),
           ),
         ],
@@ -1341,383 +1089,232 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     return cancelledBy;
   }
 
+  String _cancelledLine(Appointment a) {
+    final who = _prettyCancelledBy(a.cancelledBy);
+    final at = a.cancelledAt;
+    final when = at != null
+        ? DateFormat('HH:mm • dd MMM yyyy').format(at.toLocal())
+        : '-';
+    return 'Cancelled by $who • $when';
+  }
+
   void _showAppointmentDetail(
     BuildContext context,
     Appointment a,
     String dateLabel,
     String timeLabel,
   ) {
-    final isCancelled = a.runtimeStatus.toUpperCase().contains('CANCEL');
-    final isCompleted = a.runtimeStatus.toUpperCase() == 'COMPLETED';
-    final initials = _initialsFromName(a.coachName);
+    final isCancelled = (a.runtimeStatus ?? '').toUpperCase().contains(
+      'CANCEL',
+    );
 
     showDialog(
       context: context,
       builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header với gradient
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [primaryGreen, primaryGreen.withOpacity(0.8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.event_note_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: primaryGreen.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Details',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: -0.5,
-                              ),
+                      child: const Icon(
+                        Icons.event_note,
+                        color: primaryGreen,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Appointment Details',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
-                            const SizedBox(height: 4),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'ID: ${a.appointmentId}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Info cards
+                _buildDetailRow(
+                  icon: Icons.person,
+                  label: 'Coach',
+                  value: a.coachName,
+                  iconColor: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                _buildDetailRow(
+                  icon: Icons.calendar_today,
+                  label: 'Date',
+                  value: dateLabel,
+                  iconColor: Colors.orange,
+                ),
+                const SizedBox(height: 16),
+                _buildDetailRow(
+                  icon: Icons.access_time,
+                  label: 'Time',
+                  value: timeLabel,
+                  iconColor: Colors.purple,
+                ),
+                const SizedBox(height: 16),
+                _buildDetailRow(
+                  icon: Icons.confirmation_number,
+                  label: 'Slot',
+                  value: '${a.slotId}',
+                  iconColor: Colors.teal,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 20,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Status',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          _statusChip(a.runtimeStatus),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (a.joinWindowStart != null && a.joinWindowEnd != null) ...[
+                  const SizedBox(height: 16),
+                  _buildDetailRow(
+                    icon: Icons.video_call,
+                    label: 'Join Window',
+                    value:
+                        '${_fmtDt(a.joinWindowStart)} → ${_fmtDt(a.joinWindowEnd)}',
+                    iconColor: Colors.green,
+                  ),
+                ],
+                if (isCancelled) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.cancel_outlined,
+                              color: Colors.red.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
                             Text(
-                              'ID: ${a.appointmentId}',
+                              'Cancellation Info',
                               style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.red.shade700,
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          padding: const EdgeInsets.all(8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Coach Section với Avatar
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      // Coach Card
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: mintBg,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: primaryGreen.withOpacity(0.2),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    primaryGreen.withOpacity(0.2),
-                                    primaryGreen.withOpacity(0.3),
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: primaryGreen.withOpacity(0.3),
-                                    blurRadius: 12,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: CircleAvatar(
-                                radius: 32,
-                                backgroundColor: Colors.transparent,
-                                child: Text(
-                                  initials,
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: primaryGreen,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Coach',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    a.coachName,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black87,
-                                      letterSpacing: -0.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Status Chip
-                      Center(child: _statusChip(a.runtimeStatus)),
-
-                      const SizedBox(height: 24),
-
-                      // Divider
-                      Divider(
-                        color: Colors.grey.shade200,
-                        thickness: 1,
-                        height: 1,
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Details Section
-                      _buildEnhancedDetailRow(
-                        Icons.calendar_today_rounded,
-                        'Date',
-                        dateLabel,
-                        Colors.blue,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildEnhancedDetailRow(
-                        Icons.access_time_rounded,
-                        'Time',
-                        timeLabel,
-                        Colors.orange,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildEnhancedDetailRow(
-                        Icons.confirmation_number_rounded,
-                        'Slot',
-                        'Slot ${a.slotId}',
-                        Colors.purple,
-                      ),
-
-                      // Join window chỉ hiển thị khi không cancelled và không completed
-                      if (!isCancelled && !isCompleted) ...[
-                        const SizedBox(height: 20),
-                        _buildEnhancedDetailRow(
-                          Icons.video_call_rounded,
-                          'Join Window',
-                          '${_fmtDt(a.joinWindowStart)} → ${_fmtDt(a.joinWindowEnd)}',
-                          Colors.teal,
-                        ),
-                      ],
-
-                      // Cancelled Section
-                      if (isCancelled) ...[
-                        const SizedBox(height: 24),
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.red.shade200,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.shade100,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(
-                                      Icons.cancel_rounded,
-                                      size: 20,
-                                      color: Colors.red.shade700,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Cancelled',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.red.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              _buildEnhancedDetailRow(
-                                Icons.person_outline_rounded,
-                                'Cancelled by',
-                                _prettyCancelledBy(a.cancelledBy),
-                                Colors.red,
-                                small: true,
-                              ),
-                              const SizedBox(height: 12),
-                              _buildEnhancedDetailRow(
-                                Icons.schedule_rounded,
-                                'Cancelled at',
-                                _fmtDt(a.cancelledAt),
-                                Colors.red,
-                                small: true,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Action Buttons
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: Column(
-                    children: [
-                      // Cancel button cho PENDING status
-                      if (!isCancelled &&
-                          a.runtimeStatus.toUpperCase().contains(
-                            'PENDING',
-                          )) ...[
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _onCancelPressed(a);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.shade50,
-                              foregroundColor: Colors.red.shade700,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(
-                                  color: Colors.red.shade300,
-                                  width: 1.5,
-                                ),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.cancel_outlined, size: 20),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Cancel Appointment',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ),
                         const SizedBox(height: 12),
-                      ],
-                      // Close Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryGreen,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 3,
-                            shadowColor: primaryGreen.withOpacity(0.4),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.check_rounded, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Close',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
+                        _buildDetailRow(
+                          icon: Icons.person_outline,
+                          label: 'Cancelled by',
+                          value: _prettyCancelledBy(a.cancelledBy),
+                          iconColor: Colors.red,
+                          compact: true,
                         ),
+                        if (a.cancelledAt != null) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            icon: Icons.schedule,
+                            label: 'Cancelled at',
+                            value: _fmtDt(a.cancelledAt),
+                            iconColor: Colors.red,
+                            compact: true,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                // Close button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryGreen,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1728,46 +1325,44 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     );
   }
 
-  Widget _buildEnhancedDetailRow(
-    IconData icon,
-    String label,
-    String value,
-    Color iconColor, {
-    bool small = false,
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color iconColor,
+    bool compact = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(compact ? 6 : 8),
           decoration: BoxDecoration(
             color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: small ? 18 : 20, color: iconColor),
+          child: Icon(icon, size: compact ? 16 : 20, color: iconColor),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                label.toUpperCase(),
+                label,
                 style: TextStyle(
-                  fontSize: small ? 10 : 11,
+                  fontSize: compact ? 11 : 12,
                   color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: small ? 14 : 16,
+                  fontSize: compact ? 13 : 15,
                   color: Colors.black87,
                   fontWeight: FontWeight.w600,
-                  height: 1.3,
                 ),
               ),
             ],
@@ -1803,7 +1398,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         preferredSize: const Size.fromHeight(110),
         child: AppBar(
           elevation: 0,
-          automaticallyImplyLeading: true,
           backgroundColor: primaryGreen,
           flexibleSpace: Container(
             decoration: const BoxDecoration(
@@ -1814,9 +1408,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
               ),
             ),
           ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: null,
+          ),
+          centerTitle: true,
           title: const Text(
             'My Appointments',
-            style: TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(48),

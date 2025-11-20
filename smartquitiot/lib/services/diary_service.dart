@@ -12,7 +12,7 @@ class DiaryService {
   DiaryService(this._authRepository) {
     final apiBaseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
     baseUrl = '$apiBaseUrl/diary-records';
-    
+
     // Setup Dio interceptors
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -21,14 +21,14 @@ class DiaryService {
           final token = await _authRepository.getAccessToken();
           print('🔑 Diary API Token: $token');
           print('📡 Diary Request to: ${options.uri}');
-          
+
           if (token == null || token.isEmpty) {
             print('⚠️ WARNING: Token is null or empty!');
             print('⚠️ Checking if user is authenticated...');
             final isAuth = await _authRepository.isAuthenticated();
             print('⚠️ Is authenticated: $isAuth');
           }
-          
+
           options.headers['Content-Type'] = 'application/json';
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -51,10 +51,7 @@ class DiaryService {
 
   /// Create diary record
   Future<Response> createDiaryRecord(DiaryRecordRequest request) async {
-    return await _dio.post(
-      '$baseUrl/log',
-      data: request.toJson(),
-    );
+    return await _dio.post('$baseUrl/log', data: request.toJson());
   }
 
   /// Get diary history (list summary)
@@ -70,6 +67,11 @@ class DiaryService {
   /// Get today's diary record
   Future<Response> getTodayDiaryRecord() async {
     return await _dio.get('$baseUrl/today');
+  }
+
+  /// Check if today already has a diary record (boolean response)
+  Future<Response> checkTodayDiaryRecord() async {
+    return await _dio.get('$baseUrl/check-today');
   }
 
   /// Get diary charts data

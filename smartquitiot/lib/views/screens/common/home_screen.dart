@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
               FormMetricCard(),
               // AnalysisCard(),
               CommunityTrendingCard(),
-             
+
               RecentNewsCard(),
             ],
           ),

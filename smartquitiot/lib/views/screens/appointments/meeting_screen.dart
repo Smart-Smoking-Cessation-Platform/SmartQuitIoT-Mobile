@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:another_flushbar/flushbar.dart';
 import '../../../services/appointment_service.dart';
 import '../../../services/token_storage_service.dart';
 
@@ -70,20 +71,26 @@ class _MeetingScreenState extends State<MeetingScreen> {
   Future<void> _initAndJoin() async {
     try {
       if (_agoraAppId.isEmpty) {
-        throw Exception('AGORA_APPID is not set (FE env). Please configure AGORA_APPID.');
+        throw Exception(
+          'AGORA_APPID is not set (FE env). Please configure AGORA_APPID.',
+        );
       }
 
       // request permissions first
       final cam = await Permission.camera.request();
       final mic = await Permission.microphone.request();
       if (!cam.isGranted || !mic.isGranted) {
-        _showError('Permission camera/microphone bị từ chối. Vui lòng cấp permission trước khi vào cuộc gọi.');
+        _showError(
+          'Camera/microphone permission denied. Please grant permission before joining the call.',
+        );
         setState(() => _loading = false);
         return;
       }
 
       // use prefilled token if provided
-      if (widget.prefilledChannel != null && widget.prefilledToken != null && widget.prefilledUid != null) {
+      if (widget.prefilledChannel != null &&
+          widget.prefilledToken != null &&
+          widget.prefilledUid != null) {
         _channel = widget.prefilledChannel!;
         _token = widget.prefilledToken!;
         _localUid = widget.prefilledUid!;
@@ -103,10 +110,16 @@ class _MeetingScreenState extends State<MeetingScreen> {
         throw Exception('Not logged in.');
       }
 
-      final data = await _meetingService.requestJoinToken(widget.appointmentId, accessToken);
+      final data = await _meetingService.requestJoinToken(
+        widget.appointmentId,
+        accessToken,
+      );
       debugPrint('[Meeting] join token response: $data');
 
-      if (data == null || !data.containsKey('channel') || !data.containsKey('token') || !data.containsKey('uid')) {
+      if (data == null ||
+          !data.containsKey('channel') ||
+          !data.containsKey('token') ||
+          !data.containsKey('uid')) {
         throw Exception('Invalid join token response from server.');
       }
 
@@ -114,7 +127,9 @@ class _MeetingScreenState extends State<MeetingScreen> {
       _token = (data['token'] as String?) ?? '';
       _localUid = (data['uid'] as num).toInt();
 
-      debugPrint('[Meeting] about to join channel=$_channel uid=$_localUid tokenPresent=${_token.isNotEmpty}');
+      debugPrint(
+        '[Meeting] about to join channel=$_channel uid=$_localUid tokenPresent=${_token.isNotEmpty}',
+      );
 
       if (_token.isEmpty) {
         _showError('Cannot join meeting: missing token.');
@@ -141,42 +156,72 @@ class _MeetingScreenState extends State<MeetingScreen> {
     await _engine!.initialize(RtcEngineContext(appId: _agoraAppId));
 
     // Set channel profile to communication (for video calls)
-    await _engine!.setChannelProfile(ChannelProfileType.channelProfileCommunication);
-    
+    await _engine!.setChannelProfile(
+      ChannelProfileType.channelProfileCommunication,
+    );
+
     // Set client role to broadcaster (can send and receive)
     await _engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
 
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (connection, elapsed) {
-          debugPrint('[Agora] join success; elapsed=$elapsed; localUid=$_localUid');
+          debugPrint(
+            '[Agora] join success; elapsed=$elapsed; localUid=$_localUid',
+          );
           if (mounted) {
             setState(() {
               _joined = true;
               _meetingStart = DateTime.now();
               _startMeetingTimer();
             });
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Joined channel ✅')));
+            Flushbar(
+              message: 'Joined channel ✅',
+              icon: const Icon(Icons.check_circle, color: Colors.white),
+              backgroundColor: const Color(0xFF00D09E),
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(8),
+              borderRadius: BorderRadius.circular(8),
+              flushbarPosition: FlushbarPosition.TOP,
+            ).show(context);
           }
         },
         onUserJoined: (connection, remoteUid, elapsed) {
           debugPrint('[Agora] remote joined: $remoteUid elapsed=$elapsed');
           if (mounted) {
             setState(() => _remoteUid = remoteUid);
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Remote joined ✅')));
+            Flushbar(
+              message: 'Remote joined ✅',
+              icon: const Icon(Icons.check_circle, color: Colors.white),
+              backgroundColor: const Color(0xFF00D09E),
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(8),
+              borderRadius: BorderRadius.circular(8),
+              flushbarPosition: FlushbarPosition.TOP,
+            ).show(context);
           }
         },
         onUserOffline: (connection, remoteUid, reason) {
           debugPrint('[Agora] remote offline: $remoteUid reason=$reason');
-          if (mounted) setState(() { if (_remoteUid == remoteUid) _remoteUid = null; });
+          if (mounted)
+            setState(() {
+              if (_remoteUid == remoteUid) _remoteUid = null;
+            });
         },
         onLeaveChannel: (connection, stats) {
           debugPrint('[Agora] left channel stats=$stats');
-          if (mounted) setState(() { _joined = false; _remoteUid = null; });
+          if (mounted)
+            setState(() {
+              _joined = false;
+              _remoteUid = null;
+            });
         },
-        onConnectionStateChanged: (connection, connectionState, connectionChangedReason) {
-          debugPrint('[Agora] connectionState=$connectionState reason=$connectionChangedReason channel=${connection.channelId}');
-        },
+        onConnectionStateChanged:
+            (connection, connectionState, connectionChangedReason) {
+              debugPrint(
+                '[Agora] connectionState=$connectionState reason=$connectionChangedReason channel=${connection.channelId}',
+              );
+            },
         onTokenPrivilegeWillExpire: (connection, token) {
           debugPrint('[Agora] token will expire soon: $token');
         },
@@ -185,16 +230,24 @@ class _MeetingScreenState extends State<MeetingScreen> {
           if (mounted) _showError('Agora error $err: $msg');
         },
         onLocalVideoStateChanged: (source, state, error) {
-          debugPrint('[Agora] local video state changed: source=$source state=$state error=$error');
+          debugPrint(
+            '[Agora] local video state changed: source=$source state=$state error=$error',
+          );
         },
         onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
-          debugPrint('[Agora] remote video state changed: uid=$remoteUid state=$state reason=$reason');
+          debugPrint(
+            '[Agora] remote video state changed: uid=$remoteUid state=$state reason=$reason',
+          );
         },
         onFirstLocalVideoFrame: (source, width, height, elapsed) {
-          debugPrint('[Agora] first local video frame: ${width}x$height elapsed=$elapsed');
+          debugPrint(
+            '[Agora] first local video frame: ${width}x$height elapsed=$elapsed',
+          );
         },
         onFirstRemoteVideoFrame: (connection, remoteUid, width, height, elapsed) {
-          debugPrint('[Agora] first remote video frame: uid=$remoteUid ${width}x$height');
+          debugPrint(
+            '[Agora] first remote video frame: uid=$remoteUid ${width}x$height',
+          );
         },
       ),
     );
@@ -223,12 +276,17 @@ class _MeetingScreenState extends State<MeetingScreen> {
     _joinTimeoutTimer = Timer(_joinTimeout, () {
       if (!_joined) {
         debugPrint('[Meeting] join timeout after ${_joinTimeout.inSeconds}s');
-        if (mounted) _showError('Không thể join trong ${_joinTimeout.inSeconds}s — kiểm tra token / network / appId.');
+        if (mounted)
+          _showError(
+            'Cannot join within ${_joinTimeout.inSeconds}s — check token / network / appId.',
+          );
         _leaveChannel();
       }
     });
 
-    debugPrint('[Meeting] calling joinChannel tokenPresent=${_token.isNotEmpty} channel=$_channel uid=$_localUid');
+    debugPrint(
+      '[Meeting] calling joinChannel tokenPresent=${_token.isNotEmpty} channel=$_channel uid=$_localUid',
+    );
 
     await _engine!.joinChannel(
       token: _token,
@@ -324,7 +382,9 @@ class _MeetingScreenState extends State<MeetingScreen> {
       final engine = _engine;
       if (engine != null) {
         await engine.leaveChannel();
-        try { await engine.stopPreview(); } catch (_) {}
+        try {
+          await engine.stopPreview();
+        } catch (_) {}
         await engine.release();
       }
     } catch (e) {
@@ -333,33 +393,58 @@ class _MeetingScreenState extends State<MeetingScreen> {
       _expiryTimer?.cancel();
       _joinTimeoutTimer?.cancel();
       _meetingTimer?.cancel();
-      if (mounted) setState(() {
-        _joined = false;
-        _engine = null;
-        _remoteUid = null;
-      });
+      if (mounted)
+        setState(() {
+          _joined = false;
+          _engine = null;
+          _remoteUid = null;
+        });
       if (mounted) Navigator.of(context).maybePop();
     }
   }
 
   void _showExpiredDialog() {
     if (!mounted) return;
-    showDialog(context: context, builder: (_) => AlertDialog(
-      title: const Text('Session ended'),
-      content: const Text('This meeting session expired.'),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-    ));
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Session ended'),
+        content: const Text('This meeting session expired.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showError(String msg) {
     if (!mounted) return;
     debugPrint('[Meeting][UI Error] $msg');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-    showDialog(context: context, builder: (_) => AlertDialog(
-      title: const Text('Error'),
-      content: Text(msg),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-    ));
+    Flushbar(
+      message: msg,
+      icon: const Icon(Icons.error_outline, color: Colors.white),
+      backgroundColor: const Color(0xFF00D09E),
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(8),
+      borderRadius: BorderRadius.circular(8),
+      flushbarPosition: FlushbarPosition.TOP,
+    ).show(context);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(msg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -379,7 +464,7 @@ class _MeetingScreenState extends State<MeetingScreen> {
     if (_engine == null) {
       return const Center(child: Text('Starting preview...'));
     }
-    
+
     // Show placeholder if camera is off
     if (_cameraOff) {
       return Container(
@@ -405,14 +490,21 @@ class _MeetingScreenState extends State<MeetingScreen> {
                   color: Colors.black45,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text('You', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'You',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
         ),
       );
     }
-    
+
     // ✅ LUÔN dùng uid = 0 cho local preview (theo Agora docs)
     return Stack(
       children: [
@@ -432,7 +524,14 @@ class _MeetingScreenState extends State<MeetingScreen> {
               color: Colors.black45,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Text('You', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'You',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
       ],
@@ -461,7 +560,10 @@ class _MeetingScreenState extends State<MeetingScreen> {
           children: const [
             Icon(Icons.videocam_off, size: 64, color: Colors.white38),
             SizedBox(height: 12),
-            Text('Waiting for remote...', style: TextStyle(color: Colors.white70)),
+            Text(
+              'Waiting for remote...',
+              style: TextStyle(color: Colors.white70),
+            ),
           ],
         ),
       ),
@@ -469,14 +571,24 @@ class _MeetingScreenState extends State<MeetingScreen> {
   }
 
   Widget _buildStatusBar() {
-    final statusText = _joined ? 'Connected • ${_formattedMeetingDuration()}' : (_engine != null ? 'Connected (no remote yet)' : 'Joining...');
-    final color = _joined ? Colors.greenAccent : (_engine != null ? Colors.orangeAccent : Colors.grey);
+    final statusText = _joined
+        ? 'Connected • ${_formattedMeetingDuration()}'
+        : (_engine != null ? 'Connected (no remote yet)' : 'Joining...');
+    final color = _joined
+        ? Colors.greenAccent
+        : (_engine != null ? Colors.orangeAccent : Colors.grey);
     return Row(
       children: [
         Icon(Icons.circle, size: 12, color: color),
         const SizedBox(width: 8),
-        Expanded(child: Text(statusText, style: const TextStyle(color: Colors.white))),
-        if (_remoteUid != null) Text('Remote: $_remoteUid', style: const TextStyle(color: Colors.white70)),
+        Expanded(
+          child: Text(statusText, style: const TextStyle(color: Colors.white)),
+        ),
+        if (_remoteUid != null)
+          Text(
+            'Remote: $_remoteUid',
+            style: const TextStyle(color: Colors.white70),
+          ),
       ],
     );
   }
@@ -490,7 +602,9 @@ class _MeetingScreenState extends State<MeetingScreen> {
       children: [
         // background full area: either remote or local (depending on swap / remote presence)
         Positioned.fill(
-          child: isLocalFull ? _decoratedVideo(_renderLocalPreview()) : _decoratedVideo(_renderRemoteView()),
+          child: isLocalFull
+              ? _decoratedVideo(_renderLocalPreview())
+              : _decoratedVideo(_renderRemoteView()),
         ),
 
         // top status bar
@@ -523,13 +637,17 @@ class _MeetingScreenState extends State<MeetingScreen> {
               height: 200,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: const [BoxShadow(blurRadius: 8, color: Colors.black26)],
+                boxShadow: const [
+                  BoxShadow(blurRadius: 8, color: Colors.black26),
+                ],
                 border: Border.all(color: Colors.white24),
                 color: Colors.black,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: isLocalFull ? _renderRemoteView() : _renderLocalPreview(),
+                child: isLocalFull
+                    ? _renderRemoteView()
+                    : _renderLocalPreview(),
               ),
             ),
           ),
@@ -543,7 +661,10 @@ class _MeetingScreenState extends State<MeetingScreen> {
           child: SafeArea(
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(999),
@@ -559,7 +680,9 @@ class _MeetingScreenState extends State<MeetingScreen> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: Icon(_cameraOff ? Icons.videocam_off : Icons.videocam),
+                      icon: Icon(
+                        _cameraOff ? Icons.videocam_off : Icons.videocam,
+                      ),
                       color: Colors.white,
                       tooltip: 'Camera',
                       onPressed: _toggleCamera,
@@ -594,7 +717,9 @@ class _MeetingScreenState extends State<MeetingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.title.isNotEmpty ? widget.title : 'Meeting - ${_channel.isNotEmpty ? _channel : widget.appointmentId}';
+    final title = widget.title.isNotEmpty
+        ? widget.title
+        : 'Meeting - ${_channel.isNotEmpty ? _channel : widget.appointmentId}';
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -605,24 +730,31 @@ class _MeetingScreenState extends State<MeetingScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          // video area
-          Expanded(child: _buildVideoStack()),
-          // small footer help text
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.grey[700]),
-                const SizedBox(width: 8),
-                Expanded(child: Text('Tap the small preview to swap/maximize. Timer: ${_formattedMeetingDuration()}')),
-                const SizedBox(width: 8),
+                // video area
+                Expanded(child: _buildVideoStack()),
+                // small footer help text
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.grey[700]),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Tap the small preview to swap/maximize. Timer: ${_formattedMeetingDuration()}',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }

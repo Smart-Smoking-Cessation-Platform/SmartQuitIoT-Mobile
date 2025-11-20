@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/quit_plan_homepage.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
 import '../../../utils/phase_theme.dart';
 import '../../../viewmodels/quit_plan_homepage_view_model.dart';
@@ -48,6 +49,12 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(quitPlanHomepageViewModelProvider);
+    final authState = ref.watch(authViewModelProvider);
+
+    // Only load data if user is authenticated
+    if (!authState.isAuthenticated) {
+      return const SizedBox.shrink();
+    }
 
     // Listen for mission refresh trigger (includes quit plan refresh)
     ref.listen(missionRefreshProvider, (previous, next) {
