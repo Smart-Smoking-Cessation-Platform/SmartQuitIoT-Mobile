@@ -7,12 +7,8 @@ import '../../../providers/mission_refresh_provider.dart';
 import '../../../models/quit_phase.dart';
 import '../../../models/request/create_new_quit_plan_request.dart';
 import '../../../utils/phase_theme.dart';
-import '../../../viewmodels/form_metric_view_model.dart';
-import '../../../models/response/form_metric_response.dart';
-import '../../../models/request/update_form_metric_request.dart';
 import '../../widgets/mission_complete_dialog.dart';
 import '../diary/diary_screen.dart';
-import '../form_metric/_create_form_metric_dialog.dart';
 import 'quit_plan_history_screen.dart';
 
 class QuitPlanScreen extends ConsumerStatefulWidget {
@@ -1839,9 +1835,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                 Navigator.of(context).pop();
                 _showSnack('New quit plan created successfully! 🎉');
 
-                // Show form metric dialog to create new form metric
-                await _showCreateFormMetricDialog();
-
                 // Refresh quit plan data
                 ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
               } catch (e) {
@@ -2444,62 +2437,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     }
 
     return result;
-  }
-
-  Future<void> _showCreateFormMetricDialog() async {
-    if (!mounted) return;
-
-    // Use CreateFormMetricDialog (required, cannot be dismissed)
-    final formMetricData = await Navigator.push<FormMetricDTO>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CreateFormMetricDialog(),
-        fullscreenDialog: true,
-      ),
-    );
-
-    if (formMetricData != null && mounted) {
-      try {
-        // Create form metric using updateFormMetric API (which creates if doesn't exist)
-        final request = UpdateFormMetricRequest(
-          smokeAvgPerDay: formMetricData.smokeAvgPerDay,
-          numberOfYearsOfSmoking: formMetricData.numberOfYearsOfSmoking,
-          cigarettesPerPackage: formMetricData.cigarettesPerPackage,
-          minutesAfterWakingToSmoke: formMetricData.minutesAfterWakingToSmoke,
-          smokingInForbiddenPlaces: formMetricData.smokingInForbiddenPlaces,
-          cigaretteHateToGiveUp: formMetricData.cigaretteHateToGiveUp,
-          morningSmokingFrequency: formMetricData.morningSmokingFrequency,
-          smokeWhenSick: formMetricData.smokeWhenSick,
-          moneyPerPackage: formMetricData.moneyPerPackage,
-          estimatedMoneySavedOnPlan: formMetricData.estimatedMoneySavedOnPlan,
-          amountOfNicotinePerCigarettes:
-              formMetricData.amountOfNicotinePerCigarettes,
-          estimatedNicotineIntakePerDay:
-              formMetricData.estimatedNicotineIntakePerDay,
-          interests: formMetricData.interests,
-          triggered: formMetricData.triggered,
-        );
-
-        final response = await _withBlockingLoader(() async {
-          return await ref
-              .read(formMetricViewModelProvider.notifier)
-              .updateFormMetric(request: request);
-        }, message: 'Saving form metric...');
-
-        if (response != null && mounted) {
-          _showSnack('Form metric created successfully! ✅');
-        } else {
-          _showSnack('Failed to create form metric', isError: true);
-        }
-      } catch (e) {
-        if (mounted) {
-          _showSnack(
-            'Failed to create form metric: ${_errorMessage(e)}',
-            isError: true,
-          );
-        }
-      }
-    }
   }
 }
 

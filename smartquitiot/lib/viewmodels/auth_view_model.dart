@@ -196,6 +196,23 @@ class AuthViewModel extends StateNotifier<AuthState> {
     return isCleared;
   }
 
+  /// Clear authentication data when app restarts
+  /// This ensures app always starts from login screen when restarted
+  Future<void> clearAuthOnRestart() async {
+    _logger.i('🔄 [AuthViewModel] Clearing auth data on app restart...');
+    try {
+      await _authRepository.clearAuthData();
+      state = state.clearAuth();
+      _logger.i('✅ [AuthViewModel] Auth data cleared on restart');
+    } catch (e) {
+      _logger.w('⚠️ [AuthViewModel] Error clearing auth on restart: $e');
+      // Force clear even if there's an error
+      final tokenStorage = TokenStorageService();
+      await tokenStorage.clearTokens();
+      state = state.clearAuth();
+    }
+  }
+
   void clearError() {
     if (state.error != null) {
       state = state.copyWith(error: null);

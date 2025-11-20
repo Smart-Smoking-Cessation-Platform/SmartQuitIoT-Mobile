@@ -65,7 +65,7 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
       } catch (_) {}
 
       if (coachId == null) {
-        throw Exception('Coach id không hợp lệ: ${widget.coach.id}');
+        throw Exception('Invalid coach id: ${widget.coach.id}');
       }
 
       await viewModel.loadCoachDetail(coachId, formattedDate);
@@ -156,13 +156,15 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
                                 );
 
                                 if (chosen.isBefore(todayOnly)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Vui lòng chọn ngày từ hôm nay trở đi.',
-                                      ),
-                                    ),
-                                  );
+                                  Flushbar(
+                                    message: 'Please select a date from today onwards.',
+                                    icon: const Icon(Icons.error_outline, color: Colors.white),
+                                    backgroundColor: const Color(0xFF00D09E),
+                                    duration: const Duration(seconds: 3),
+                                    margin: const EdgeInsets.all(8),
+                                    borderRadius: BorderRadius.circular(8),
+                                    flushbarPosition: FlushbarPosition.TOP,
+                                  ).show(context);
                                   return;
                                 }
 
@@ -535,11 +537,15 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
     final SlotAvailable? chosenSlot = matches.isNotEmpty ? matches.first : null;
 
     if (chosenSlot == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không tìm thấy slot đã chọn. Vui lòng thử lại.'),
-        ),
-      );
+      Flushbar(
+        message: 'Selected slot not found. Please try again.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -550,9 +556,15 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
     final coachId = coachDetail?.id ?? int.tryParse(widget.coach.id.toString());
 
     if (coachId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Coach ID không hợp lệ')));
+      Flushbar(
+        message: 'Invalid coach ID',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -567,11 +579,15 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
     final token = await tokenService.getAccessToken();
 
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bạn chưa đăng nhập. Vui lòng đăng nhập để đặt lịch.'),
-        ),
-      );
+      Flushbar(
+        message: 'You are not logged in. Please log in to book an appointment.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -657,15 +673,23 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
       debugPrint('[ERROR] booking failed: $e\n$st');
       final errMsg = e is Exception
           ? e.toString().replaceAll('Exception: ', '')
-          : 'Đặt lịch thất bại';
+          : 'Booking failed';
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(errMsg)));
+      );
+      Flushbar(
+        message: errMsg,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     }
   }
 }
 */
-
 
 // lib/views/screens/appointments/coach_detail_screen.dart
 // Màn chi tiết coach + flow đặt lịch
@@ -675,6 +699,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:another_flushbar/flushbar.dart';
 
 import 'package:SmartQuitIoT/views/screens/appointments/coach_list_items.dart';
 import 'package:SmartQuitIoT/views/screens/appointments/info_card.dart';
@@ -734,7 +759,7 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
       } catch (_) {}
 
       if (coachId == null) {
-        throw Exception('Coach id không hợp lệ: ${widget.coach.id}');
+        throw Exception('Invalid coach id: ${widget.coach.id}');
       }
 
       await viewModel.loadCoachDetail(coachId, formattedDate);
@@ -782,7 +807,7 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
               return SafeArea(
                 child: Padding(
                   padding:
-                  MediaQuery.of(ctx2).viewInsets +
+                      MediaQuery.of(ctx2).viewInsets +
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -825,13 +850,19 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
                                 );
 
                                 if (chosen.isBefore(todayOnly)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Vui lòng chọn ngày từ hôm nay trở đi.',
-                                      ),
+                                  Flushbar(
+                                    message:
+                                        'Please select a date from today onwards.',
+                                    icon: const Icon(
+                                      Icons.error_outline,
+                                      color: Colors.white,
                                     ),
-                                  );
+                                    backgroundColor: const Color(0xFF00D09E),
+                                    duration: const Duration(seconds: 3),
+                                    margin: const EdgeInsets.all(8),
+                                    borderRadius: BorderRadius.circular(8),
+                                    flushbarPosition: FlushbarPosition.TOP,
+                                  ).show(context);
                                   return;
                                 }
 
@@ -978,8 +1009,12 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
           child: Center(
             child: CircleAvatar(
               radius: 60,
-              backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-              child: avatarUrl.isEmpty ? const Icon(Icons.person, size: 56, color: Colors.white) : null,
+              backgroundImage: avatarUrl.isNotEmpty
+                  ? NetworkImage(avatarUrl)
+                  : null,
+              child: avatarUrl.isEmpty
+                  ? const Icon(Icons.person, size: 56, color: Colors.white)
+                  : null,
             ),
           ),
         ),
@@ -990,13 +1025,13 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
   Widget _buildStatsCards(CoachDetail? detail) {
     final patientsLabel = '—';
     final ratingLabel =
-    (detail?.ratingAvg ?? widget.coach.rating?.toString() ?? '0.0')
-        .toString();
+        (detail?.ratingAvg ?? widget.coach.rating?.toString() ?? '0.0')
+            .toString();
     final yearsExp =
-    (detail?.experienceYears?.toString() ??
-        widget.coach.experience?.split(' ').first ??
-        '0')
-        .toString();
+        (detail?.experienceYears?.toString() ??
+                widget.coach.experience?.split(' ').first ??
+                '0')
+            .toString();
 
     return Row(
       children: [
@@ -1031,11 +1066,11 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
   }
 
   Widget _buildStatCard(
-      IconData icon,
-      String value,
-      String label,
-      Color color,
-      ) {
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1175,18 +1210,18 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
             ),
           )
         else if (availableSlots.isEmpty)
-            const Center(child: Text('No available slots for this day'))
-          else
-            TimeSlotGrid(
-              timeSlots: availableSlots
-                  .map(
-                    (slot) =>
-                    TimeSlot(time: slot.startTime ?? '', available: true),
-              )
-                  .toList(),
-              selectedSlot: selectedSlot,
-              onSlotSelected: (slot) => setState(() => selectedSlot = slot),
-            ),
+          const Center(child: Text('No available slots for this day'))
+        else
+          TimeSlotGrid(
+            timeSlots: availableSlots
+                .map(
+                  (slot) =>
+                      TimeSlot(time: slot.startTime ?? '', available: true),
+                )
+                .toList(),
+            selectedSlot: selectedSlot,
+            onSlotSelected: (slot) => setState(() => selectedSlot = slot),
+          ),
       ],
     );
   }
@@ -1200,11 +1235,15 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
     final SlotAvailable? chosenSlot = matches.isNotEmpty ? matches.first : null;
 
     if (chosenSlot == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không tìm thấy slot đã chọn. Vui lòng thử lại.'),
-        ),
-      );
+      Flushbar(
+        message: 'Selected slot not found. Please try again.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -1215,9 +1254,15 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
     final coachId = coachDetail?.id ?? int.tryParse(widget.coach.id.toString());
 
     if (coachId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Coach ID không hợp lệ')));
+      Flushbar(
+        message: 'Invalid coach ID',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -1232,11 +1277,15 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
     final token = await tokenService.getAccessToken();
 
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bạn chưa đăng nhập. Vui lòng đăng nhập để đặt lịch.'),
-        ),
-      );
+      Flushbar(
+        message: 'You are not logged in. Please log in to book an appointment.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -1319,10 +1368,17 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
       debugPrint('[ERROR] booking failed: $e\n$st');
       final errMsg = e is Exception
           ? e.toString().replaceAll('Exception: ', '')
-          : 'Đặt lịch thất bại';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errMsg)));
+          : 'Booking failed';
+      ScaffoldMessenger.of(context);
+      Flushbar(
+        message: errMsg,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     }
   }
 }

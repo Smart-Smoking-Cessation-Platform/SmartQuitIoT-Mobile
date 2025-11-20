@@ -23,24 +23,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     if (!mounted) return;
 
-    // Kiểm tra authentication status
+    // Clear tokens khi app restart để đảm bảo user phải login lại
+    // Điều này đảm bảo app luôn bắt đầu từ login khi restart
     final authViewModel = ref.read(authViewModelProvider.notifier);
-    final isAuthenticated = await authViewModel.checkAuthStatus();
+    await authViewModel.clearAuthOnRestart();
 
     if (!mounted) return;
 
-    if (isAuthenticated) {
-      // User đã đăng nhập, chuyển đến màn hình chính
-      final authState = ref.read(authViewModelProvider);
-      if (authState.isFirstLogin == true) {
-        context.go('/onboarding');
-      } else {
-        context.go('/main');
-      }
-    } else {
-      // User chưa đăng nhập, chuyển đến welcome screen
-      context.go('/welcome');
-    }
+    // Luôn chuyển đến welcome screen khi app restart
+    context.go('/welcome');
   }
 
   @override

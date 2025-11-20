@@ -1,6 +1,7 @@
 // lib/views/screens/appointments/appointments_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:another_flushbar/flushbar.dart';
 import '../../../models/appointment.dart';
 import '../../../services/appointment_service.dart';
 import '../../../services/token_storage_service.dart';
@@ -57,7 +58,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       final tokenService = TokenStorageService();
       final token = await tokenService.getAccessToken();
       if (token == null || token.isEmpty) {
-        throw Exception('Bạn chưa đăng nhập.');
+        throw Exception('You are not logged in.');
       }
 
       final service = AppointmentService();
@@ -70,18 +71,36 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           final Map<String, dynamic> m = Map<String, dynamic>.from(e);
           int? aid;
           if (m.containsKey('appointmentId')) {
-            aid = m['appointmentId'] is int ? m['appointmentId'] as int : int.tryParse(m['appointmentId'].toString());
+            aid = m['appointmentId'] is int
+                ? m['appointmentId'] as int
+                : int.tryParse(m['appointmentId'].toString());
           } else if (m.containsKey('id')) {
-            aid = m['id'] is int ? m['id'] as int : int.tryParse(m['id'].toString());
+            aid = m['id'] is int
+                ? m['id'] as int
+                : int.tryParse(m['id'].toString());
           }
-          final ratingKeys = ['memberRating', 'rating', 'userRating', 'member_rated', 'hasRated', 'rated'];
+          final ratingKeys = [
+            'memberRating',
+            'rating',
+            'userRating',
+            'member_rated',
+            'hasRated',
+            'rated',
+          ];
           bool hasRating = false;
           for (var k in ratingKeys) {
             if (m.containsKey(k) && m[k] != null) {
               final v = m[k];
-              if (v is bool && v == true) { hasRating = true; break; }
-              else if (v is num && v > 0) { hasRating = true; break; }
-              else if (v is String && v.isNotEmpty && v != '0') { hasRating = true; break; }
+              if (v is bool && v == true) {
+                hasRating = true;
+                break;
+              } else if (v is num && v > 0) {
+                hasRating = true;
+                break;
+              } else if (v is String && v.isNotEmpty && v != '0') {
+                hasRating = true;
+                break;
+              }
             }
           }
           if (aid != null) {
@@ -159,10 +178,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       final nowUtc = DateTime.now().toUtc();
 
       final ok = !nowUtc.isBefore(startUtc) && !nowUtc.isAfter(endUtc);
-      debugPrint('[JoinWindow] appointment=${a.appointmentId} start=$startUtc end=$endUtc now=$nowUtc ok=$ok');
+      debugPrint(
+        '[JoinWindow] appointment=${a.appointmentId} start=$startUtc end=$endUtc now=$nowUtc ok=$ok',
+      );
       return ok;
     } catch (e, st) {
-      debugPrint('[JoinWindow] parse error for appointment ${a.appointmentId}: $e\n$st');
+      debugPrint(
+        '[JoinWindow] parse error for appointment ${a.appointmentId}: $e\n$st',
+      );
       return false;
     }
   }
@@ -172,9 +195,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final tokenService = TokenStorageService();
     final token = await tokenService.getAccessToken();
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bạn chưa đăng nhập hoặc token hết hạn')),
-      );
+      Flushbar(
+        message: 'You are not logged in or token has expired',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -192,21 +221,31 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
       Navigator.pop(context); // remove loading
 
-      context.pushNamed('meeting', extra: {
-        'channel': resp['channel'],
-        'token': resp['token'],
-        'uid': resp['uid'],
-        'appointmentId': a.appointmentId,
-        'expiresAt': resp['expiresAt'],
-      });
+      context.pushNamed(
+        'meeting',
+        extra: {
+          'channel': resp['channel'],
+          'token': resp['token'],
+          'uid': resp['uid'],
+          'appointmentId': a.appointmentId,
+          'expiresAt': resp['expiresAt'],
+        },
+      );
     } catch (e, st) {
       debugPrint('[Join] requestJoinToken failed: $e\n$st');
       Navigator.pop(context); // remove loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể lấy token vào phòng: $e')),
-      );
+      Flushbar(
+        message: 'Cannot get token to join room: $e',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     }
   }
+
   // method riêng trong class _AppointmentsScreenState
   Future<Map<String, dynamic>?> _showRatingDialog() {
     return showModalBottomSheet<Map<String, dynamic>?>(
@@ -216,107 +255,179 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       builder: (ctx) {
         int selectedStars = 5;
         String comment = '';
-        return StatefulBuilder(builder: (ctx2, setSt) {
-          return DraggableScrollableSheet(
-            initialChildSize: 0.46,
-            minChildSize: 0.32,
-            maxChildSize: 0.9,
-            expand: false,
-            builder: (_, controller) {
-              return Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
-                ),
-                child: SingleChildScrollView(
-                  controller: controller,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(999))),
-                      const Text('Rate your session', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
-                      const Text('Please share your feedback about the coaching session so the coach can improve.',
-                          textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Colors.black54)),
-                      const SizedBox(height: 18),
-                      Column(
-                        children: [
-                          Row(mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(5, (i) {
-                              final idx = i + 1;
-                              final bool active = idx <= selectedStars;
-                              return GestureDetector(
-                                onTap: () => setSt(() => selectedStars = idx),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 160),
-                                  margin: const EdgeInsets.symmetric(horizontal: 6),
-                                  transform: Matrix4.identity()..scale(active ? 1.14 : 1.0),
-                                  child: Icon(active ? Icons.star_rounded : Icons.star_border_rounded,
-                                      size: active ? 36 : 32,
-                                      color: active ? Colors.amber : Colors.grey.shade400),
-                                ),
-                              );
-                            }),
-                          ),
-                          const SizedBox(height: 8),
-                          // label
-                          Builder(builder: (_) {
-                            final labels = ['Terrible','Bad','Okay','Good','Excellent'];
-                            return Text(labels[selectedStars - 1], style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700));
-                          }),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        maxLines: 4,
-                        onChanged: (v) => comment = v,
-                        decoration: InputDecoration(
-                          hintText: 'Write comment (optional)...',
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          filled: true,
-                          fillColor: Theme.of(context).cardColor,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.of(ctx2).pop(null),
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: Colors.grey.shade300),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: const Text('Cancel', style: TextStyle(color: Colors.black87)),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.of(ctx2).pop({'stars': selectedStars, 'comment': comment.trim()}),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00D09E),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                elevation: 3,
-                              ),
-                              child: const Text('Submit', style: TextStyle(fontWeight: FontWeight.w700)),
-                            ),
-                          ),
-                        ],
+        return StatefulBuilder(
+          builder: (ctx2, setSt) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.46,
+              minChildSize: 0.32,
+              maxChildSize: 0.9,
+              expand: false,
+              builder: (_, controller) {
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
                       ),
                     ],
                   ),
-                ),
-              );
-            },
-          );
-        });
+                  child: SingleChildScrollView(
+                    controller: controller,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                        const Text(
+                          'Rate your session',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Please share your feedback about the coaching session so the coach can improve.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 18),
+                        Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(5, (i) {
+                                final idx = i + 1;
+                                final bool active = idx <= selectedStars;
+                                return GestureDetector(
+                                  onTap: () => setSt(() => selectedStars = idx),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 160),
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                    ),
+                                    transform: Matrix4.identity()
+                                      ..scale(active ? 1.14 : 1.0),
+                                    child: Icon(
+                                      active
+                                          ? Icons.star_rounded
+                                          : Icons.star_border_rounded,
+                                      size: active ? 36 : 32,
+                                      color: active
+                                          ? Colors.amber
+                                          : Colors.grey.shade400,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                            const SizedBox(height: 8),
+                            // label
+                            Builder(
+                              builder: (_) {
+                                final labels = [
+                                  'Terrible',
+                                  'Bad',
+                                  'Okay',
+                                  'Good',
+                                  'Excellent',
+                                ];
+                                return Text(
+                                  labels[selectedStars - 1],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          maxLines: 4,
+                          onChanged: (v) => comment = v,
+                          decoration: InputDecoration(
+                            hintText: 'Write comment (optional)...',
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).cardColor,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(ctx2).pop(null),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: Colors.grey.shade300),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: Colors.black87),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.of(ctx2).pop({
+                                  'stars': selectedStars,
+                                  'comment': comment.trim(),
+                                }),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00D09E),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  elevation: 3,
+                                ),
+                                child: const Text(
+                                  'Submit',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
       },
     );
   }
@@ -326,7 +437,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final tokenService = TokenStorageService();
     final token = await tokenService.getAccessToken();
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập.')));
+      Flushbar(
+        message: 'You are not logged in.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
@@ -336,7 +455,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final int selectedStars = result['stars'] is int
         ? result['stars'] as int
         : int.tryParse(result['stars']?.toString() ?? '') ?? 5;
-    final String comment = result['comment'] != null ? result['comment'].toString().trim() : '';
+    final String comment = result['comment'] != null
+        ? result['comment'].toString().trim()
+        : '';
 
     // prevent double submit across taps
     if (_isSubmitting) return;
@@ -346,7 +467,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     });
 
     // show global loading
-    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
 
     try {
       final svc = AppointmentService();
@@ -360,15 +485,34 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       // refresh canonical state from server (optional), but preserve local rated flag
       await _fetchAppointments();
       setState(() {
-        _ratedMap[a.appointmentId] = true; // re-apply in case server response didn't include it
+        _ratedMap[a.appointmentId] =
+            true; // re-apply in case server response didn't include it
       });
 
       Navigator.pop(context); // remove loading
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thank your feedback!')));
+      Flushbar(
+        message: 'Thank you for your feedback!',
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     } catch (e, st) {
-      try { Navigator.pop(context); } catch (_) {}
+      try {
+        Navigator.pop(context);
+      } catch (_) {}
       debugPrint('[Rate] failed: $e\n$st');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Can not send feedback: ${e.toString()}')));
+      Flushbar(
+        message: 'Cannot send feedback: ${e.toString()}',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -376,7 +520,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       });
     }
   }
-
 
   // ----- Cancel flow (member) -----
   Future<void> _onCancelPressed(Appointment a) async {
@@ -386,11 +529,21 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       barrierDismissible: true,
       builder: (dialogCtx) {
         return AlertDialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('Confirm Cancel'),
-          content: const Text('Are you sure you want to cancel this appointment? (If you cancel, your turn will NOT be refunded)'),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          content: const Text(
+            'Are you sure you want to cancel this appointment? (If you cancel, your turn will NOT be refunded)',
+          ),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
           actions: [
             // Cancel (outlined pill)
             SizedBox(
@@ -399,7 +552,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(dialogCtx, false),
                 style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                   side: const BorderSide(color: Color(0xFF00D09E)),
                   foregroundColor: const Color(0xFF00D09E),
                 ),
@@ -415,7 +570,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 onPressed: () => Navigator.pop(dialogCtx, true),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryGreen,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
                 child: const Text('Yes', style: TextStyle(color: Colors.white)),
               ),
@@ -431,12 +588,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final tokenService = TokenStorageService();
     final token = await tokenService.getAccessToken();
     if (token == null || token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bạn chưa đăng nhập.')));
+      Flushbar(
+        message: 'You are not logged in.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
       return;
     }
 
     // show loading
-    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
     try {
       final svc = AppointmentService();
       // NOTE: AppointmentService must implement cancelAppointment(appointmentId, token)
@@ -444,14 +613,32 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
       Navigator.pop(context); // remove loading
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hủy lịch thành công')));
+      Flushbar(
+        message: 'Appointment cancelled successfully',
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
 
       // refresh list from server (safer than local mutation)
       await _fetchAppointments();
     } catch (e, st) {
-      try { Navigator.pop(context); } catch (_) {}
+      try {
+        Navigator.pop(context);
+      } catch (_) {}
       debugPrint('[Cancel] failed: $e\n$st');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Không thể hủy lịch: $e')));
+      Flushbar(
+        message: 'Cannot cancel appointment: $e',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
     }
   }
 
@@ -507,14 +694,21 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
                 final canJoin = _isWithinJoinWindow(a);
 
-                final isCancelled = (a.runtimeStatus ?? '').toUpperCase().contains('CANCEL');
+                final isCancelled = (a.runtimeStatus ?? '')
+                    .toUpperCase()
+                    .contains('CANCEL');
 
                 // determine if this appointment is in Completed state
-                final isCompleted = (a.runtimeStatus ?? '').toUpperCase() == 'COMPLETED';
+                final isCompleted =
+                    (a.runtimeStatus ?? '').toUpperCase() == 'COMPLETED';
 
                 // prefer server-provided flag if available, else fall back to client-side _ratedMap
-                final hasRated = (a.hasRated != null) ? a.hasRated! : (_ratedMap[a.appointmentId] ?? false);
-                final bool isSubmittingThis = _isSubmitting && _submittingRatingAppointmentId == a.appointmentId;
+                final hasRated = (a.hasRated != null)
+                    ? a.hasRated!
+                    : (_ratedMap[a.appointmentId] ?? false);
+                final bool isSubmittingThis =
+                    _isSubmitting &&
+                    _submittingRatingAppointmentId == a.appointmentId;
                 return Container(
                   decoration: BoxDecoration(
                     color: cardBg,
@@ -548,11 +742,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                             // avatar + ghost on cancelled
                             CircleAvatar(
                               radius: 26,
-                              backgroundColor: isCancelled ? Colors.grey.shade200 : mintBg,
+                              backgroundColor: isCancelled
+                                  ? Colors.grey.shade200
+                                  : mintBg,
                               child: Text(
                                 initials,
                                 style: TextStyle(
-                                  color: isCancelled ? Colors.grey.shade600 : primaryGreen,
+                                  color: isCancelled
+                                      ? Colors.grey.shade600
+                                      : primaryGreen,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -571,8 +769,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: isCancelled ? Colors.grey.shade600 : Colors.black87,
-                                      decoration: isCancelled ? TextDecoration.lineThrough : TextDecoration.none,
+                                      color: isCancelled
+                                          ? Colors.grey.shade600
+                                          : Colors.black87,
+                                      decoration: isCancelled
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -590,7 +792,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            color: isCancelled ? Colors.grey : Colors.black54,
+                                            color: isCancelled
+                                                ? Colors.grey
+                                                : Colors.black54,
                                           ),
                                         ),
                                       ),
@@ -611,7 +815,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            color: isCancelled ? Colors.grey : Colors.black54,
+                                            color: isCancelled
+                                                ? Colors.grey
+                                                : Colors.black54,
                                           ),
                                         ),
                                       ),
@@ -622,7 +828,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            color: isCancelled ? Colors.grey.shade500 : Colors.black45,
+                                            color: isCancelled
+                                                ? Colors.grey.shade500
+                                                : Colors.black45,
                                             fontSize: 12,
                                           ),
                                         ),
@@ -655,99 +863,131 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                             const SizedBox(width: 8),
                             // right column: responsive controls
                             ConstrainedBox(
-                              constraints: const BoxConstraints(minWidth: 90, maxWidth: 140),
+                              constraints: const BoxConstraints(
+                                minWidth: 90,
+                                maxWidth: 140,
+                              ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   SizedBox(
                                     height: 36,
-                                    child: Center(child: _statusChip(a.runtimeStatus)),
+                                    child: Center(
+                                      child: _statusChip(a.runtimeStatus),
+                                    ),
                                   ),
                                   const SizedBox(height: 8),
                                   // Completed => show Rate button (if not rated) OR disabled "Rated"
                                   if (isCompleted && !isCancelled) ...[
-                      hasRated
-                      ? ElevatedButton(
-                      onPressed: null,
-                        child: const Text('Rated'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade300,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(90, 36),
-                        ),
-                      )
-                          : isSubmittingThis
-                      ? ElevatedButton(
-                      onPressed: null,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))),
-                          SizedBox(width: 8),
-                          Text('Submitting'),
-                        ],
-                      ),
-                      style: ElevatedButton.styleFrom(minimumSize: const Size(90, 36), backgroundColor: primaryGreen),
-                    )
-                          : ElevatedButton(
-                      onPressed: () => _onRatePressed(a),
-                child: const Text('Rate'),
-                style: ElevatedButton.styleFrom(
-                backgroundColor: primaryGreen,
-                minimumSize: const Size(90, 36),
-                ),
-                )
-
-                ]
+                                    hasRated
+                                        ? ElevatedButton(
+                                            onPressed: null,
+                                            child: const Text('Rated'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.grey.shade300,
+                                              foregroundColor: Colors.white,
+                                              minimumSize: const Size(90, 36),
+                                            ),
+                                          )
+                                        : isSubmittingThis
+                                        ? ElevatedButton(
+                                            onPressed: null,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: const [
+                                                SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(Colors.white),
+                                                  ),
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text('Submitting'),
+                                              ],
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              minimumSize: const Size(90, 36),
+                                              backgroundColor: primaryGreen,
+                                            ),
+                                          )
+                                        : ElevatedButton(
+                                            onPressed: () => _onRatePressed(a),
+                                            child: const Text('Rate'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: primaryGreen,
+                                              minimumSize: const Size(90, 36),
+                                            ),
+                                          ),
+                                  ]
                                   // Join button only if not cancelled, status IN_PROGRESS and within window
                                   else if (!isCancelled &&
                                       a.runtimeStatus != null &&
-                                      a.runtimeStatus!.toUpperCase().contains('IN_PROGRESS') &&
+                                      a.runtimeStatus!.toUpperCase().contains(
+                                        'IN_PROGRESS',
+                                      ) &&
                                       canJoin)
                                     ElevatedButton.icon(
                                       onPressed: () => _onJoinPressed(a),
-                                      icon: const Icon(Icons.video_call, size: 16),
+                                      icon: const Icon(
+                                        Icons.video_call,
+                                        size: 16,
+                                      ),
                                       label: const Text('Join'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: primaryGreen,
                                         minimumSize: const Size(80, 36),
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 6,
+                                        ),
                                       ),
                                     )
                                   // Pending: show Cancel button
                                   else if (!isCancelled &&
-                                        a.runtimeStatus != null &&
-                                        a.runtimeStatus!.toUpperCase().contains('PENDING'))
-                                      SizedBox(
-                                        width: 110,
-                                        height: 36,
-                                        child: ElevatedButton(
-                                          onPressed: () => _onCancelPressed(a),
-                                          child: const Text('Cancel'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red.shade200,
-                                            foregroundColor: Colors.red.shade900,
-                                            minimumSize: const Size(80, 36),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(10),
+                                      a.runtimeStatus != null &&
+                                      a.runtimeStatus!.toUpperCase().contains(
+                                        'PENDING',
+                                      ))
+                                    SizedBox(
+                                      width: 110,
+                                      height: 36,
+                                      child: ElevatedButton(
+                                        onPressed: () => _onCancelPressed(a),
+                                        child: const Text('Cancel'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red.shade200,
+                                          foregroundColor: Colors.red.shade900,
+                                          minimumSize: const Size(80, 36),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
                                             ),
                                           ),
                                         ),
-                                      )
-                                    else
-                                      IconButton(
-                                        onPressed: () => _showAppointmentDetail(
-                                          context,
-                                          a,
-                                          dateLabel,
-                                          timeLabel,
-                                        ),
-                                        icon: Icon(
-                                          Icons.chevron_right,
-                                          color: isCancelled ? Colors.grey.shade400 : Colors.grey,
-                                        ),
                                       ),
+                                    )
+                                  else
+                                    IconButton(
+                                      onPressed: () => _showAppointmentDetail(
+                                        context,
+                                        a,
+                                        dateLabel,
+                                        timeLabel,
+                                      ),
+                                      icon: Icon(
+                                        Icons.chevron_right,
+                                        color: isCancelled
+                                            ? Colors.grey.shade400
+                                            : Colors.grey,
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
@@ -852,50 +1092,283 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   String _cancelledLine(Appointment a) {
     final who = _prettyCancelledBy(a.cancelledBy);
     final at = a.cancelledAt;
-    final when = at != null ? DateFormat('HH:mm • dd MMM yyyy').format(at.toLocal()) : '-';
+    final when = at != null
+        ? DateFormat('HH:mm • dd MMM yyyy').format(at.toLocal())
+        : '-';
     return 'Cancelled by $who • $when';
   }
 
   void _showAppointmentDetail(
-      BuildContext context,
-      Appointment a,
-      String dateLabel,
-      String timeLabel,
-      ) {
+    BuildContext context,
+    Appointment a,
+    String dateLabel,
+    String timeLabel,
+  ) {
+    final isCancelled = (a.runtimeStatus ?? '').toUpperCase().contains(
+      'CANCEL',
+    );
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Appointment ${a.appointmentId}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Coach: ${a.coachName}'),
-            const SizedBox(height: 8),
-            Text('Date: $dateLabel'),
-            const SizedBox(height: 8),
-            Text('Time: $timeLabel'),
-            const SizedBox(height: 8),
-            Text('Slot: ${a.slotId}'),
-            const SizedBox(height: 8),
-            Text('Status: ${a.runtimeStatus}'),
-            const SizedBox(height: 8),
-            Text('Join window: ${_fmtDt(a.joinWindowStart)} → ${_fmtDt(a.joinWindowEnd)}'),
-            if ((a.runtimeStatus ?? '').toUpperCase().contains('CANCEL')) ...[
-              const SizedBox(height: 8),
-              Text('Cancelled by: ${_prettyCancelledBy(a.cancelledBy)}'),
-              const SizedBox(height: 6),
-              Text('Cancelled at: ${_fmtDt(a.cancelledAt)}'),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: primaryGreen.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.event_note,
+                        color: primaryGreen,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Appointment Details',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'ID: ${a.appointmentId}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Info cards
+                _buildDetailRow(
+                  icon: Icons.person,
+                  label: 'Coach',
+                  value: a.coachName,
+                  iconColor: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                _buildDetailRow(
+                  icon: Icons.calendar_today,
+                  label: 'Date',
+                  value: dateLabel,
+                  iconColor: Colors.orange,
+                ),
+                const SizedBox(height: 16),
+                _buildDetailRow(
+                  icon: Icons.access_time,
+                  label: 'Time',
+                  value: timeLabel,
+                  iconColor: Colors.purple,
+                ),
+                const SizedBox(height: 16),
+                _buildDetailRow(
+                  icon: Icons.confirmation_number,
+                  label: 'Slot',
+                  value: '${a.slotId}',
+                  iconColor: Colors.teal,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 20,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Status',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          _statusChip(a.runtimeStatus),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (a.joinWindowStart != null && a.joinWindowEnd != null) ...[
+                  const SizedBox(height: 16),
+                  _buildDetailRow(
+                    icon: Icons.video_call,
+                    label: 'Join Window',
+                    value:
+                        '${_fmtDt(a.joinWindowStart)} → ${_fmtDt(a.joinWindowEnd)}',
+                    iconColor: Colors.green,
+                  ),
+                ],
+                if (isCancelled) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.cancel_outlined,
+                              color: Colors.red.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Cancellation Info',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.red.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildDetailRow(
+                          icon: Icons.person_outline,
+                          label: 'Cancelled by',
+                          value: _prettyCancelledBy(a.cancelledBy),
+                          iconColor: Colors.red,
+                          compact: true,
+                        ),
+                        if (a.cancelledAt != null) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            icon: Icons.schedule,
+                            label: 'Cancelled at',
+                            value: _fmtDt(a.cancelledAt),
+                            iconColor: Colors.red,
+                            compact: true,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                // Close button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryGreen,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color iconColor,
+    bool compact = false,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.all(compact ? 6 : 8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: compact ? 16 : 20, color: iconColor),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: compact ? 11 : 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 15,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -909,7 +1382,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   Widget build(BuildContext context) {
     final pendingOnly = _filterByStatus('PENDING');
     final cancelled = _filterByStatus('CANCELLED');
-    final pendingTabList = [...pendingOnly, ...cancelled]; // Pending tab = pending + cancelled
+    final pendingTabList = [
+      ...pendingOnly,
+      ...cancelled,
+    ]; // Pending tab = pending + cancelled
     final inprogress =
         _filterByStatus('IN_PROGRESS') + _filterByStatus('INPROGRESS');
     final completed = _filterByStatus('COMPLETED');
@@ -922,7 +1398,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         preferredSize: const Size.fromHeight(110),
         child: AppBar(
           elevation: 0,
-          automaticallyImplyLeading: true,
           backgroundColor: primaryGreen,
           flexibleSpace: Container(
             decoration: const BoxDecoration(
@@ -933,9 +1408,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
               ),
             ),
           ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: null,
+          ),
+          centerTitle: true,
           title: const Text(
             'My Appointments',
-            style: TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
           ),
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(48),
@@ -971,7 +1452,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                   labelStyle: const TextStyle(fontWeight: FontWeight.w700),
                   tabs: [
                     Tab(
-                      child: Center(child: Text('Pending (${pendingTabList.length})')),
+                      child: Center(
+                        child: Text('Pending (${pendingTabList.length})'),
+                      ),
                     ),
                     Tab(
                       child: Center(
