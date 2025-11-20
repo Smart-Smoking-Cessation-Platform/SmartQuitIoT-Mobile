@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
 import '../../../providers/quit_plan_provider.dart';
 import '../../../models/request/create_new_quit_plan_request.dart';
+import '../../../views/widgets/common/full_screen_loader.dart';
 import 'package:go_router/go_router.dart';
 
 class CreateNewQuitPlanDialog extends ConsumerStatefulWidget {
@@ -110,16 +111,8 @@ class _CreateNewQuitPlanDialogState
       quitPlanName: _quitPlanNameController.text.trim(),
     );
 
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
-        ),
-      ),
-    );
+    // Show full screen loader
+    FullScreenLoader.show(context, message: 'Creating quit plan...');
 
     try {
       // Create new plan
@@ -130,11 +123,13 @@ class _CreateNewQuitPlanDialogState
       // Wait a bit for state to update
       await Future.delayed(const Duration(milliseconds: 100));
 
+      // Hide full screen loader
+      FullScreenLoader.hide(context);
+
       // Check state
       final state = ref.read(quitPlanViewModelProvider);
 
       if (state.hasError) {
-        Navigator.of(context).pop(); // Close loading
         Flushbar(
           message: state.error.toString(),
           backgroundColor: Colors.red,
@@ -144,9 +139,8 @@ class _CreateNewQuitPlanDialogState
           flushbarPosition: FlushbarPosition.TOP,
         ).show(context);
       } else if (state.hasValue && state.value != null) {
-        // Success
-        Navigator.of(context).pop(); // Close loading
-        Navigator.of(context).pop(); // Close create dialog
+        // Success - close create dialog
+        Navigator.of(context).pop();
 
         // Show success dialog
         if (mounted) {
@@ -160,7 +154,6 @@ class _CreateNewQuitPlanDialogState
         }
       } else {
         // Still loading or unknown state
-        Navigator.of(context).pop(); // Close loading
         Flushbar(
           message: 'Failed to create quit plan',
           backgroundColor: Colors.red,
@@ -172,7 +165,8 @@ class _CreateNewQuitPlanDialogState
       }
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading
+      // Hide full screen loader
+      FullScreenLoader.hide(context);
       Flushbar(
         message: 'Failed to create quit plan: ${e.toString()}',
         backgroundColor: Colors.red,

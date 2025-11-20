@@ -121,9 +121,15 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
       text: widget.currentData.amountOfNicotinePerCigarettes.toString(),
     );
 
-    // Initialize selections
-    _selectedInterests = List.from(widget.currentData.interests);
-    _selectedTriggers = List.from(widget.currentData.triggered);
+    // Initialize selections and filter out empty strings
+    _selectedInterests = widget.currentData.interests
+        .where((interest) => interest.isNotEmpty && interest.trim().isNotEmpty)
+        .map((interest) => interest.trim())
+        .toList();
+    _selectedTriggers = widget.currentData.triggered
+        .where((trigger) => trigger.isNotEmpty && trigger.trim().isNotEmpty)
+        .map((trigger) => trigger.trim())
+        .toList();
     _smokingInForbiddenPlaces = widget.currentData.smokingInForbiddenPlaces;
     _cigaretteHateToGiveUp = widget.currentData.cigaretteHateToGiveUp;
     _morningSmokingFrequency = widget.currentData.morningSmokingFrequency;
@@ -195,11 +201,62 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
       return;
     }
 
+    // Debug: Log selected triggers and interests before saving
+    debugPrint(
+      '🔍 [EditFormMetricDialog] Selected triggers: $_selectedTriggers',
+    );
+    debugPrint(
+      '🔍 [EditFormMetricDialog] Selected triggers count: ${_selectedTriggers.length}',
+    );
+    debugPrint(
+      '🔍 [EditFormMetricDialog] Selected interests: $_selectedInterests',
+    );
+    debugPrint(
+      '🔍 [EditFormMetricDialog] Selected interests count: ${_selectedInterests.length}',
+    );
+
+    // Ensure triggers and interests are not empty (validation should have caught this, but double-check)
+    if (_selectedTriggers.isEmpty) {
+      _showError('Please select at least one trigger');
+      return;
+    }
+    if (_selectedInterests.isEmpty) {
+      _showError('Please select at least one interest');
+      return;
+    }
+
     // Parse money - strip any non-digit characters before parsing
     final moneyText = _moneyPerPackageController.text.replaceAll(
       RegExp(r'[^0-9]'),
       '',
     );
+
+    // Create new lists and filter out empty strings/null values
+    final triggersList = _selectedTriggers
+        .where((trigger) => trigger.isNotEmpty && trigger.trim().isNotEmpty)
+        .map((trigger) => trigger.trim())
+        .toList();
+    final interestsList = _selectedInterests
+        .where((interest) => interest.isNotEmpty && interest.trim().isNotEmpty)
+        .map((interest) => interest.trim())
+        .toList();
+
+    debugPrint(
+      '🔍 [EditFormMetricDialog] Triggers list to save: $triggersList',
+    );
+    debugPrint(
+      '🔍 [EditFormMetricDialog] Interests list to save: $interestsList',
+    );
+
+    // Double-check: ensure no empty strings
+    if (triggersList.any((t) => t.isEmpty)) {
+      _showError('Invalid triggers detected. Please try again.');
+      return;
+    }
+    if (interestsList.any((i) => i.isEmpty)) {
+      _showError('Invalid interests detected. Please try again.');
+      return;
+    }
 
     final updatedData = FormMetricDTO(
       id: widget.currentData.id,
@@ -227,8 +284,15 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
       estimatedMoneySavedOnPlan: widget.currentData.estimatedMoneySavedOnPlan,
       estimatedNicotineIntakePerDay:
           widget.currentData.estimatedNicotineIntakePerDay,
-      interests: _selectedInterests,
-      triggered: _selectedTriggers,
+      interests: interestsList,
+      triggered: triggersList,
+    );
+
+    debugPrint(
+      '🔍 [EditFormMetricDialog] Updated data triggers: ${updatedData.triggered}',
+    );
+    debugPrint(
+      '🔍 [EditFormMetricDialog] Updated data interests: ${updatedData.interests}',
     );
 
     Navigator.pop(context, updatedData);

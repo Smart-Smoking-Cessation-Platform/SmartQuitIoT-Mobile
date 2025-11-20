@@ -867,6 +867,54 @@ class _FormMetricDetailScreenState
   Future<void> _handleUpdate(FormMetricDTO currentData) async {
     logger.i('🔄 [FormMetricDetail] Starting update process');
 
+    // Debug: Log triggers before creating request
+    logger.d(
+      '🔍 [FormMetricDetail] Current triggers: ${currentData.triggered}',
+    );
+    logger.d(
+      '🔍 [FormMetricDetail] Triggers count: ${currentData.triggered.length}',
+    );
+    logger.d('🔍 [FormMetricDetail] Interests: ${currentData.interests}');
+    logger.d(
+      '🔍 [FormMetricDetail] Interests count: ${currentData.interests.length}',
+    );
+
+    // Ensure triggers list is not null, filter out empty strings, and is a proper list
+    final triggersList = currentData.triggered
+        .where((trigger) => trigger.isNotEmpty && trigger.trim().isNotEmpty)
+        .map((trigger) => trigger.trim())
+        .toList();
+
+    // Ensure interests list is not null, filter out empty strings, and is a proper list
+    final interestsList = currentData.interests
+        .where((interest) => interest.isNotEmpty && interest.trim().isNotEmpty)
+        .map((interest) => interest.trim())
+        .toList();
+
+    // Log after filtering
+    logger.d('🔍 [FormMetricDetail] Triggers after filtering: $triggersList');
+    logger.d(
+      '🔍 [FormMetricDetail] Triggers count after filtering: ${triggersList.length}',
+    );
+    logger.d('🔍 [FormMetricDetail] Interests after filtering: $interestsList');
+    logger.d(
+      '🔍 [FormMetricDetail] Interests count after filtering: ${interestsList.length}',
+    );
+
+    // Validate triggers are not empty after filtering
+    if (triggersList.isEmpty) {
+      logger.e('❌ [FormMetricDetail] Triggers list is empty after filtering!');
+      Flushbar(
+        message: 'Please select at least one trigger',
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(12),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
+      return;
+    }
+
     final request = UpdateFormMetricRequest(
       smokeAvgPerDay: currentData.smokeAvgPerDay,
       numberOfYearsOfSmoking: currentData.numberOfYearsOfSmoking,
@@ -880,11 +928,17 @@ class _FormMetricDetailScreenState
       estimatedMoneySavedOnPlan: currentData.estimatedMoneySavedOnPlan,
       amountOfNicotinePerCigarettes: currentData.amountOfNicotinePerCigarettes,
       estimatedNicotineIntakePerDay: currentData.estimatedNicotineIntakePerDay,
-      interests: currentData.interests,
-      triggered: currentData.triggered,
+      interests: interestsList,
+      triggered: triggersList,
     );
 
     logger.d('📦 [FormMetricDetail] Request data: ${request.toJson()}');
+    logger.d(
+      '📦 [FormMetricDetail] Request triggers in JSON: ${request.toJson()['triggered']}',
+    );
+    logger.d(
+      '📦 [FormMetricDetail] Request interests in JSON: ${request.toJson()['interests']}',
+    );
 
     final response = await ref
         .read(formMetricViewModelProvider.notifier)
