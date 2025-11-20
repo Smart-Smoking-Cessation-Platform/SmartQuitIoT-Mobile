@@ -1,11 +1,23 @@
 // services/token_storage_service.dart
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logger/logger.dart';
 
 class TokenStorageService {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userDataKey = 'user_data';
+
+  final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 3,
+      lineLength: 75,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
 
   /// Save access token
   Future<void> saveAccessToken(String token) async {
@@ -21,24 +33,28 @@ class TokenStorageService {
 
   /// Save both tokens
   Future<void> saveTokens(String accessToken, String refreshToken) async {
-    print('💾 [TokenStorage] Saving tokens to SharedPreferences...');
+    _logger.i('💾 [TokenStorage] Saving tokens to SharedPreferences...');
     final prefs = await SharedPreferences.getInstance();
     await Future.wait([
       prefs.setString(_accessTokenKey, accessToken),
       prefs.setString(_refreshTokenKey, refreshToken),
     ]);
-    print('✅ [TokenStorage] Tokens saved successfully');
-    
+    _logger.i('✅ [TokenStorage] Tokens saved successfully');
+
     // Verify immediately
     final saved = prefs.getString(_accessTokenKey);
-    print('🔍 [TokenStorage] Verification - Token exists: ${saved != null}');
+    _logger.d(
+      '🔍 [TokenStorage] Verification - Token exists: ${saved != null}',
+    );
   }
 
   /// Get access token
   Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_accessTokenKey);
-    print('📖 [TokenStorage] Reading access token: ${token != null ? "Found (${token.substring(0, 20)}...)" : "NULL"}');
+    _logger.d(
+      '📖 [TokenStorage] Reading access token: ${token != null ? "Found (${token.substring(0, 20)}...)" : "NULL"}',
+    );
     return token;
   }
 
@@ -57,15 +73,43 @@ class TokenStorageService {
 
   /// Clear all tokens and user data
   Future<void> clearTokens() async {
-    print('🗑️ [TokenStorage] CLEARING ALL TOKENS!');
-    print('📍 [TokenStorage] Call stack: ${StackTrace.current}');
+    _logger.w('🗑️ [TokenStorage] CLEARING ALL TOKENS!');
+    _logger.d('📍 [TokenStorage] Call stack: ${StackTrace.current}');
     final prefs = await SharedPreferences.getInstance();
+
+    // Remove all tokens and user data
     await Future.wait([
       prefs.remove(_accessTokenKey),
       prefs.remove(_refreshTokenKey),
       prefs.remove(_userDataKey),
     ]);
-    print('✅ [TokenStorage] Tokens cleared');
+
+    // Verify removal immediately
+    final accessTokenAfter = prefs.getString(_accessTokenKey);
+    final refreshTokenAfter = prefs.getString(_refreshTokenKey);
+    final userDataAfter = prefs.getString(_userDataKey);
+
+    if (accessTokenAfter == null &&
+        refreshTokenAfter == null &&
+        userDataAfter == null) {
+      _logger.i('✅ [TokenStorage] Tokens cleared and verified');
+    } else {
+      _logger.w('⚠️ [TokenStorage] WARNING: Some tokens may still exist!');
+      _logger.w(
+        '   Access token: ${accessTokenAfter != null ? "EXISTS" : "NULL"}',
+      );
+      _logger.w(
+        '   Refresh token: ${refreshTokenAfter != null ? "EXISTS" : "NULL"}',
+      );
+      _logger.w('   User data: ${userDataAfter != null ? "EXISTS" : "NULL"}');
+      // Force remove again
+      await Future.wait([
+        prefs.remove(_accessTokenKey),
+        prefs.remove(_refreshTokenKey),
+        prefs.remove(_userDataKey),
+      ]);
+      _logger.i('✅ [TokenStorage] Force cleared again');
+    }
   }
 
   /// Save user data

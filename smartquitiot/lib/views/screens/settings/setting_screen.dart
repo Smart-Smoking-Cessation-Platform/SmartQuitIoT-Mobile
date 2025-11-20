@@ -1,18 +1,32 @@
 // lib/views/screens/settings/settings_screen.dart
 import 'package:SmartQuitIoT/views/screens/appointments/appointments_screen.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
 
 import '../../../providers/auth_provider.dart';
 import '../../../providers/websocket_provider.dart';
 import '../../../providers/membership_provider.dart';
 import '../../../providers/quit_plan_time_provider.dart';
-import '../../../../utils/snackbar_helper.dart';
+import '../../../providers/notification_provider.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 3,
+      lineLength: 75,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -200,11 +214,11 @@ class SettingsScreen extends ConsumerWidget {
                                         websocketManagerProvider,
                                       );
                                       await websocketManager.disconnect();
-                                      debugPrint(
+                                      _logger.i(
                                         '✅ [SettingsScreen] WebSocket disconnected',
                                       );
                                     } catch (e) {
-                                      debugPrint(
+                                      _logger.e(
                                         '❌ [SettingsScreen] WebSocket disconnect error: $e',
                                       );
                                     }
@@ -231,13 +245,42 @@ class SettingsScreen extends ConsumerWidget {
                                     ref.invalidate(
                                       quitPlanTimeViewModelProvider,
                                     );
+                                    // Clear notification data
+                                    ref.invalidate(
+                                      notificationViewModelProvider,
+                                    );
+                                    ref.invalidate(unreadCountProvider);
+                                    // Clear quit plan data
+                                    ref
+                                        .read(
+                                          quitPlanHomepageViewModelProvider
+                                              .notifier,
+                                        )
+                                        .clear();
+                                    ref.invalidate(
+                                      quitPlanHomepageViewModelProvider,
+                                    );
 
                                     if (context.mounted) {
-                                      SnackBarHelper.showSuccess(
-                                        context,
-                                        'Logout successfully!',
-                                      );
+                                      // Navigate to login immediately
                                       context.go('/login');
+
+                                      // Show flushbar after navigation
+                                      Flushbar(
+                                        message: 'Logout successfully!',
+                                        backgroundColor: const Color(
+                                          0xFF00D09E,
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                        flushbarPosition: FlushbarPosition.TOP,
+                                        margin: const EdgeInsets.all(8),
+                                        borderRadius: BorderRadius.circular(8),
+                                        icon: const Icon(
+                                          Icons.check_circle,
+                                          size: 28,
+                                          color: Colors.white,
+                                        ),
+                                      ).show(context);
                                     }
                                   },
                                   child: const Text(

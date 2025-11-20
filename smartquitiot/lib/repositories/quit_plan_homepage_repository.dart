@@ -8,25 +8,28 @@ class QuitPlanHomepageRepository {
   final AuthRepository _authRepository;
 
   QuitPlanHomepageRepository({
-    QuitPlanHomepageService? quitPlanHomepageService, 
-    AuthRepository? authRepository
-  }) : _quitPlanHomepageService = quitPlanHomepageService ?? QuitPlanHomepageService(),
+    QuitPlanHomepageService? quitPlanHomepageService,
+    AuthRepository? authRepository,
+  }) : _quitPlanHomepageService =
+           quitPlanHomepageService ?? QuitPlanHomepageService(),
        _authRepository = authRepository ?? AuthRepository();
 
   /// Get quit plan home page data
   Future<QuitPlanHomePage> getQuitPlanHomePage() async {
     try {
-      final accessToken = await _authRepository.getAccessToken();
+      // Use getValidAccessToken() to ensure we have a valid token (will refresh if expired)
+      final accessToken = await _authRepository.getValidAccessToken();
       if (accessToken == null) {
         throw QuitPlanException('Access token not found. Please login again.');
       }
 
       // Call service to get response
-      final QuitPlanHomePage quitPlan = await _quitPlanHomepageService.getQuitPlanHomePage(
-        accessToken: accessToken,
-      );
+      final QuitPlanHomePage quitPlan = await _quitPlanHomepageService
+          .getQuitPlanHomePage(accessToken: accessToken);
 
-      print('✅ [QuitPlanHomepageRepository] Loaded quit plan: ${quitPlan.name}');
+      print(
+        '✅ [QuitPlanHomepageRepository] Loaded quit plan: ${quitPlan.name}',
+      );
 
       return quitPlan;
     } catch (e, st) {

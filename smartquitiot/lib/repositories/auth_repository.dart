@@ -1,6 +1,7 @@
 // repositories/auth_repository.dart
 
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:logger/logger.dart';
 import '../core/errors/exception.dart';
 import '../models/request/login_request.dart';
 import '../models/response/login_response.dart';
@@ -13,6 +14,16 @@ import 'dart:convert';
 class AuthRepository {
   final AuthService _authService;
   final TokenStorageService _tokenStorageService;
+  final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 3,
+      lineLength: 75,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
 
   AuthRepository({
     AuthService? authService,
@@ -59,10 +70,12 @@ class AuthRepository {
         throw AuthException('Password cannot be empty');
       }
 
-      print('🔐 [AuthRepository] Starting login process...');
+      _logger.i('🔐 [AuthRepository] Starting login process...');
 
       // Clear any existing tokens first to ensure fresh login
-      print('🧹 [AuthRepository] Clearing any existing tokens before login...');
+      _logger.i(
+        '🧹 [AuthRepository] Clearing any existing tokens before login...',
+      );
       await _tokenStorageService.clearTokens();
 
       final loginRequest = LoginRequest(
@@ -71,8 +84,8 @@ class AuthRepository {
       );
       final loginResponse = await _authService.login(loginRequest);
 
-      print('💾 [AuthRepository] Saving NEW tokens from server...');
-      print(
+      _logger.i('💾 [AuthRepository] Saving NEW tokens from server...');
+      _logger.d(
         '   New Access Token: ${loginResponse.accessToken.substring(0, 20)}...',
       );
 
@@ -81,22 +94,22 @@ class AuthRepository {
         loginResponse.accessToken,
         loginResponse.refreshToken,
       );
-      print('✅ [AuthRepository] New tokens saved successfully!');
+      _logger.i('✅ [AuthRepository] New tokens saved successfully!');
 
       // Verify tokens were saved and are the new ones
       final savedToken = await _tokenStorageService.getAccessToken();
       if (savedToken != null && savedToken == loginResponse.accessToken) {
-        print(
+        _logger.i(
           '✅ [AuthRepository] Token verification passed: ${savedToken.substring(0, 20)}...',
         );
       } else {
-        print('❌ [AuthRepository] WARNING: Token verification failed!');
+        _logger.e('❌ [AuthRepository] WARNING: Token verification failed!');
         throw AuthException('Failed to save access token properly');
       }
 
       return loginResponse;
     } catch (e) {
-      print('❌ [AuthRepository] Login failed: $e');
+      _logger.e('❌ [AuthRepository] Login failed: $e');
       // Clear tokens on login failure to ensure clean state
       await _tokenStorageService.clearTokens();
       if (e is AuthException) {
@@ -115,7 +128,7 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
-    print('🚪 [AuthRepository] Starting logout process...');
+    _logger.i('🚪 [AuthRepository] Starting logout process...');
     try {
       // Get access token before clearing
       final accessToken = await _tokenStorageService.getAccessToken();
@@ -123,49 +136,75 @@ class AuthRepository {
       // Try to notify backend (non-blocking - we clear tokens regardless)
       if (accessToken != null && accessToken.isNotEmpty) {
         try {
-          print('📡 [AuthRepository] Notifying backend of logout...');
+          _logger.i('📡 [AuthRepository] Notifying backend of logout...');
           await _authService.logout(accessToken);
-          print('✅ [AuthRepository] Backend logout successful');
+          _logger.i('✅ [AuthRepository] Backend logout successful');
         } catch (e) {
           // Log but don't fail - we still need to clear local tokens
-          print('⚠️ [AuthRepository] Backend logout failed (non-critical): $e');
+          _logger.w(
+            '⚠️ [AuthRepository] Backend logout failed (non-critical): $e',
+          );
         }
       } else {
-        print(
+        _logger.w(
           '⚠️ [AuthRepository] No access token found, skipping backend logout',
         );
       }
 
       // ALWAYS clear tokens locally, regardless of backend response
-      print('🗑️ [AuthRepository] Clearing local tokens...');
+      _logger.i('🗑️ [AuthRepository] Clearing local tokens...');
       await _tokenStorageService.clearTokens();
 
-      // Verify tokens are actually cleared
-      final verifyAccessToken = await _tokenStorageService.getAccessToken();
-      final verifyRefreshToken = await _tokenStorageService.getRefreshToken();
+      // Verify tokens are actually cleared (with retry if needed)
+      var verifyAccessToken = await _tokenStorageService.getAccessToken();
+      var verifyRefreshToken = await _tokenStorageService.getRefreshToken();
+
+      // If tokens still exist, force clear again (SharedPreferences might need a moment)
+      if (verifyAccessToken != null || verifyRefreshToken != null) {
+        _logger.w(
+          '⚠️ [AuthRepository] Tokens still exist, force clearing again...',
+        );
+        await _tokenStorageService.clearTokens();
+        // Wait a bit and verify again
+        await Future.delayed(const Duration(milliseconds: 100));
+        verifyAccessToken = await _tokenStorageService.getAccessToken();
+        verifyRefreshToken = await _tokenStorageService.getRefreshToken();
+      }
 
       if (verifyAccessToken == null && verifyRefreshToken == null) {
-        print('✅ [AuthRepository] Logout successful - all tokens cleared');
+        _logger.i(
+          '✅ [AuthRepository] Logout successful - all tokens cleared and verified',
+        );
       } else {
-        print('❌ [AuthRepository] WARNING: Tokens may not be fully cleared!');
-        // Force clear again
+        _logger.e(
+          '❌ [AuthRepository] CRITICAL: Tokens still exist after multiple clear attempts!',
+        );
+        _logger.e(
+          '   Access token: ${verifyAccessToken != null ? "EXISTS" : "NULL"}',
+        );
+        _logger.e(
+          '   Refresh token: ${verifyRefreshToken != null ? "EXISTS" : "NULL"}',
+        );
+        // Final attempt
         await _tokenStorageService.clearTokens();
       }
     } catch (e) {
       // Even if everything fails, ensure tokens are cleared
-      print('❌ [AuthRepository] Logout error: $e - Force clearing tokens...');
+      _logger.e(
+        '❌ [AuthRepository] Logout error: $e - Force clearing tokens...',
+      );
       await _tokenStorageService.clearTokens();
       // Don't throw - logout should always succeed in clearing local tokens
-      print('✅ [AuthRepository] Tokens cleared despite error');
+      _logger.i('✅ [AuthRepository] Tokens cleared despite error');
     }
   }
 
   Future<LoginResponse> loginWithGoogle() async {
     try {
-      print('🔐 [AuthRepository] Starting Google Sign-In...');
+      _logger.i('🔐 [AuthRepository] Starting Google Sign-In...');
 
       // Clear any existing tokens first to ensure fresh login
-      print(
+      _logger.i(
         '🧹 [AuthRepository] Clearing any existing tokens before Google login...',
       );
       await _tokenStorageService.clearTokens();
@@ -178,17 +217,17 @@ class AuthRepository {
               'https://www.googleapis.com/auth/userinfo.profile',
             ],
           );
-      print('[AuthRepository] Got Google user: ${googleUser.email}');
+      _logger.d('[AuthRepository] Got Google user: ${googleUser.email}');
       final googleAuth = googleUser.authentication;
       final idToken = googleAuth.idToken;
       if (idToken == null) {
         throw AuthException('Failed to get Google ID Token');
       }
-      print('[AuthRepository] Sending ID token to backend...');
+      _logger.d('[AuthRepository] Sending ID token to backend...');
       final responseData = await _authService.loginWithGoogle(idToken);
       final loginResponse = LoginResponse.fromJson(responseData);
 
-      print('💾 [AuthRepository] Saving NEW tokens from Google login...');
+      _logger.i('💾 [AuthRepository] Saving NEW tokens from Google login...');
       await _tokenStorageService.saveTokens(
         loginResponse.accessToken,
         loginResponse.refreshToken,
@@ -197,15 +236,17 @@ class AuthRepository {
       // Verify tokens were saved
       final savedToken = await _tokenStorageService.getAccessToken();
       if (savedToken != null && savedToken == loginResponse.accessToken) {
-        print('✅ [AuthRepository] Google login successful - tokens verified!');
+        _logger.i(
+          '✅ [AuthRepository] Google login successful - tokens verified!',
+        );
       } else {
-        print('❌ [AuthRepository] WARNING: Token verification failed!');
+        _logger.e('❌ [AuthRepository] WARNING: Token verification failed!');
         throw AuthException('Failed to save access token properly');
       }
 
       return loginResponse;
     } catch (e) {
-      print('❌ [AuthRepository] ERROR during Google sign-in: $e');
+      _logger.e('❌ [AuthRepository] ERROR during Google sign-in: $e');
       await GoogleSignIn.instance.signOut();
       // Clear tokens on failure
       await _tokenStorageService.clearTokens();
@@ -222,14 +263,16 @@ class AuthRepository {
   }
 
   Future<String?> getAccessToken() async {
-    print('🔍 [AuthRepository] Getting access token...');
+    _logger.d('🔍 [AuthRepository] Getting access token...');
     final token = await _tokenStorageService.getAccessToken();
     if (token == null || token.isEmpty) {
-      print('⚠️ [AuthRepository] Token is NULL or EMPTY!');
+      _logger.w('⚠️ [AuthRepository] Token is NULL or EMPTY!');
       final isAuth = await isAuthenticated();
-      print('⚠️ [AuthRepository] isAuthenticated: $isAuth');
+      _logger.w('⚠️ [AuthRepository] isAuthenticated: $isAuth');
     } else {
-      print('✅ [AuthRepository] Token retrieved: ${token.substring(0, 20)}...');
+      _logger.d(
+        '✅ [AuthRepository] Token retrieved: ${token.substring(0, 20)}...',
+      );
     }
     return token;
   }
@@ -283,13 +326,13 @@ class AuthRepository {
   Future<String?> getValidAccessToken() async {
     String? accessToken = await _tokenStorageService.getAccessToken();
     if (accessToken == null || _isTokenExpired(accessToken)) {
-      print('[AuthRepository] Access token expired — refreshing...');
+      _logger.i('[AuthRepository] Access token expired — refreshing...');
       try {
         final newTokens = await refreshAccessToken();
         accessToken = newTokens.accessToken;
-        print('[AuthRepository] Token refreshed successfully!');
+        _logger.i('[AuthRepository] Token refreshed successfully!');
       } catch (e) {
-        print('[AuthRepository] Failed to refresh token: $e');
+        _logger.e('[AuthRepository] Failed to refresh token: $e');
         rethrow;
       }
     }
@@ -301,7 +344,7 @@ class AuthRepository {
     try {
       final parts = token.split('.');
       if (parts.length != 3) {
-        print('[AuthRepository] Invalid JWT format: $token');
+        _logger.w('[AuthRepository] Invalid JWT format: $token');
         return true;
       }
 
@@ -318,7 +361,7 @@ class AuthRepository {
       final expiryDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
       return DateTime.now().isAfter(expiryDate);
     } catch (e) {
-      print('[AuthRepository] Token decode error: $e');
+      _logger.e('[AuthRepository] Token decode error: $e');
       return true; // Nếu decode lỗi → xem như token hết hạn
     }
   }
@@ -328,13 +371,13 @@ class AuthRepository {
     try {
       final token = await getAccessToken();
       if (token == null || token.isEmpty) {
-        print('[AuthRepository] No access token available');
+        _logger.w('[AuthRepository] No access token available');
         return null;
       }
 
       final parts = token.split('.');
       if (parts.length != 3) {
-        print('[AuthRepository] Invalid JWT format');
+        _logger.w('[AuthRepository] Invalid JWT format');
         return null;
       }
 
@@ -354,10 +397,10 @@ class AuthRepository {
         return int.tryParse(userId.toString());
       }
 
-      print('[AuthRepository] No user ID found in token');
+      _logger.w('[AuthRepository] No user ID found in token');
       return null;
     } catch (e) {
-      print('[AuthRepository] Error getting user ID: $e');
+      _logger.e('[AuthRepository] Error getting user ID: $e');
       return null;
     }
   }
@@ -367,13 +410,13 @@ class AuthRepository {
     try {
       final token = await getAccessToken();
       if (token == null || token.isEmpty) {
-        print('[AuthRepository] No access token available');
+        _logger.w('[AuthRepository] No access token available');
         return null;
       }
 
       final parts = token.split('.');
       if (parts.length != 3) {
-        print('[AuthRepository] Invalid JWT format');
+        _logger.w('[AuthRepository] Invalid JWT format');
         return null;
       }
 
@@ -389,10 +432,10 @@ class AuthRepository {
         return int.tryParse(accountId.toString());
       }
 
-      print('[AuthRepository] No accountId found in token');
+      _logger.w('[AuthRepository] No accountId found in token');
       return null;
     } catch (e) {
-      print('[AuthRepository] Error getting accountId: $e');
+      _logger.e('[AuthRepository] Error getting accountId: $e');
       return null;
     }
   }

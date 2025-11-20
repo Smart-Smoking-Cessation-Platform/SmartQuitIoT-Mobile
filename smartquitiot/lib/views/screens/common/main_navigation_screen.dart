@@ -275,7 +275,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               // Metrics Tracking features - Always show, but protected
               _buildPremiumProtectedCard(
                 subscription,
-                const DiaryRecordCard(),
+                const DiaryCardSection(),
                 'Metrics Tracking',
               ),
               _buildPremiumProtectedCard(

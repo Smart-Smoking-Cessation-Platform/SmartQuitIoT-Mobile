@@ -1,15 +1,30 @@
+import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:logger/logger.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../../utils/snackbar_helper.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../providers/achievement_provider.dart'; // Import achievement_provider
 import '../../../providers/membership_provider.dart';
+import '../../../providers/quit_plan_time_provider.dart';
+import '../../../providers/websocket_provider.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
+
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 3,
+      lineLength: 75,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,7 +33,7 @@ class HomeHeader extends ConsumerWidget {
     final username = authState.username;
     final unreadCount = ref.watch(unreadCountProvider);
 
-    print(
+    _logger.d(
       '--- >>> HOME_HEADER BUILD: Username is [$username], IsAuthenticated is [${authState.isAuthenticated}], Unread Notifications: $unreadCount',
     );
 
@@ -174,10 +189,20 @@ class HomeHeader extends ConsumerWidget {
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () async {
+                  // Disconnect WebSocket before logout
+                  try {
+                    final websocketManager = ref.read(websocketManagerProvider);
+                    await websocketManager.disconnect();
+                    _logger.i('✅ [HomeHeader] WebSocket disconnected');
+                  } catch (e) {
+                    _logger.e('❌ [HomeHeader] WebSocket disconnect error: $e');
+                  }
+
+                  // Perform logout (this clears tokens)
                   await ref.read(authViewModelProvider.notifier).logout();
 
                   // Invalidate all user-specific data providers to clear cache
-                  print(
+                  _logger.i(
                     '🔄 [HomeHeader] Clearing all user data after logout...',
                   );
                   ref.invalidate(allAchievementsProvider);
@@ -186,12 +211,34 @@ class HomeHeader extends ConsumerWidget {
                   ref.read(membershipViewModelProvider.notifier).reset();
                   ref.invalidate(membershipViewModelProvider);
                   ref.invalidate(currentSubscriptionProvider);
+                  // Clear quit plan time data
+                  ref.read(quitPlanTimeViewModelProvider.notifier).reset();
+                  ref.invalidate(quitPlanTimeViewModelProvider);
+                  // Clear notification data
+                  ref.invalidate(notificationViewModelProvider);
+                  ref.invalidate(unreadCountProvider);
+                  // Clear quit plan data
+                  ref.read(quitPlanHomepageViewModelProvider.notifier).clear();
+                  ref.invalidate(quitPlanHomepageViewModelProvider);
 
                   if (context.mounted) {
-                    SnackBarHelper.showSuccess(context, 'Logout successfully!');
-                  }
-                  if (context.mounted) {
+                    // Navigate to login immediately
                     context.go('/login');
+
+                    // Show flushbar after navigation
+                    Flushbar(
+                      message: 'Logout successfully!',
+                      backgroundColor: const Color(0xFF00D09E),
+                      duration: const Duration(seconds: 2),
+                      flushbarPosition: FlushbarPosition.TOP,
+                      margin: const EdgeInsets.all(8),
+                      borderRadius: BorderRadius.circular(8),
+                      icon: const Icon(
+                        Icons.check_circle,
+                        size: 28,
+                        color: Colors.white,
+                      ),
+                    ).show(context);
                   }
                 },
                 child: Container(
