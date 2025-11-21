@@ -292,7 +292,12 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               const AchievementsCard(),
               const LeaderboardCard(),
 
-              const CreateQuitPlanCard(),
+              _buildPremiumProtectedCard(
+                subscription,
+                const CreateQuitPlanCard(),
+                'Smart Quit Plan',
+              ),
+
               // Smart Quit Plan feature - Always show, but protected
               _buildPremiumProtectedCard(
                 subscription,
