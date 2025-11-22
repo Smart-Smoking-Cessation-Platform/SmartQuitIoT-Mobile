@@ -84,8 +84,8 @@ class _MyAppState extends ConsumerState<MyApp> {
       debugPrint('🏆 Achievement notification received');
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Navigate to main screen (achievement tab)
-      router.go('/main');
+      // Navigate to achievements screen with completed tab
+      router.go('/achievements?tab=completed');
 
       // Show snackbar to inform user
       if (rootNavigatorKey.currentContext != null &&
@@ -133,14 +133,20 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     // Navigate directly to success/cancel screen, API will be called in the screen
     if (cancel || path.contains('failed')) {
-      debugPrint('❌ [DeepLink] Payment cancelled/failed, navigating to cancel screen');
+      debugPrint(
+        '❌ [DeepLink] Payment cancelled/failed, navigating to cancel screen',
+      );
       router.go('/payment/cancel', extra: body);
     } else if (membershipStatus == 'AVAILABLE') {
-      debugPrint('✅ [DeepLink] Payment successful, navigating to success screen');
+      debugPrint(
+        '✅ [DeepLink] Payment successful, navigating to success screen',
+      );
       // Pass payment params to success screen which will call API
       router.go('/payment/success', extra: body);
     } else {
-      debugPrint('⚠️ [DeepLink] Unknown payment status, navigating to cancel screen');
+      debugPrint(
+        '⚠️ [DeepLink] Unknown payment status, navigating to cancel screen',
+      );
       router.go('/payment/cancel', extra: body);
     }
   }

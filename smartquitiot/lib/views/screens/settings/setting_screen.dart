@@ -12,7 +12,10 @@ import '../../../providers/websocket_provider.dart';
 import '../../../providers/membership_provider.dart';
 import '../../../providers/quit_plan_time_provider.dart';
 import '../../../providers/notification_provider.dart';
+import '../../../providers/diary_record_provider.dart';
+import '../../../providers/metrics_provider.dart';
 import '../../../viewmodels/quit_plan_homepage_view_model.dart';
+import '../../../viewmodels/today_mission_view_model.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -260,6 +263,18 @@ class SettingsScreen extends ConsumerWidget {
                                     ref.invalidate(
                                       quitPlanHomepageViewModelProvider,
                                     );
+
+                                    // Clear card data providers
+                                    ref.invalidate(diaryTodayViewModelProvider);
+                                    ref.invalidate(homeMetricsProvider);
+                                    ref.invalidate(homeHealthRecoveryProvider);
+                                    ref.invalidate(
+                                      todayMissionViewModelProvider,
+                                    );
+                                    ref.invalidate(diaryHistoryProvider);
+                                    ref.invalidate(diaryChartsProvider);
+                                    ref.invalidate(allDiaryRecordsProvider);
+                                    ref.invalidate(todayDiaryRecordProvider);
 
                                     if (context.mounted) {
                                       // Navigate to login immediately

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:SmartQuitIoT/views/screens/badges/badges_screen.dart';
 import 'package:SmartQuitIoT/providers/achievement_provider.dart';
 import 'package:SmartQuitIoT/providers/websocket_provider.dart';
 import 'package:SmartQuitIoT/providers/achievement_refresh_provider.dart';
@@ -62,7 +61,7 @@ class AchievementsCard extends ConsumerWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  context.push('/achievement');
+                  context.go('/achievements');
                 },
                 child: const Padding(
                   padding: EdgeInsets.only(right: 12),
