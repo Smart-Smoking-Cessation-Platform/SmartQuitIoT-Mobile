@@ -63,15 +63,26 @@ class AchievementsCard extends ConsumerWidget {
                 onTap: () {
                   context.go('/achievements');
                 },
-                child: const Padding(
-                  padding: EdgeInsets.only(right: 12),
-                  child: Text(
-                    'View more',
-                    style: TextStyle(
-                      color: Color(0xFF00D09E),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'View more',
+                        style: TextStyle(
+                          color: Color(0xFF00D09E),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Color(0xFF00D09E),
+                        size: 14,
+                      ),
+                    ],
                   ),
                 ),
               ),

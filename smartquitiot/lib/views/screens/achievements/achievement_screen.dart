@@ -80,6 +80,12 @@ class _AchievementScreenState extends State<AchievementScreen>
           backgroundColor: const Color(0xFF00D09E),
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              context.go('/main');
+            },
+          ),
           title: const Text(
             'Achievements',
             style: TextStyle(
