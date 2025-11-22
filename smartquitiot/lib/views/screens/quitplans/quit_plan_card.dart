@@ -1013,7 +1013,11 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.primaryColor,
+        gradient: LinearGradient(
+          colors: theme.gradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

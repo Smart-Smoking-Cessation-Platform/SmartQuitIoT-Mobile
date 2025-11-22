@@ -17,8 +17,10 @@ class NotificationRepository {
   }) async {
     try {
       print('📂 [NotificationRepository] Getting notifications...');
-      print('📂 [NotificationRepository] Filters - isRead: $isRead, type: $type, page: $page');
-      
+      print(
+        '📂 [NotificationRepository] Filters - isRead: $isRead, type: $type, page: $page',
+      );
+
       final response = await _notificationService.getAllNotifications(
         accessToken: accessToken,
         isRead: isRead,
@@ -27,7 +29,9 @@ class NotificationRepository {
         size: size,
       );
 
-      print('✅ [NotificationRepository] Got ${response.content.length} notifications');
+      print(
+        '✅ [NotificationRepository] Got ${response.content.length} notifications',
+      );
       return response;
     } catch (e) {
       print('❌ [NotificationRepository] Error getting notifications: $e');
@@ -36,24 +40,32 @@ class NotificationRepository {
   }
 
   /// Get all notifications from all 5 types
-  Future<List<AchievementNotification>> getAllNotificationsAllTypes({
+  /// Returns NotificationResponse with pagination info
+  Future<NotificationResponse> getAllNotificationsAllTypes({
     required String accessToken,
     bool? isRead,
     int page = 0,
     int size = 10,
   }) async {
     try {
-      print('📂 [NotificationRepository] Getting notifications from all types...');
-      
-      final notifications = await _notificationService.getAllNotificationsAllTypes(
+      print(
+        '📂 [NotificationRepository] Getting notifications from all types...',
+      );
+
+      final response = await _notificationService.getAllNotificationsAllTypes(
         accessToken: accessToken,
         isRead: isRead,
         page: page,
         size: size,
       );
 
-      print('✅ [NotificationRepository] Got ${notifications.length} total notifications');
-      return notifications;
+      print(
+        '✅ [NotificationRepository] Got ${response.content.length} total notifications',
+      );
+      print(
+        '📄 [NotificationRepository] Page: ${response.page.number + 1}/${response.page.totalPages}',
+      );
+      return response;
     } catch (e) {
       print('❌ [NotificationRepository] Error getting all notifications: $e');
       rethrow;
@@ -61,12 +73,10 @@ class NotificationRepository {
   }
 
   /// Mark all notifications as read
-  Future<bool> markAllAsRead({
-    required String accessToken,
-  }) async {
+  Future<bool> markAllAsRead({required String accessToken}) async {
     try {
       print('📂 [NotificationRepository] Marking all as read...');
-      
+
       final success = await _notificationService.markAllAsRead(
         accessToken: accessToken,
       );
@@ -87,19 +97,25 @@ class NotificationRepository {
     required int notificationId,
   }) async {
     try {
-      print('📂 [NotificationRepository] Marking notification $notificationId as read...');
-      
+      print(
+        '📂 [NotificationRepository] Marking notification $notificationId as read...',
+      );
+
       final success = await _notificationService.markAsRead(
         accessToken: accessToken,
         notificationId: notificationId,
       );
 
       if (success) {
-        print('✅ [NotificationRepository] Notification $notificationId marked as read');
+        print(
+          '✅ [NotificationRepository] Notification $notificationId marked as read',
+        );
       }
       return success;
     } catch (e) {
-      print('❌ [NotificationRepository] Error marking notification as read: $e');
+      print(
+        '❌ [NotificationRepository] Error marking notification as read: $e',
+      );
       rethrow;
     }
   }
@@ -110,15 +126,19 @@ class NotificationRepository {
     required int notificationId,
   }) async {
     try {
-      print('📂 [NotificationRepository] Deleting notification $notificationId...');
-      
+      print(
+        '📂 [NotificationRepository] Deleting notification $notificationId...',
+      );
+
       final success = await _notificationService.deleteNotification(
         accessToken: accessToken,
         notificationId: notificationId,
       );
 
       if (success) {
-        print('✅ [NotificationRepository] Notification $notificationId deleted');
+        print(
+          '✅ [NotificationRepository] Notification $notificationId deleted',
+        );
       }
       return success;
     } catch (e) {
@@ -128,12 +148,10 @@ class NotificationRepository {
   }
 
   /// Delete all notifications
-  Future<bool> deleteAllNotifications({
-    required String accessToken,
-  }) async {
+  Future<bool> deleteAllNotifications({required String accessToken}) async {
     try {
       print('📂 [NotificationRepository] Deleting all notifications...');
-      
+
       final success = await _notificationService.deleteAllNotifications(
         accessToken: accessToken,
       );
@@ -149,21 +167,19 @@ class NotificationRepository {
   }
 
   /// Get unread notifications count
-  Future<int> getUnreadCount({
-    required String accessToken,
-  }) async {
+  Future<int> getUnreadCount({required String accessToken}) async {
     try {
       print('📂 [NotificationRepository] Getting unread count...');
-      
+
       // Fetch only unread notifications with page 0 and size 1 to minimize data transfer
-      final notifications = await getAllNotificationsAllTypes(
+      final response = await getAllNotificationsAllTypes(
         accessToken: accessToken,
         isRead: false,
         page: 0,
         size: 100, // Get enough to show accurate count
       );
 
-      final unreadCount = notifications.length;
+      final unreadCount = response.content.length;
       print('✅ [NotificationRepository] Unread count: $unreadCount');
       return unreadCount;
     } catch (e) {

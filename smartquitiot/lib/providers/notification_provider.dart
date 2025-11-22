@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/services/notification_service.dart';
 import 'package:SmartQuitIoT/repositories/notification_repository.dart';
 import 'package:SmartQuitIoT/models/achievement_notification.dart';
+import 'package:SmartQuitIoT/models/notification_response.dart';
 import 'package:SmartQuitIoT/providers/user_provider.dart';
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
 
@@ -25,8 +26,20 @@ class NotificationState {
   final bool isLoading;
   final bool isLoadingRead;
   final bool isLoadingUnread;
+  final bool isLoadingMoreRead;
+  final bool isLoadingMoreUnread;
   final String? error;
   final int unreadCount;
+
+  // Pagination info for read notifications
+  final int readCurrentPage;
+  final int readTotalPages;
+  final bool hasMoreRead;
+
+  // Pagination info for unread notifications
+  final int unreadCurrentPage;
+  final int unreadTotalPages;
+  final bool hasMoreUnread;
 
   NotificationState({
     this.notifications = const [],
@@ -35,8 +48,16 @@ class NotificationState {
     this.isLoading = false,
     this.isLoadingRead = false,
     this.isLoadingUnread = false,
+    this.isLoadingMoreRead = false,
+    this.isLoadingMoreUnread = false,
     this.error,
     this.unreadCount = 0,
+    this.readCurrentPage = 0,
+    this.readTotalPages = 0,
+    this.hasMoreRead = false,
+    this.unreadCurrentPage = 0,
+    this.unreadTotalPages = 0,
+    this.hasMoreUnread = false,
   });
 
   NotificationState copyWith({
@@ -46,8 +67,16 @@ class NotificationState {
     bool? isLoading,
     bool? isLoadingRead,
     bool? isLoadingUnread,
+    bool? isLoadingMoreRead,
+    bool? isLoadingMoreUnread,
     String? error,
     int? unreadCount,
+    int? readCurrentPage,
+    int? readTotalPages,
+    bool? hasMoreRead,
+    int? unreadCurrentPage,
+    int? unreadTotalPages,
+    bool? hasMoreUnread,
   }) {
     return NotificationState(
       notifications: notifications ?? this.notifications,
@@ -56,8 +85,16 @@ class NotificationState {
       isLoading: isLoading ?? this.isLoading,
       isLoadingRead: isLoadingRead ?? this.isLoadingRead,
       isLoadingUnread: isLoadingUnread ?? this.isLoadingUnread,
+      isLoadingMoreRead: isLoadingMoreRead ?? this.isLoadingMoreRead,
+      isLoadingMoreUnread: isLoadingMoreUnread ?? this.isLoadingMoreUnread,
       error: error,
       unreadCount: unreadCount ?? this.unreadCount,
+      readCurrentPage: readCurrentPage ?? this.readCurrentPage,
+      readTotalPages: readTotalPages ?? this.readTotalPages,
+      hasMoreRead: hasMoreRead ?? this.hasMoreRead,
+      unreadCurrentPage: unreadCurrentPage ?? this.unreadCurrentPage,
+      unreadTotalPages: unreadTotalPages ?? this.unreadTotalPages,
+      hasMoreUnread: hasMoreUnread ?? this.hasMoreUnread,
     );
   }
 }
@@ -67,10 +104,15 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
   final NotificationRepository _repository;
   final Ref _ref;
 
-  NotificationViewModel(this._repository, this._ref) : super(NotificationState());
+  NotificationViewModel(this._repository, this._ref)
+    : super(NotificationState());
 
   /// Get all notifications from all types
-  Future<void> getAllNotifications({bool? isRead, int page = 0, int size = 10}) async {
+  Future<void> getAllNotifications({
+    bool? isRead,
+    int page = 0,
+    int size = 10,
+  }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
       print('🔔 [NotificationViewModel] Loading all notifications...');
@@ -80,7 +122,7 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
         throw Exception('No access token found');
       }
 
-      final notifications = await _repository.getAllNotificationsAllTypes(
+      final response = await _repository.getAllNotificationsAllTypes(
         accessToken: token,
         isRead: isRead,
         page: page,
@@ -88,22 +130,21 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
       );
 
       // Calculate unread count
-      final unreadCount = notifications.where((n) => !n.isRead).length;
+      final unreadCount = response.content.where((n) => !n.isRead).length;
 
       state = state.copyWith(
-        notifications: notifications,
+        notifications: response.content,
         isLoading: false,
         unreadCount: unreadCount,
       );
 
-      print('✅ [NotificationViewModel] Loaded ${notifications.length} notifications');
+      print(
+        '✅ [NotificationViewModel] Loaded ${response.content.length} notifications',
+      );
       print('📊 [NotificationViewModel] Unread count: $unreadCount');
     } catch (e) {
       print('❌ [NotificationViewModel] Error: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -163,7 +204,9 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
   /// Mark single notification as read
   Future<bool> markAsRead(int notificationId) async {
     try {
-      print('🔔 [NotificationViewModel] Marking notification $notificationId as read...');
+      print(
+        '🔔 [NotificationViewModel] Marking notification $notificationId as read...',
+      );
 
       final token = await _ref.read(authRepositoryProvider).getAccessToken();
       if (token == null) {
@@ -192,7 +235,9 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
           unreadCount: unreadCount,
         );
 
-        print('✅ [NotificationViewModel] Notification $notificationId marked as read');
+        print(
+          '✅ [NotificationViewModel] Notification $notificationId marked as read',
+        );
       }
 
       return success;
@@ -205,7 +250,9 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
   /// Delete notification
   Future<bool> deleteNotification(int notificationId) async {
     try {
-      print('🔔 [NotificationViewModel] Deleting notification $notificationId...');
+      print(
+        '🔔 [NotificationViewModel] Deleting notification $notificationId...',
+      );
 
       final token = await _ref.read(authRepositoryProvider).getAccessToken();
       if (token == null) {
@@ -251,13 +298,12 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
         throw Exception('No access token found');
       }
 
-      final success = await _repository.deleteAllNotifications(accessToken: token);
+      final success = await _repository.deleteAllNotifications(
+        accessToken: token,
+      );
 
       if (success) {
-        state = state.copyWith(
-          notifications: [],
-          unreadCount: 0,
-        );
+        state = state.copyWith(notifications: [], unreadCount: 0);
 
         print('✅ [NotificationViewModel] All notifications deleted');
       }
@@ -270,70 +316,160 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
   }
 
   /// Get read notifications only
-  Future<void> getReadNotifications({int page = 0, int size = 200}) async {
+  Future<void> getReadNotifications({
+    int page = 0,
+    int size = 10,
+    bool loadMore = false,
+  }) async {
     try {
-      state = state.copyWith(isLoadingRead: true, error: null);
-      print('🔔 [NotificationViewModel] Loading read notifications...');
+      if (loadMore) {
+        state = state.copyWith(isLoadingMoreRead: true, error: null);
+      } else {
+        state = state.copyWith(isLoadingRead: true, error: null);
+      }
+      print(
+        '🔔 [NotificationViewModel] Loading read notifications (page: $page)...',
+      );
 
       final token = await _ref.read(authRepositoryProvider).getAccessToken();
       if (token == null) {
         throw Exception('No access token found');
       }
 
-      final notifications = await _repository.getAllNotificationsAllTypes(
+      final response = await _repository.getAllNotificationsAllTypes(
         accessToken: token,
         isRead: true,
         page: page,
         size: size,
       );
 
+      final List<AchievementNotification> updatedNotifications;
+      if (loadMore) {
+        // Append new notifications to existing list
+        updatedNotifications = [
+          ...state.readNotifications,
+          ...response.content,
+        ];
+      } else {
+        // Replace with new notifications
+        updatedNotifications = response.content;
+      }
+
+      final currentPage = response.page.number;
+      final totalPages = response.page.totalPages;
+      final hasMore = currentPage < totalPages - 1;
+
       state = state.copyWith(
-        readNotifications: notifications,
+        readNotifications: updatedNotifications,
         isLoadingRead: false,
+        isLoadingMoreRead: false,
+        readCurrentPage: currentPage,
+        readTotalPages: totalPages,
+        hasMoreRead: hasMore,
       );
 
-      print('✅ [NotificationViewModel] Loaded ${notifications.length} read notifications');
+      print(
+        '✅ [NotificationViewModel] Loaded ${response.content.length} read notifications',
+      );
+      print(
+        '📄 [NotificationViewModel] Page: ${currentPage + 1}/$totalPages, Has more: $hasMore',
+      );
     } catch (e) {
       print('❌ [NotificationViewModel] Error loading read notifications: $e');
       state = state.copyWith(
         isLoadingRead: false,
+        isLoadingMoreRead: false,
         error: e.toString(),
       );
     }
   }
 
   /// Get unread notifications only
-  Future<void> getUnreadNotifications({int page = 0, int size = 200}) async {
+  Future<void> getUnreadNotifications({
+    int page = 0,
+    int size = 10,
+    bool loadMore = false,
+  }) async {
     try {
-      state = state.copyWith(isLoadingUnread: true, error: null);
-      print('🔔 [NotificationViewModel] Loading unread notifications...');
+      if (loadMore) {
+        state = state.copyWith(isLoadingMoreUnread: true, error: null);
+      } else {
+        state = state.copyWith(isLoadingUnread: true, error: null);
+      }
+      print(
+        '🔔 [NotificationViewModel] Loading unread notifications (page: $page)...',
+      );
 
       final token = await _ref.read(authRepositoryProvider).getAccessToken();
       if (token == null) {
         throw Exception('No access token found');
       }
 
-      final notifications = await _repository.getAllNotificationsAllTypes(
+      final response = await _repository.getAllNotificationsAllTypes(
         accessToken: token,
         isRead: false,
         page: page,
         size: size,
       );
 
+      final List<AchievementNotification> updatedNotifications;
+      if (loadMore) {
+        // Append new notifications to existing list
+        updatedNotifications = [
+          ...state.unreadNotifications,
+          ...response.content,
+        ];
+      } else {
+        // Replace with new notifications
+        updatedNotifications = response.content;
+      }
+
+      final currentPage = response.page.number;
+      final totalPages = response.page.totalPages;
+      final hasMore = currentPage < totalPages - 1;
+
       state = state.copyWith(
-        unreadNotifications: notifications,
+        unreadNotifications: updatedNotifications,
         isLoadingUnread: false,
-        unreadCount: notifications.length,
+        isLoadingMoreUnread: false,
+        unreadCount: updatedNotifications.length,
+        unreadCurrentPage: currentPage,
+        unreadTotalPages: totalPages,
+        hasMoreUnread: hasMore,
       );
 
-      print('✅ [NotificationViewModel] Loaded ${notifications.length} unread notifications');
+      print(
+        '✅ [NotificationViewModel] Loaded ${response.content.length} unread notifications',
+      );
+      print(
+        '📄 [NotificationViewModel] Page: ${currentPage + 1}/$totalPages, Has more: $hasMore',
+      );
     } catch (e) {
       print('❌ [NotificationViewModel] Error loading unread notifications: $e');
       state = state.copyWith(
         isLoadingUnread: false,
+        isLoadingMoreUnread: false,
         error: e.toString(),
       );
     }
+  }
+
+  /// Load more read notifications
+  Future<void> loadMoreReadNotifications() async {
+    if (!state.hasMoreRead || state.isLoadingMoreRead) {
+      return;
+    }
+    final nextPage = state.readCurrentPage + 1;
+    await getReadNotifications(page: nextPage, size: 10, loadMore: true);
+  }
+
+  /// Load more unread notifications
+  Future<void> loadMoreUnreadNotifications() async {
+    if (!state.hasMoreUnread || state.isLoadingMoreUnread) {
+      return;
+    }
+    final nextPage = state.unreadCurrentPage + 1;
+    await getUnreadNotifications(page: nextPage, size: 10, loadMore: true);
   }
 
   /// Refresh notifications
@@ -345,19 +481,16 @@ class NotificationViewModel extends StateNotifier<NotificationState> {
   /// Refresh both read and unread tabs
   Future<void> refreshTabs() async {
     print('🔄 [NotificationViewModel] Refreshing both tabs...');
-    await Future.wait([
-      getReadNotifications(),
-      getUnreadNotifications(),
-    ]);
+    await Future.wait([getReadNotifications(), getUnreadNotifications()]);
   }
 }
 
 // Notification ViewModel Provider
 final notificationViewModelProvider =
     StateNotifierProvider<NotificationViewModel, NotificationState>((ref) {
-  final repository = ref.watch(notificationRepositoryProvider);
-  return NotificationViewModel(repository, ref);
-});
+      final repository = ref.watch(notificationRepositoryProvider);
+      return NotificationViewModel(repository, ref);
+    });
 
 // Convenience providers for specific use cases
 
@@ -367,7 +500,9 @@ final allNotificationsProvider = Provider<List<AchievementNotification>>((ref) {
 });
 
 /// Unread notifications provider
-final unreadNotificationsProvider = Provider<List<AchievementNotification>>((ref) {
+final unreadNotificationsProvider = Provider<List<AchievementNotification>>((
+  ref,
+) {
   final notifications = ref.watch(notificationViewModelProvider).notifications;
   return notifications.where((n) => !n.isRead).toList();
 });
