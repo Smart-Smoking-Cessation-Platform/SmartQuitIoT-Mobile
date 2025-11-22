@@ -36,7 +36,9 @@ class NotificationService {
 
       print('📡 [NotificationService] POST: $url');
       print('📦 [NotificationService] Request: ${request.toJson()}');
-      print('🔑 [NotificationService] Token: ${accessToken.substring(0, 20)}...');
+      print(
+        '🔑 [NotificationService] Token: ${accessToken.substring(0, 20)}...',
+      );
 
       final response = await _dio.post(
         url,
@@ -52,7 +54,9 @@ class NotificationService {
       print('✅ [NotificationService] Status: ${response.statusCode}');
       print('📦 [NotificationService] Response: ${response.data}');
 
-      return NotificationResponse.fromJson(response.data as Map<String, dynamic>);
+      return NotificationResponse.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } catch (e) {
       print('❌ [NotificationService] Error getting notifications: $e');
       rethrow;
@@ -60,23 +64,19 @@ class NotificationService {
   }
 
   /// Mark all notifications as read
-  Future<bool> markAllAsRead({
-    required String accessToken,
-  }) async {
+  Future<bool> markAllAsRead({required String accessToken}) async {
     try {
       final url = '$_baseUrl/notifications/read-all';
       print('📡 [NotificationService] PUT: $url');
 
       final response = await _dio.put(
         url,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
 
-      print('✅ [NotificationService] Mark all read - Status: ${response.statusCode}');
+      print(
+        '✅ [NotificationService] Mark all read - Status: ${response.statusCode}',
+      );
       return response.statusCode == 200;
     } catch (e) {
       print('❌ [NotificationService] Error marking all as read: $e');
@@ -95,14 +95,12 @@ class NotificationService {
 
       final response = await _dio.put(
         url,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
 
-      print('✅ [NotificationService] Mark as read - Status: ${response.statusCode}');
+      print(
+        '✅ [NotificationService] Mark as read - Status: ${response.statusCode}',
+      );
       return response.statusCode == 200;
     } catch (e) {
       print('❌ [NotificationService] Error marking notification as read: $e');
@@ -121,11 +119,7 @@ class NotificationService {
 
       final response = await _dio.delete(
         url,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
 
       print('✅ [NotificationService] Delete - Status: ${response.statusCode}');
@@ -137,23 +131,19 @@ class NotificationService {
   }
 
   /// Delete all notifications
-  Future<bool> deleteAllNotifications({
-    required String accessToken,
-  }) async {
+  Future<bool> deleteAllNotifications({required String accessToken}) async {
     try {
       final url = '$_baseUrl/notifications/delete-all';
       print('📡 [NotificationService] DELETE: $url');
 
       final response = await _dio.delete(
         url,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
 
-      print('✅ [NotificationService] Delete all - Status: ${response.statusCode}');
+      print(
+        '✅ [NotificationService] Delete all - Status: ${response.statusCode}',
+      );
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
       print('❌ [NotificationService] Error deleting all notifications: $e');
@@ -161,7 +151,7 @@ class NotificationService {
     }
   }
 
-  /// Get all notifications across all types (make 5 parallel requests)
+  /// Get all notifications across all types (single request without type filter)
   Future<List<AchievementNotification>> getAllNotificationsAllTypes({
     required String accessToken,
     bool? isRead,
@@ -169,34 +159,34 @@ class NotificationService {
     int size = 10,
   }) async {
     try {
-      print('🔔 [NotificationService] Fetching notifications from all 5 types...');
-      
-      final types = ['ACHIEVEMENT', 'MISSION', 'PHASE', 'QUIT_PLAN', 'SYSTEM'];
-      final futures = types.map((type) => 
-        getAllNotifications(
-          accessToken: accessToken,
-          isRead: isRead,
-          type: type,
-          page: page,
-          size: size,
-        )
-      ).toList();
+      print(
+        '🔔 [NotificationService] Fetching notifications from all types (no type filter)...',
+      );
 
-      final responses = await Future.wait(futures);
-      
-      // Combine all notifications from all types
-      final allNotifications = <AchievementNotification>[];
-      for (var response in responses) {
-        allNotifications.addAll(response.content);
-      }
+      // Call getAllNotifications without type parameter to get all notifications
+      // Don't pass type parameter at all so it won't be in request body
+      final response = await getAllNotifications(
+        accessToken: accessToken,
+        isRead: isRead,
+        // type is not passed, so it will be null and won't appear in request body
+        page: page,
+        size: size,
+      );
 
       // Sort by createdAt descending (newest first)
+      final allNotifications = List<AchievementNotification>.from(
+        response.content,
+      );
       allNotifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-      print('✅ [NotificationService] Total notifications from all types: ${allNotifications.length}');
+      print(
+        '✅ [NotificationService] Total notifications from all types: ${allNotifications.length}',
+      );
       return allNotifications;
     } catch (e) {
-      print('❌ [NotificationService] Error getting notifications from all types: $e');
+      print(
+        '❌ [NotificationService] Error getting notifications from all types: $e',
+      );
       rethrow;
     }
   }

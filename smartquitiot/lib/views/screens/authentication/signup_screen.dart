@@ -341,11 +341,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter a password';
                               }
-                              final passwordRegex = RegExp(
-                                r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
-                              );
-                              if (!passwordRegex.hasMatch(value)) {
-                                return 'Password needs 8+ chars, with uppercase, lowercase, number & special character.';
+                              if (value.length < 3) {
+                                return 'Password must be at least 3 characters';
                               }
                               return null;
                             },

@@ -14,11 +14,48 @@ class AchievementScreen extends StatefulWidget {
 class _AchievementScreenState extends State<AchievementScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _hasNavigatedToTab = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Check if we need to navigate to a specific tab from route parameters
+    if (!_hasNavigatedToTab) {
+      final routeData = GoRouterState.of(context).uri.queryParameters;
+      final tabParam = routeData['tab'];
+      if (tabParam == 'completed') {
+        // Switch to completed tab (index 0 after reordering)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _tabController.animateTo(0);
+            _hasNavigatedToTab = true;
+          }
+        });
+      } else if (tabParam == 'in-progress') {
+        // Switch to in-progress tab (index 1 after reordering)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _tabController.animateTo(1);
+            _hasNavigatedToTab = true;
+          }
+        });
+      } else if (tabParam == 'all') {
+        // Switch to all tab (index 2 after reordering)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _tabController.animateTo(2);
+            _hasNavigatedToTab = true;
+          }
+        });
+      }
+    }
   }
 
   @override
@@ -43,6 +80,12 @@ class _AchievementScreenState extends State<AchievementScreen>
           backgroundColor: const Color(0xFF00D09E),
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              context.go('/main');
+            },
+          ),
           title: const Text(
             'Achievements',
             style: TextStyle(
@@ -68,18 +111,18 @@ class _AchievementScreenState extends State<AchievementScreen>
               fontSize: 14,
             ),
             tabs: const [
-              Tab(text: 'All'),
               Tab(text: 'Completed'),
               Tab(text: 'In Progress'),
+              Tab(text: 'All'),
             ],
           ),
         ),
         body: TabBarView(
           controller: _tabController,
           children: [
-            _buildAllAchievements(),
             _buildCompletedAchievements(),
             _buildInProgressAchievements(),
+            _buildAllAchievements(),
           ],
         ),
       ),
