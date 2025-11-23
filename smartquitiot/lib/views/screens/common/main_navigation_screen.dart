@@ -351,6 +351,12 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 'Smart Quit Plan',
               ),
 
+              _buildPremiumProtectedCard(
+                subscription,
+                const CreateQuitPlanCard(),
+                'Smart Quit Plan',
+              ),
+
               // Missions feature - Always show, but protected (moved up)
               _buildPremiumProtectedCard(
                 subscription,
@@ -371,12 +377,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               ),
 
               const AchievementsCard(),
-
-              _buildPremiumProtectedCard(
-                subscription,
-                const CreateQuitPlanCard(),
-                'Smart Quit Plan',
-              ),
 
               // const FormMetricCard(),
               // Always show these

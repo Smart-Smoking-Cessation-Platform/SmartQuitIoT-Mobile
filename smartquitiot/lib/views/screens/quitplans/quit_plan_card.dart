@@ -1013,7 +1013,11 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.primaryColor,
+        gradient: LinearGradient(
+          colors: theme.gradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1038,7 +1042,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
           ),
           const SizedBox(height: 10),
           Text(
-            'Phase Completed!',
+            'Mission Completed!',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,

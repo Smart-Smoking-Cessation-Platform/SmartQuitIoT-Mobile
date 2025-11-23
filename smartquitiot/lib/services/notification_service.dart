@@ -152,7 +152,8 @@ class NotificationService {
   }
 
   /// Get all notifications across all types (single request without type filter)
-  Future<List<AchievementNotification>> getAllNotificationsAllTypes({
+  /// Returns NotificationResponse with pagination info
+  Future<NotificationResponse> getAllNotificationsAllTypes({
     required String accessToken,
     bool? isRead,
     int page = 0,
@@ -180,9 +181,14 @@ class NotificationService {
       allNotifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       print(
-        '✅ [NotificationService] Total notifications from all types: ${allNotifications.length}',
+        '✅ [NotificationService] Total notifications from all types: ${allNotifications.length}, Page: ${response.page.number}/${response.page.totalPages - 1}',
       );
-      return allNotifications;
+
+      // Return response with sorted content but keep original pagination info
+      return NotificationResponse(
+        content: allNotifications,
+        page: response.page,
+      );
     } catch (e) {
       print(
         '❌ [NotificationService] Error getting notifications from all types: $e',

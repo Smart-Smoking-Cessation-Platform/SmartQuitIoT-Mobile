@@ -5,17 +5,77 @@ import 'package:intl/intl.dart';
 import '../../../models/state/membership_state.dart';
 import '../../../providers/membership_provider.dart';
 import 'plan_selection_screen.dart';
+import 'payment_success_screen.dart';
 
-class PremiumMembershipScreen extends ConsumerWidget {
+class PremiumMembershipScreen extends ConsumerStatefulWidget {
   const PremiumMembershipScreen({super.key});
 
+  @override
+  ConsumerState<PremiumMembershipScreen> createState() =>
+      _PremiumMembershipScreenState();
+}
+
+class _PremiumMembershipScreenState
+    extends ConsumerState<PremiumMembershipScreen> {
   String _formatCurrency(num amount) {
     final formatCurrency = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
     return formatCurrency.format(amount);
   }
 
+  bool _isProcessingFreeTrial = false;
+
+  Future<void> _handleFreeTrialClick() async {
+    if (_isProcessingFreeTrial) return;
+
+    setState(() {
+      _isProcessingFreeTrial = true;
+    });
+
+    try {
+      final subscription = await ref
+          .read(membershipViewModelProvider.notifier)
+          .createFreeTrialSubscription(packageId: 1, duration: 7);
+
+      if (mounted && subscription != null) {
+        // Refresh subscription
+        await ref
+            .read(currentSubscriptionProvider.notifier)
+            .fetchCurrentSubscription();
+
+        // Navigate to success screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentSuccessScreen(
+              status: 'SUCCESS',
+              packageName: subscription.membershipPackage?.name ?? 'Free Trial',
+              amount: subscription.totalAmount?.toString() ?? '0',
+              startDate: subscription.startDate?.toIso8601String(),
+              endDate: subscription.endDate?.toIso8601String(),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating free trial: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingFreeTrial = false;
+        });
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final viewModel = ref.watch(membershipViewModelProvider);
     final state = viewModel.state;
 
@@ -24,28 +84,40 @@ class PremiumMembershipScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            await ref.read(membershipViewModelProvider.notifier).fetchMembershipPackages();
+            await ref
+                .read(membershipViewModelProvider.notifier)
+                .fetchMembershipPackages();
           },
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text('Premium Membership',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center),
+                    const Text(
+                      'Premium Membership',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 8),
-                    Text('Register membership for more features.',
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.9), fontSize: 16),
-                        textAlign: TextAlign.center),
+                    Text(
+                      'Register membership for more features.',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               ),
@@ -54,8 +126,13 @@ class PremiumMembershipScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 child: Center(
-                    child: Image.asset('lib/assets/images/membership.png',
-                        width: 300, height: 300, fit: BoxFit.contain)),
+                  child: Image.asset(
+                    'lib/assets/images/membership.png',
+                    width: 300,
+                    height: 300,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
 
               // Plans section
@@ -65,112 +142,166 @@ class PremiumMembershipScreen extends ConsumerWidget {
                   builder: (_) {
                     if (state == ViewState.loading) {
                       return const Center(
-                          child: Padding(
-                              padding: EdgeInsets.all(24.0),
-                              child:
-                                  CircularProgressIndicator(color: Colors.white)));
+                        child: Padding(
+                          padding: EdgeInsets.all(24.0),
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      );
                     } else if (state == ViewState.error) {
                       return Center(
-                          child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Text(viewModel.errorMessage,
-                                  style: const TextStyle(color: Colors.white),
-                                  textAlign: TextAlign.center)));
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Text(
+                            viewModel.errorMessage,
+                            style: const TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
                     } else if (state == ViewState.success &&
                         viewModel.packages.isNotEmpty) {
                       return Column(
                         children: viewModel.packages.map((pkg) {
                           final isFree = pkg.price == 0;
-                          final isPremium =
-                              pkg.type.toUpperCase() == 'PREMIUM';
-                          final isStandard = !isFree && !isPremium;
+                          final isPremium = pkg.type.toUpperCase() == 'PREMIUM';
 
-                          // Box decoration cho từng loại card
+                          // Enhanced box decoration for each card type
                           final BoxDecoration boxDecoration = isPremium
                               ? BoxDecoration(
                                   gradient: const LinearGradient(
                                     colors: [
-                                      Color(0xFFBF953F),
-                                      Color(0xFFFCF6BA),
-                                      Color(0xFFB38728),
-                                      Color(0xFFFBF5B7),
-                                      Color(0xFFAA771C),
+                                      Color(0xFFD4AF37),
+                                      Color(0xFFF4E4BC),
+                                      Color(0xFFC9A961),
+                                      Color(0xFFF7E8C4),
+                                      Color(0xFFB8941F),
                                     ],
-                                    begin: Alignment(-1.5, -1.5),
-                                    end: Alignment(1.5, 1.5),
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    stops: [0.0, 0.3, 0.5, 0.7, 1.0],
                                   ),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.25),
-                                      blurRadius: 25,
-                                      offset: const Offset(0, 10),
+                                      color: const Color(
+                                        0xFFD4AF37,
+                                      ).withOpacity(0.4),
+                                      blurRadius: 20,
+                                      spreadRadius: 2,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.15),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ],
                                 )
                               : isFree
-                                  ? BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                          color: Colors.green.withOpacity(0.5),
-                                          width: 1.5),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    )
-                                  : BoxDecoration(
-                                      color: Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                          color:
-                                              Colors.green.withOpacity(0.3),
-                                          width: 1.2),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
-                                    );
+                              ? BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.white,
+                                      Colors.green.shade50,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: Colors.green.shade300,
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.green.withOpacity(0.2),
+                                      blurRadius: 15,
+                                      spreadRadius: 1,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.08),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                )
+                              : BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Colors.white, Colors.grey.shade50],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.08),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                );
 
                           final mainTextColor = isPremium
                               ? Colors.white
                               : isFree
-                                  ? Colors.green[800]
-                                  : Colors.black87;
+                              ? Colors.green.shade800
+                              : Colors.grey.shade900;
 
                           final subTextColor = isPremium
-                              ? Colors.white70
+                              ? Colors.white.withOpacity(0.9)
                               : isFree
-                                  ? Colors.green[600]
-                                  : Colors.black54;
+                              ? Colors.green.shade700
+                              : Colors.grey.shade600;
 
-                          final dividerColor =
-                              isPremium ? Colors.white.withOpacity(0.3) : Colors.black12;
+                          final dividerColor = isPremium
+                              ? Colors.white.withOpacity(0.4)
+                              : Colors.grey.shade300;
 
                           return Stack(
                             clipBehavior: Clip.none,
                             children: [
                               Container(
-                                margin: const EdgeInsets.only(bottom: 16),
+                                margin: const EdgeInsets.only(bottom: 20),
                                 decoration: boxDecoration,
                                 child: Material(
                                   color: Colors.transparent,
                                   child: InkWell(
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(24),
                                     onTap: isFree
-                                        ? null
+                                        ? (_isProcessingFreeTrial
+                                              ? null
+                                              : _handleFreeTrialClick)
                                         : () => _navigateToPlanSelection(
-                                            context, pkg.id, pkg.name),
+                                            context,
+                                            pkg.id,
+                                            pkg.name,
+                                          ),
                                     child: Stack(
                                       children: [
                                         if (isPremium) _buildGlossySheen(),
+                                        if (isFree && _isProcessingFreeTrial)
+                                          Positioned.fill(
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(
+                                                  0.8,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(24),
+                                              ),
+                                              child: const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Color(0xFF00D09E),
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
                                         Padding(
                                           padding: const EdgeInsets.all(24.0),
                                           child: Column(
@@ -190,68 +321,164 @@ class PremiumMembershipScreen extends ConsumerWidget {
                                                           CrossAxisAlignment
                                                               .start,
                                                       children: [
-                                                        Text(pkg.name,
-                                                            style: TextStyle(
-                                                                color:
-                                                                    mainTextColor,
-                                                                fontSize: 22,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                shadows: isPremium
-                                                                    ? [
-                                                                        const Shadow(
-                                                                            color:
-                                                                                Colors.black26,
-                                                                            blurRadius:
-                                                                                4,
-                                                                            offset:
-                                                                                Offset(1, 1))
-                                                                      ]
-                                                                    : [])),
-                                                        const SizedBox(height: 4),
-                                                        Text(pkg.description,
-                                                            style: TextStyle(
-                                                                color:
-                                                                    subTextColor,
-                                                                fontSize: 16,
-                                                                fontStyle:
-                                                                    FontStyle
-                                                                        .italic)),
+                                                        Text(
+                                                          pkg.name,
+                                                          style: TextStyle(
+                                                            color:
+                                                                mainTextColor,
+                                                            fontSize: 22,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            shadows: isPremium
+                                                                ? [
+                                                                    const Shadow(
+                                                                      color: Colors
+                                                                          .black26,
+                                                                      blurRadius:
+                                                                          4,
+                                                                      offset:
+                                                                          Offset(
+                                                                            1,
+                                                                            1,
+                                                                          ),
+                                                                    ),
+                                                                  ]
+                                                                : [],
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Text(
+                                                          pkg.description,
+                                                          style: TextStyle(
+                                                            color: subTextColor,
+                                                            fontSize: 16,
+                                                            fontStyle: FontStyle
+                                                                .italic,
+                                                          ),
+                                                        ),
                                                       ],
                                                     ),
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 16),
-                                              Text(
-                                                isFree
-                                                    ? 'Free trial for ${pkg.duration} days'
-                                                    : '${_formatCurrency(pkg.price)} / ${pkg.durationUnit.toLowerCase()}',
-                                                style: TextStyle(
-                                                    color: mainTextColor,
-                                                    fontSize: isFree ? 16 : 24,
-                                                    fontWeight: FontWeight.w900,
-                                                    shadows: isPremium
-                                                        ? [
-                                                            const Shadow(
-                                                                color: Colors
-                                                                    .black26,
-                                                                blurRadius: 4,
-                                                                offset:
-                                                                    Offset(1, 1))
-                                                          ]
-                                                        : []),
+                                              const SizedBox(height: 20),
+                                              Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  if (!isFree) ...[
+                                                    Text(
+                                                      _formatCurrency(
+                                                        pkg.price,
+                                                      ),
+                                                      style: TextStyle(
+                                                        color: mainTextColor,
+                                                        fontSize: 28,
+                                                        fontWeight:
+                                                            FontWeight.w900,
+                                                        height: 1.0,
+                                                        shadows: isPremium
+                                                            ? [
+                                                                const Shadow(
+                                                                  color: Colors
+                                                                      .black26,
+                                                                  blurRadius: 4,
+                                                                  offset:
+                                                                      Offset(
+                                                                        1,
+                                                                        1,
+                                                                      ),
+                                                                ),
+                                                              ]
+                                                            : [],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            bottom: 4,
+                                                          ),
+                                                      child: Text(
+                                                        '/ ${pkg.durationUnit.toLowerCase()}',
+                                                        style: TextStyle(
+                                                          color: subTextColor,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ] else ...[
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 8,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors
+                                                            .green
+                                                            .shade100,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: Colors
+                                                              .green
+                                                              .shade300,
+                                                          width: 1.5,
+                                                        ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.stars_rounded,
+                                                            color: Colors
+                                                                .green
+                                                                .shade700,
+                                                            size: 20,
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 6,
+                                                          ),
+                                                          Text(
+                                                            'Free trial for ${pkg.duration} days',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .green
+                                                                  .shade800,
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
                                               ),
                                               Padding(
-                                                padding: const EdgeInsets.symmetric(
-                                                    vertical: 16.0),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 16.0,
+                                                    ),
                                                 child: Divider(
-                                                    height: 1,
-                                                    color: dividerColor),
+                                                  height: 1,
+                                                  color: dividerColor,
+                                                ),
                                               ),
-                                              _buildFeatureList(pkg.features,
-                                                  isPremium: isPremium),
+                                              _buildFeatureList(
+                                                pkg.features,
+                                                isPremium: isPremium,
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -266,10 +493,14 @@ class PremiumMembershipScreen extends ConsumerWidget {
                       );
                     } else {
                       return const Center(
-                          child: Padding(
-                              padding: EdgeInsets.all(24.0),
-                              child: Text('No membership packages available.',
-                                  style: TextStyle(color: Colors.white))));
+                        child: Padding(
+                          padding: EdgeInsets.all(24.0),
+                          child: Text(
+                            'No membership packages available.',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      );
                     }
                   },
                 ),
@@ -277,14 +508,18 @@ class PremiumMembershipScreen extends ConsumerWidget {
 
               // Terms
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 32,
+                ),
                 child: Text(
                   'By placing this order, you agree to the Terms of Service and Privacy Policy. Subscription automatically renews unless auto-renewal is turned off at least 24-hours before the end of the current period.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
-                      height: 1.4),
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
                 ),
               ),
 
@@ -294,8 +529,9 @@ class PremiumMembershipScreen extends ConsumerWidget {
                   width: 134,
                   height: 5,
                   decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(3)),
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -310,7 +546,13 @@ class PremiumMembershipScreen extends ConsumerWidget {
     final featureColor = isPremium ? Colors.white : const Color(0xFF4A4A4A);
     final iconColor = isPremium ? Colors.white : const Color(0xFF00D09E);
     final textShadow = isPremium
-        ? [const Shadow(color: Colors.black38, blurRadius: 2, offset: Offset(1, 1))]
+        ? [
+            const Shadow(
+              color: Colors.black38,
+              blurRadius: 2,
+              offset: Offset(1, 1),
+            ),
+          ]
         : <Shadow>[];
 
     return Column(
@@ -321,15 +563,24 @@ class PremiumMembershipScreen extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.check_circle, color: iconColor, size: 20, shadows: textShadow),
+              Icon(
+                Icons.check_circle,
+                color: iconColor,
+                size: 20,
+                shadows: textShadow,
+              ),
               const SizedBox(width: 12),
               Expanded(
-                  child: Text(feature,
-                      style: TextStyle(
-                          color: featureColor,
-                          fontSize: 15,
-                          height: 1.4,
-                          shadows: textShadow))),
+                child: Text(
+                  feature,
+                  style: TextStyle(
+                    color: featureColor,
+                    fontSize: 15,
+                    height: 1.4,
+                    shadows: textShadow,
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -340,7 +591,7 @@ class PremiumMembershipScreen extends ConsumerWidget {
   Widget _buildGlossySheen() {
     return Positioned.fill(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         child: Transform.translate(
           offset: const Offset(-80, -120),
           child: Transform.rotate(
@@ -364,14 +615,16 @@ class PremiumMembershipScreen extends ConsumerWidget {
     );
   }
 
-  void _navigateToPlanSelection(BuildContext context, int packageId, String packageName) {
+  void _navigateToPlanSelection(
+    BuildContext context,
+    int packageId,
+    String packageName,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PlanSelectionScreen(
-          packageId: packageId,
-          packageName: packageName,
-        ),
+        builder: (context) =>
+            PlanSelectionScreen(packageId: packageId, packageName: packageName),
       ),
     );
   }
