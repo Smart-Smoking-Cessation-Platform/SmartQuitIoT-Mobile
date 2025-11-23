@@ -37,6 +37,7 @@ class PaymentSuccessScreen extends ConsumerStatefulWidget {
 class _PaymentSuccessScreenState extends ConsumerState<PaymentSuccessScreen> {
   MembershipSubscription? _subscription;
   bool _isProcessingApi = true;
+  bool _isNavigating = false;
   String? _apiError;
 
   @override
@@ -170,7 +171,8 @@ class _PaymentSuccessScreenState extends ConsumerState<PaymentSuccessScreen> {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height -
+              minHeight:
+                  MediaQuery.of(context).size.height -
                   MediaQuery.of(context).padding.top -
                   MediaQuery.of(context).padding.bottom,
             ),
@@ -179,273 +181,278 @@ class _PaymentSuccessScreenState extends ConsumerState<PaymentSuccessScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                      // Success Icon or Loading
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: _isProcessingApi
-                            ? const Padding(
-                                padding: EdgeInsets.all(30),
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xFF00D09E),
-                                  ),
-                                ),
-                              )
-                            : Icon(
-                                _apiError != null
-                                    ? Icons.warning_rounded
-                                    : Icons.check_rounded,
-                                color: _apiError != null
-                                    ? Colors.orange
-                                    : const Color(0xFF4CAF50),
-                                size: 60,
-                              ),
-                      ),
-                      const SizedBox(height: 40),
-
-                      // Title
-                      Text(
-                        _isProcessingApi
-                            ? 'Processing Payment...'
-                            : _apiError != null
-                            ? 'Payment Received'
-                            : 'Payment Successful!',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _isProcessingApi
-                            ? 'Please wait while we confirm your payment with the server...'
-                            : _apiError != null
-                            ? 'Payment received. Your membership will be activated shortly.'
-                            : 'Your premium membership has been activated successfully.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          height: 1.4,
-                        ),
-                      ),
-                      if (_apiError != null) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.orange.withOpacity(0.5),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                '⚠️ API Connection Issue',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Your payment was successful, but we couldn\'t update your membership status. Please contact support or try refreshing.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontSize: 12,
-                                  height: 1.3,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Error: ${_apiError?.split(':').first ?? 'Unknown error'}',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 11,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ],
-                          ),
+                  // Success Icon or Loading
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
-                      const SizedBox(height: 32),
+                    ),
+                    child: _isProcessingApi
+                        ? const Padding(
+                            padding: EdgeInsets.all(30),
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF00D09E),
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            _apiError != null
+                                ? Icons.warning_rounded
+                                : Icons.check_rounded,
+                            color: _apiError != null
+                                ? Colors.orange
+                                : const Color(0xFF4CAF50),
+                            size: 60,
+                          ),
+                  ),
+                  const SizedBox(height: 40),
 
-                      // Payment Details Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Payment Details',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            _buildDetailRow(
-                              icon: Icons.check_circle,
-                              title: 'Status',
-                              value: displayStatus.toUpperCase(),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildDetailRow(
-                              icon: Icons.receipt_long,
-                              title: 'Order Code',
-                              value: displayOrderCode,
-                            ),
-                            if (displayCode.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              _buildDetailRow(
-                                icon: Icons.qr_code,
-                                title: 'Payment Code',
-                                value: displayCode,
-                              ),
-                            ],
-                            if (displayId.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              _buildDetailRow(
-                                icon: Icons.fingerprint,
-                                title: 'Transaction ID',
-                                value: displayId,
-                              ),
-                            ],
-                            if (formattedAmount.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              _buildDetailRow(
-                                icon: Icons.attach_money,
-                                title: 'Amount',
-                                value: '$formattedAmount VND',
-                              ),
-                            ],
-                            const SizedBox(height: 16),
-                            _buildDetailRow(
-                              icon: Icons.workspace_premium,
-                              title: 'Package',
-                              value: displayPackageName,
-                            ),
-                            if (formattedStartDate.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              _buildDetailRow(
-                                icon: Icons.calendar_today,
-                                title: 'Start Date',
-                                value: formattedStartDate,
-                              ),
-                            ],
-                            if (formattedEndDate.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              _buildDetailRow(
-                                icon: Icons.event_available,
-                                title: 'End Date',
-                                value: formattedEndDate,
-                              ),
-                            ],
-                          ],
+                  // Title
+                  Text(
+                    _isProcessingApi
+                        ? 'Processing Payment...'
+                        : _apiError != null
+                        ? 'Payment Received'
+                        : 'Payment Successful!',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _isProcessingApi
+                        ? 'Please wait while we confirm your payment with the server...'
+                        : _apiError != null
+                        ? 'Payment received. Your membership will be activated shortly.'
+                        : 'Your premium membership has been activated successfully.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 16,
+                      height: 1.4,
+                    ),
+                  ),
+                  if (_apiError != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.orange.withOpacity(0.5),
                         ),
                       ),
-                      const SizedBox(height: 40),
-
-                      // Continue Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isProcessingApi
-                              ? null
-                              : () async {
-                                  print(
-                                    '🔄 [PaymentSuccess] Final membership refresh before navigation...',
-                                  );
-
-                                  try {
-                                    // Final refresh to ensure features are unlocked
-                                    await ref
-                                        .read(
-                                          currentSubscriptionProvider.notifier,
-                                        )
-                                        .fetchCurrentSubscription();
-                                    print(
-                                      '✅ [PaymentSuccess] Membership refreshed successfully',
-                                    );
-                                  } catch (e) {
-                                    print(
-                                      '⚠️ [PaymentSuccess] Refresh error (ignoring): $e',
-                                    );
-                                    // Continue anyway - user can try again later
-                                  }
-
-                                  // Navigate to home with unlocked features
-                                  if (context.mounted) {
-                                    print(
-                                      '🏠 [PaymentSuccess] Navigating to home',
-                                    );
-                                    context.go('/main');
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 2,
-                            disabledBackgroundColor: Colors.white.withOpacity(
-                              0.5,
+                      child: Column(
+                        children: [
+                          Text(
+                            '⚠️ API Connection Issue',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          child: _isProcessingApi
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.black54,
-                                    ),
-                                  ),
-                                )
-                              : const Text(
-                                  'Back to Home',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Your payment was successful, but we couldn\'t update your membership status. Please contact support or try refreshing.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Error: ${_apiError?.split(':').first ?? 'Unknown error'}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+
+                  // Payment Details Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Payment Details',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildDetailRow(
+                          icon: Icons.check_circle,
+                          title: 'Status',
+                          value: displayStatus.toUpperCase(),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDetailRow(
+                          icon: Icons.receipt_long,
+                          title: 'Order Code',
+                          value: displayOrderCode,
+                        ),
+                        if (displayCode.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildDetailRow(
+                            icon: Icons.qr_code,
+                            title: 'Payment Code',
+                            value: displayCode,
+                          ),
+                        ],
+                        if (displayId.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildDetailRow(
+                            icon: Icons.fingerprint,
+                            title: 'Transaction ID',
+                            value: displayId,
+                          ),
+                        ],
+                        if (formattedAmount.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildDetailRow(
+                            icon: Icons.attach_money,
+                            title: 'Amount',
+                            value: '$formattedAmount VND',
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        _buildDetailRow(
+                          icon: Icons.workspace_premium,
+                          title: 'Package',
+                          value: displayPackageName,
+                        ),
+                        if (formattedStartDate.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildDetailRow(
+                            icon: Icons.calendar_today,
+                            title: 'Start Date',
+                            value: formattedStartDate,
+                          ),
+                        ],
+                        if (formattedEndDate.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildDetailRow(
+                            icon: Icons.event_available,
+                            title: 'End Date',
+                            value: formattedEndDate,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Continue Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: (_isProcessingApi || _isNavigating)
+                          ? null
+                          : () async {
+                              if (mounted) {
+                                setState(() {
+                                  _isNavigating = true;
+                                });
+                              }
+
+                              print(
+                                '🔄 [PaymentSuccess] Final membership refresh before navigation...',
+                              );
+
+                              try {
+                                // Final refresh to ensure features are unlocked
+                                await ref
+                                    .read(currentSubscriptionProvider.notifier)
+                                    .fetchCurrentSubscription();
+                                print(
+                                  '✅ [PaymentSuccess] Membership refreshed successfully',
+                                );
+                              } catch (e) {
+                                print(
+                                  '⚠️ [PaymentSuccess] Refresh error (ignoring): $e',
+                                );
+                                // Continue anyway - user can try again later
+                              }
+
+                              // Wait 1.5 seconds before navigating
+                              await Future.delayed(
+                                const Duration(milliseconds: 1500),
+                              );
+
+                              // Navigate to home with unlocked features
+                              if (mounted && context.mounted) {
+                                print('🏠 [PaymentSuccess] Navigating to home');
+                                context.go('/main');
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 2,
+                        disabledBackgroundColor: Colors.white.withOpacity(0.5),
+                      ),
+                      child: (_isProcessingApi || _isNavigating)
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.black54,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              'Back to Home',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
                 ],
               ),
             ),

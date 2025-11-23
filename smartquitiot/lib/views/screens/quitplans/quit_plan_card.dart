@@ -1042,7 +1042,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
           ),
           const SizedBox(height: 10),
           Text(
-            'Phase Completed!',
+            'Mission Completed!',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
