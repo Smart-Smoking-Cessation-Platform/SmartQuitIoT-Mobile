@@ -30,6 +30,11 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   String? _thumbnailUrl;
   List<Map<String, String>> _mediaList = [];
 
+  // Validation error states
+  String? _titleError;
+  String? _descriptionError;
+  String? _contentError;
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +58,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       _quillController = quill.QuillController.basic();
     }
 
+    // Listen to content changes to clear error
+    _quillController.addListener(() {
+      if (_contentError != null) {
+        setState(() {
+          _contentError = null;
+        });
+      }
+    });
+
     // Load other post data if editing
     if (widget.post != null) {
       _titleController.text = widget.post!.title;
@@ -67,7 +81,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 'thumbUrl': m.mediaType == 'VIDEO' ? m.mediaUrl : '',
               },
             )
-              .toList();
+            .toList();
       }
     }
   }
@@ -79,6 +93,64 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     _descriptionController.dispose();
     _editorFocusNode.dispose();
     super.dispose();
+  }
+
+  // Validation function to check for special characters
+  bool _hasSpecialCharacters(String text) {
+    // Check for problematic special characters (excluding alphanumeric, spaces, and common punctuation)
+    // Allowed: letters, numbers, spaces, and: . , ! ? - _ ( ) [ ] : ; ' "
+    // Block: @ # $ % ^ & * + = { } | \ < > / ~ ` and other special chars
+    final allowedChars = 'a-zA-Z0-9\\s.,!?\\-_\\(\\)\\[\\]\\:;';
+    final singleQuote = "'";
+    final doubleQuote = '"';
+    final problematicPattern = RegExp(
+      '[^$allowedChars$singleQuote$doubleQuote]',
+    );
+    return problematicPattern.hasMatch(text);
+  }
+
+  // Validate all fields
+  bool _validateFields() {
+    bool isValid = true;
+
+    // Validate title
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      _titleError = 'Title is required';
+      isValid = false;
+    } else if (_hasSpecialCharacters(title)) {
+      _titleError = 'Title cannot contain special characters';
+      isValid = false;
+    } else {
+      _titleError = null;
+    }
+
+    // Validate description
+    final description = _descriptionController.text.trim();
+    if (description.isEmpty) {
+      _descriptionError = 'Description is required';
+      isValid = false;
+    } else if (_hasSpecialCharacters(description)) {
+      _descriptionError = 'Description cannot contain special characters';
+      isValid = false;
+    } else {
+      _descriptionError = null;
+    }
+
+    // Validate content
+    final contentText = _quillController.document.toPlainText().trim();
+    if (contentText.isEmpty) {
+      _contentError = 'Content is required';
+      isValid = false;
+    } else if (_hasSpecialCharacters(contentText)) {
+      _contentError = 'Content cannot contain special characters';
+      isValid = false;
+    } else {
+      _contentError = null;
+    }
+
+    setState(() {});
+    return isValid;
   }
 
   @override
@@ -129,6 +201,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             controller: _titleController,
             label: 'Title',
             hint: 'Enter post title',
+            error: _titleError,
           ),
           const SizedBox(height: 20),
           _buildTextField(
@@ -136,6 +209,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             label: 'Description',
             hint: 'Enter a short description',
             maxLines: 2,
+            error: _descriptionError,
           ),
           const SizedBox(height: 20),
           _buildThumbnailPicker(),
@@ -155,7 +229,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     required String label,
     required String hint,
     int maxLines = 1,
+    String? error,
   }) {
+    final hasError = error != null && error.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -168,6 +244,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           controller: controller,
           maxLines: maxLines,
           style: const TextStyle(fontSize: 15),
+          onChanged: (value) {
+            // Clear error when user starts typing
+            if (controller == _titleController) {
+              _titleError = null;
+            } else if (controller == _descriptionController) {
+              _descriptionError = null;
+            }
+            setState(() {});
+          },
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: Colors.grey[400]),
@@ -179,14 +264,39 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : Colors.grey[300]!,
+                width: hasError ? 2 : 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : Colors.grey[300]!,
+                width: hasError ? 2 : 1,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF00D09E), width: 2),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : const Color(0xFF00D09E),
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
             ),
           ),
         ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Text(error, style: const TextStyle(color: Colors.red, fontSize: 12)),
+        ],
       ],
     );
   }
@@ -346,6 +456,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   Widget _buildRichTextEditor() {
+    final hasError = _contentError != null && _contentError!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -362,7 +473,10 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
+            border: Border.all(
+              color: hasError ? Colors.red : Colors.grey[300]!,
+              width: hasError ? 2 : 1,
+            ),
           ),
           child: Column(
             children: [
@@ -409,6 +523,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             ],
           ),
         ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Text(
+            _contentError!,
+            style: const TextStyle(color: Colors.red, fontSize: 12),
+          ),
+        ],
       ],
     );
   }
@@ -526,14 +647,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   Future<void> _savePost() async {
-    if (_titleController.text.trim().isEmpty) {
-      if (!mounted) return;
-      NotificationHelper.showTopNotification(
-        context,
-        title: 'Error',
-        message: 'Title cannot be empty',
-        isError: true,
-      );
+    // Validate all required fields
+    if (!_validateFields()) {
       return;
     }
 
