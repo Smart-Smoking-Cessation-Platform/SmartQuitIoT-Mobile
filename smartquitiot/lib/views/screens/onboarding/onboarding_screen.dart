@@ -813,7 +813,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   cigaretteHateToGiveUp: _hateToGiveUp!,
                                   morningSmokingFrequency: _smokeMoreMorning!,
                                   smokeWhenSick: _smokeEvenSick!,
-                                  interests: _selectedInterests,
+                                  interests: _selectedInterests.contains("All Interests") ? null : _selectedInterests,
                                   amountOfNicotinePerCigarettes: double.parse(
                                     _nicotineAmountController.text.replaceAll(
                                       ',',

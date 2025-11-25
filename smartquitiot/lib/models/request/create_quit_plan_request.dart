@@ -11,7 +11,7 @@ class CreateQuitPlanRequest {
   final bool cigaretteHateToGiveUp;
   final bool morningSmokingFrequency;
   final bool smokeWhenSick;
-  final List<String> interests;
+  final List<String>? interests;
   final double amountOfNicotinePerCigarettes;
 
   CreateQuitPlanRequest({
@@ -27,7 +27,7 @@ class CreateQuitPlanRequest {
     required this.cigaretteHateToGiveUp,
     required this.morningSmokingFrequency,
     required this.smokeWhenSick,
-    required this.interests,
+    this.interests,
     required this.amountOfNicotinePerCigarettes,
   });
 
