@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../models/quit_plan_history.dart';
 import '../../../providers/quit_plan_history_provider.dart';
 import '../../../providers/mission_refresh_provider.dart';
+import '../../../providers/auth_provider.dart';
 import 'quit_plan_detail_screen.dart';
 
 class QuitPlanHistoryScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,42 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final quitPlansAsync = ref.watch(quitPlanHistoryViewModelProvider);
+
+    // Listen for authentication state changes (login/logout/user switch)
+    ref.listen(authViewModelProvider, (previous, next) {
+      if (previous != null) {
+        final wasAuthenticated = previous.isAuthenticated;
+        final isAuthenticated = next.isAuthenticated;
+        final previousUsername = previous.username;
+        final currentUsername = next.username;
+
+        // Case 1: User logged in (from not authenticated to authenticated)
+        if (!wasAuthenticated && isAuthenticated) {
+          print(
+            '🔄 [QuitPlanHistoryScreen] User logged in - refreshing quit plan history...',
+          );
+          ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+        }
+        // Case 2: User logged out (from authenticated to not authenticated)
+        else if (wasAuthenticated && !isAuthenticated) {
+          print(
+            '🔄 [QuitPlanHistoryScreen] User logged out - clearing quit plan history...',
+          );
+          // Reset to loading state to clear old data
+          ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+        }
+        // Case 3: User switched (username changed while authenticated)
+        else if (isAuthenticated &&
+            previousUsername != null &&
+            currentUsername != null &&
+            previousUsername != currentUsername) {
+          print(
+            '🔄 [QuitPlanHistoryScreen] User switched from $previousUsername to $currentUsername - refreshing quit plan history...',
+          );
+          ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+        }
+      }
+    });
 
     // Listen for quit plan refresh trigger
     ref.listen(missionRefreshProvider, (previous, next) {
@@ -241,7 +278,10 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => QuitPlanDetailScreen(quitPlanId: quitPlan.id),
+                builder: (_) => QuitPlanDetailScreen(
+                  quitPlanId: quitPlan.id,
+                  isReadOnly: true,
+                ),
               ),
             );
           },

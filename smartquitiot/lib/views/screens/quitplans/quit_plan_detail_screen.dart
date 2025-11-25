@@ -18,8 +18,13 @@ import '../form_metric/_create_form_metric_dialog.dart';
 
 class QuitPlanDetailScreen extends ConsumerStatefulWidget {
   final int quitPlanId;
+  final bool isReadOnly;
 
-  const QuitPlanDetailScreen({super.key, required this.quitPlanId});
+  const QuitPlanDetailScreen({
+    super.key,
+    required this.quitPlanId,
+    this.isReadOnly = false,
+  });
 
   @override
   ConsumerState<QuitPlanDetailScreen> createState() =>
@@ -240,16 +245,18 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
         backgroundColor: const Color(0xFF00D09E),
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref
-                  .read(quitPlanDetailViewModelProvider.notifier)
-                  .loadQuitPlanDetail(widget.quitPlanId);
-            },
-          ),
-        ],
+        actions: widget.isReadOnly
+            ? null
+            : [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () {
+                    ref
+                        .read(quitPlanDetailViewModelProvider.notifier)
+                        .loadQuitPlanDetail(widget.quitPlanId);
+                  },
+                ),
+              ],
       ),
       body: state.when(
         loading: () => const Center(
@@ -744,7 +751,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                   ),
                 ),
               ),
-              if (isExpanded && shouldShowFailedActions) ...[
+              if (isExpanded && shouldShowFailedActions && !widget.isReadOnly) ...[
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1194,7 +1201,10 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                     ),
                   ),
                 ],
-                if (!completed && missionId != -1) ...[
+                if (!completed &&
+                    missionId != -1 &&
+                    !widget.isReadOnly &&
+                    !_isFailedStatus(phase.status)) ...[
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,

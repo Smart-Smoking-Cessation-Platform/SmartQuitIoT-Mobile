@@ -464,13 +464,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
       // Only show snackbar if widget is still mounted and route is still active
       if (mounted && ModalRoute.of(context)?.isCurrent == true) {
         final messenger = ScaffoldMessenger.of(context);
-        messenger.showSnackBar(const SnackBar(content: Text('Danh sách coach đã được cập nhật')));
+        // messenger.showSnackBar(const SnackBar(content: Text('Danh sách coach đã được cập nhật')));
       }
     } catch (e) {
       // Only show snackbar if widget is still mounted and route is still active
       if (mounted && ModalRoute.of(context)?.isCurrent == true) {
         final messenger = ScaffoldMessenger.of(context);
-        messenger.showSnackBar(SnackBar(content: Text('Tải lại thất bại: $e')));
+        // messenger.showSnackBar(SnackBar(content: Text('Tải lại thất bại: $e')));
       }
     } finally {
       if (mounted) {
