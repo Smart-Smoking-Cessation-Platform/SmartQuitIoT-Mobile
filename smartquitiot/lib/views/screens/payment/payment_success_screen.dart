@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -94,6 +96,46 @@ class _PaymentSuccessScreenState extends ConsumerState<PaymentSuccessScreen> {
           _apiError =
               'Could not fetch membership details. Please restart the app to see your premium features.';
           _isProcessingApi = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshMembershipWithTimeout() async {
+    try {
+      await ref
+          .read(currentSubscriptionProvider.notifier)
+          .fetchCurrentSubscription()
+          .timeout(const Duration(seconds: 5));
+      print('✅ [PaymentSuccess] Membership refreshed before navigation');
+    } on TimeoutException catch (e) {
+      print('⚠️ [PaymentSuccess] Membership refresh timeout: $e');
+    } catch (e) {
+      print('⚠️ [PaymentSuccess] Membership refresh skipped: $e');
+    }
+  }
+
+  Future<void> _handleNavigateHome() async {
+    if (_isNavigating || !mounted) return;
+
+    setState(() {
+      _isNavigating = true;
+    });
+
+    await _refreshMembershipWithTimeout();
+    if (!mounted) return;
+
+    var navigated = false;
+    try {
+      context.go('/main');
+      navigated = true;
+    } catch (e, stack) {
+      print('❌ [PaymentSuccess] Navigation error: $e');
+      print('🧩 [PaymentSuccess] Stack trace: $stack');
+    } finally {
+      if (!navigated && mounted) {
+        setState(() {
+          _isNavigating = false;
         });
       }
     }
@@ -386,43 +428,7 @@ class _PaymentSuccessScreenState extends ConsumerState<PaymentSuccessScreen> {
                     child: ElevatedButton(
                       onPressed: (_isProcessingApi || _isNavigating)
                           ? null
-                          : () async {
-                              if (mounted) {
-                                setState(() {
-                                  _isNavigating = true;
-                                });
-                              }
-
-                              print(
-                                '🔄 [PaymentSuccess] Final membership refresh before navigation...',
-                              );
-
-                              try {
-                                // Final refresh to ensure features are unlocked
-                                await ref
-                                    .read(currentSubscriptionProvider.notifier)
-                                    .fetchCurrentSubscription();
-                                print(
-                                  '✅ [PaymentSuccess] Membership refreshed successfully',
-                                );
-                              } catch (e) {
-                                print(
-                                  '⚠️ [PaymentSuccess] Refresh error (ignoring): $e',
-                                );
-                                // Continue anyway - user can try again later
-                              }
-
-                              // Wait 1.5 seconds before navigating
-                              await Future.delayed(
-                                const Duration(milliseconds: 1500),
-                              );
-
-                              // Navigate to home with unlocked features
-                              if (mounted && context.mounted) {
-                                print('🏠 [PaymentSuccess] Navigating to home');
-                                context.go('/main');
-                              }
-                            },
+                          : _handleNavigateHome,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
