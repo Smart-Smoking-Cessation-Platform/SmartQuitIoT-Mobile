@@ -237,7 +237,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     final unreadNotifications = notificationState.unreadNotifications;
     final isLoadingRead = notificationState.isLoadingRead;
     final isLoadingUnread = notificationState.isLoadingUnread;
+    final isLoadingMoreRead = notificationState.isLoadingMoreRead;
+    final isLoadingMoreUnread = notificationState.isLoadingMoreUnread;
     final unreadCount = notificationState.unreadCount;
+    final hasMoreRead = notificationState.hasMoreRead;
+    final hasMoreUnread = notificationState.hasMoreUnread;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -486,6 +490,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
           _buildNotificationTab(
             notifications: unreadNotifications,
             isLoading: isLoadingUnread,
+            isLoadingMore: isLoadingMoreUnread,
+            hasMore: hasMoreUnread,
             emptyMessage: 'No unread notifications',
             emptySubtitle: 'You\'re all caught up! 🎉',
             onRefresh: () async {
@@ -493,18 +499,30 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                   .read(notificationViewModelProvider.notifier)
                   .getUnreadNotifications();
             },
+            onLoadMore: () async {
+              await ref
+                  .read(notificationViewModelProvider.notifier)
+                  .loadMoreUnreadNotifications();
+            },
             forceHideBadge: false, // Show badge in Unread tab
           ),
           // Read Tab
           _buildNotificationTab(
             notifications: readNotifications,
             isLoading: isLoadingRead,
+            isLoadingMore: isLoadingMoreRead,
+            hasMore: hasMoreRead,
             emptyMessage: 'No read notifications',
             emptySubtitle: 'Read notifications will appear here',
             onRefresh: () async {
               await ref
                   .read(notificationViewModelProvider.notifier)
                   .getReadNotifications();
+            },
+            onLoadMore: () async {
+              await ref
+                  .read(notificationViewModelProvider.notifier)
+                  .loadMoreReadNotifications();
             },
             forceHideBadge: true, // HIDE badge in Read tab
           ),
@@ -516,9 +534,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   Widget _buildNotificationTab({
     required List<AchievementNotification> notifications,
     required bool isLoading,
+    required bool isLoadingMore,
+    required bool hasMore,
     required String emptyMessage,
     required String emptySubtitle,
     required Future<void> Function() onRefresh,
+    required Future<void> Function() onLoadMore,
     bool forceHideBadge = false,
   }) {
     if (isLoading && notifications.isEmpty) {
@@ -533,13 +554,66 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       onRefresh: onRefresh,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: notifications.length,
+        itemCount:
+            notifications.length +
+            (hasMore ? 1 : 0), // Add 1 for load more button
         itemBuilder: (context, index) {
+          // Show load more button at the end
+          if (index == notifications.length) {
+            return _buildLoadMoreButton(
+              isLoading: isLoadingMore,
+              onTap: onLoadMore,
+            );
+          }
+
           return _buildNotificationItem(
             notifications[index],
             forceHideBadge: forceHideBadge,
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLoadMoreButton({
+    required bool isLoading,
+    required Future<void> Function() onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12, bottom: 12),
+      child: Center(
+        child: isLoading
+            ? const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
+                ),
+              )
+            : ElevatedButton.icon(
+                onPressed: onTap,
+                icon: const Icon(Icons.expand_more, size: 20),
+                label: const Text(
+                  'Load More',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF00D09E),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(
+                      color: Color(0xFF00D09E),
+                      width: 1.5,
+                    ),
+                  ),
+                  elevation: 0,
+                ),
+              ),
       ),
     );
   }

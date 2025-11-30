@@ -1,7 +1,6 @@
 // ... các import không đổi
 import 'package:flutter/material.dart';
-import 'package:SmartQuitIoT/views/screens/diary/create_diary_screen.dart';
-import 'package:SmartQuitIoT/views/screens/payment/premium_membership_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:SmartQuitIoT/views/widgets/common/receipt_bottom_sheet.dart';
 
 class SuccessScreen extends StatefulWidget {
@@ -23,10 +22,14 @@ class _SuccessScreenState extends State<SuccessScreen>
   late AnimationController _checkController;
   late AnimationController _scaleController;
   late AnimationController _fadeController;
+  late AnimationController _loadingController;
 
   late Animation<double> _checkAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _loadingAnimation;
+
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -47,6 +50,11 @@ class _SuccessScreenState extends State<SuccessScreen>
       vsync: this,
     );
 
+    _loadingController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
     _checkAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _checkController, curve: Curves.elasticOut),
     );
@@ -59,12 +67,34 @@ class _SuccessScreenState extends State<SuccessScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
+    _loadingAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _loadingController, curve: Curves.linear),
+    );
+
     _scaleController.forward();
     Future.delayed(const Duration(milliseconds: 300), () {
       _checkController.forward();
     });
     Future.delayed(const Duration(milliseconds: 600), () {
       _fadeController.forward();
+    });
+
+    _loadingController.repeat();
+
+    // 先停止 loading 动画，显示成功图标
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _loadingController.stop();
+      }
+    });
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        context.go('/main');
+      }
     });
   }
 
@@ -73,6 +103,7 @@ class _SuccessScreenState extends State<SuccessScreen>
     _checkController.dispose();
     _scaleController.dispose();
     _fadeController.dispose();
+    _loadingController.dispose();
     super.dispose();
   }
 
@@ -96,7 +127,7 @@ class _SuccessScreenState extends State<SuccessScreen>
                   children: [
                     // ==== Success Animation ====
                     AnimatedBuilder(
-                      animation: _scaleAnimation,
+                      animation: Listenable.merge([_scaleAnimation, _loadingAnimation]),
                       builder: (context, child) {
                         return Transform.scale(
                           scale: _scaleAnimation.value,
@@ -114,19 +145,34 @@ class _SuccessScreenState extends State<SuccessScreen>
                                 ),
                               ],
                             ),
-                            child: AnimatedBuilder(
-                              animation: _checkAnimation,
-                              builder: (context, child) {
-                                return Transform.scale(
-                                  scale: _checkAnimation.value,
-                                  child: const Icon(
-                                    Icons.check_rounded,
-                                    color: Color(0xFF4CAF50),
-                                    size: 60,
+                            child: _isLoading
+                                ? AnimatedBuilder(
+                                    animation: _loadingAnimation,
+                                    builder: (context, child) {
+                                      return Transform.rotate(
+                                        angle: _loadingAnimation.value * 2 * 3.14159,
+                                        child: const CircularProgressIndicator(
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            Color(0xFF00D09E),
+                                          ),
+                                          strokeWidth: 3,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : AnimatedBuilder(
+                                    animation: _checkAnimation,
+                                    builder: (context, child) {
+                                      return Transform.scale(
+                                        scale: _checkAnimation.value,
+                                        child: const Icon(
+                                          Icons.check_rounded,
+                                          color: Color(0xFF4CAF50),
+                                          size: 60,
+                                        ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ),
                           ),
                         );
                       },
@@ -204,40 +250,16 @@ class _SuccessScreenState extends State<SuccessScreen>
 
                               const SizedBox(height: 40),
 
-                              // ==== Continue Button (white bg / black text) ====
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    // Navigate tới CreateDiaryScreen
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const CreateDiaryScreen(),
-                                      ),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 18,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    elevation: 2,
-                                  ),
-                                  child: const Text(
-                                    'Continue',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                              // ==== Loading Text ====
+                              if (_isLoading)
+                                const Text(
+                                  'Processing...',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ),
 
                               const SizedBox(height: 16),
 
@@ -315,14 +337,6 @@ class _SuccessScreenState extends State<SuccessScreen>
       default:
         return 'Payment';
     }
-  }
-
-  void _navigateToHome(BuildContext context) {
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const PremiumMembershipScreen()),
-    );
   }
 
   void _showReceipt(BuildContext context) {

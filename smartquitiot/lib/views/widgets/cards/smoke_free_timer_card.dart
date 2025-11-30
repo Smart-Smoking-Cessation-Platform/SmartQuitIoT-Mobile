@@ -174,11 +174,11 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
     late String title;
 
     if (isBeforeStart) {
-      // Chưa tới quit plan - COUNTDOWN đến start date
+      // API time is earlier than current time - show countdown until quit plan starts
       difference = startDate.difference(_now);
-      title = 'Countdown to Quit Plan';
+      title = 'Time until your quit plan starts';
     } else {
-      // Đã bắt đầu quit plan - Hiển thị TIME SMOKE FREE
+      // Already started or equal - show smoke free time normally
       difference = _now.difference(startDate);
       title = 'Time Smoke Free';
     }
@@ -267,7 +267,7 @@ class _SmokeFreeTimerCardState extends ConsumerState<SmokeFreeTimerCard> {
                           const SizedBox(height: 2),
                           Text(
                             isBeforeStart
-                                ? 'Your journey begins soon'
+                                ? 'Your quit plan will begin in'
                                 : 'You\'re doing amazing!',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),

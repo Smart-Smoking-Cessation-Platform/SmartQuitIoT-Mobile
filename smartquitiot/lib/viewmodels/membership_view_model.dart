@@ -2,6 +2,7 @@
 
 import '../models/payment_link_data.dart';
 import '../models/state/membership_state.dart';
+import '../models/membership_subscription.dart';
 import '../repositories/membership_repository.dart';
 
 class MembershipViewModel extends StateNotifier<MembershipState> {
@@ -36,6 +37,22 @@ class MembershipViewModel extends StateNotifier<MembershipState> {
       return paymentData;
     } catch (e) {
       print('Error in ViewModel creating payment link: $e');
+      return null;
+    }
+  }
+
+  Future<MembershipSubscription?> createFreeTrialSubscription({
+    required int packageId,
+    required int duration,
+  }) async {
+    try {
+      final subscription = await _repository.createFreeTrialSubscription(
+        packageId: packageId,
+        duration: duration,
+      );
+      return subscription;
+    } catch (e) {
+      print('Error in ViewModel creating free trial: $e');
       return null;
     }
   }

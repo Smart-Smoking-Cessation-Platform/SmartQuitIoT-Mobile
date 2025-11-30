@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:SmartQuitIoT/views/screens/badges/badges_screen.dart';
 import 'package:SmartQuitIoT/providers/achievement_provider.dart';
 import 'package:SmartQuitIoT/providers/websocket_provider.dart';
 import 'package:SmartQuitIoT/providers/achievement_refresh_provider.dart';
@@ -62,17 +61,28 @@ class AchievementsCard extends ConsumerWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  context.push('/achievement');
+                  context.go('/achievements');
                 },
-                child: const Padding(
-                  padding: EdgeInsets.only(right: 12),
-                  child: Text(
-                    'View more',
-                    style: TextStyle(
-                      color: Color(0xFF00D09E),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'View more',
+                        style: TextStyle(
+                          color: Color(0xFF00D09E),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Color(0xFF00D09E),
+                        size: 14,
+                      ),
+                    ],
                   ),
                 ),
               ),

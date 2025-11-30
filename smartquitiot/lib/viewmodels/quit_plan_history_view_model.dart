@@ -45,6 +45,13 @@ class QuitPlanHistoryViewModel extends StateNotifier<AsyncValue<List<QuitPlanHis
     await loadAllQuitPlans();
   }
 
+  /// Clear all quit plans data (used when user logs out or switches)
+  void clear() {
+    _logger.i('🗑️ [QuitPlanHistoryViewModel] Clearing quit plan history data...');
+    state = const AsyncValue.loading();
+    _logger.d('✅ [QuitPlanHistoryViewModel] Quit plan history cleared');
+  }
+
   /// Filter quit plans by status
   List<QuitPlanHistory> filterByStatus(String status) {
     return state.whenData((quitPlans) {

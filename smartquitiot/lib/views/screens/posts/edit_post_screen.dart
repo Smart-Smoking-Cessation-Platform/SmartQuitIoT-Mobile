@@ -29,6 +29,11 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
   String? _thumbnailUrl;
   List<Map<String, String>> _mediaList = [];
 
+  // Validation error states
+  String? _titleError;
+  String? _descriptionError;
+  String? _contentError;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +59,15 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
         print('❌ [EditPost] Failed to parse content: $e');
       }
     }
+
+    // Listen to content changes to clear error
+    _quillController.addListener(() {
+      if (_contentError != null) {
+        setState(() {
+          _contentError = null;
+        });
+      }
+    });
   }
 
   @override
@@ -168,28 +182,78 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
     });
   }
 
+  // Validation function to check for special characters
+  bool _hasSpecialCharacters(String text) {
+    // Check for problematic special characters (excluding alphanumeric, spaces, and common punctuation)
+    // Allowed: letters, numbers, spaces, and: . , ! ? - _ ( ) [ ] : ; ' "
+    // Block: @ # $ % ^ & * + = { } | \ < > / ~ ` and other special chars
+    final allowedChars = 'a-zA-Z0-9\\s.,!?\\-_\\(\\)\\[\\]\\:;';
+    final singleQuote = "'";
+    final doubleQuote = '"';
+    final problematicPattern = RegExp(
+      '[^$allowedChars$singleQuote$doubleQuote]',
+    );
+    return problematicPattern.hasMatch(text);
+  }
+
+  // Validate all fields
+  bool _validateFields() {
+    bool isValid = true;
+
+    // Validate title
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      _titleError = 'Title is required';
+      isValid = false;
+    } else if (_hasSpecialCharacters(title)) {
+      _titleError = 'Title cannot contain special characters';
+      isValid = false;
+    } else {
+      _titleError = null;
+    }
+
+    // Validate description
+    final description = _descriptionController.text.trim();
+    if (description.isEmpty) {
+      _descriptionError = 'Description is required';
+      isValid = false;
+    } else if (_hasSpecialCharacters(description)) {
+      _descriptionError = 'Description cannot contain special characters';
+      isValid = false;
+    } else {
+      _descriptionError = null;
+    }
+
+    // Validate content
+    final contentText = _quillController.document.toPlainText().trim();
+    if (contentText.isEmpty) {
+      _contentError = 'Content is required';
+      isValid = false;
+    } else if (_hasSpecialCharacters(contentText)) {
+      _contentError = 'Content cannot contain special characters';
+      isValid = false;
+    } else {
+      _contentError = null;
+    }
+
+    setState(() {});
+    return isValid;
+  }
+
   Future<void> _updatePost() async {
+    // Validate all required fields
+    if (!_validateFields()) {
+      return;
+    }
+
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
     final content = jsonEncode(_quillController.document.toDelta().toJson());
-
-    if (title.isEmpty) {
-      _showErrorFlushbar('Please enter post title');
-      return;
-    }
 
     print('📝 [EditPost] Updating post...');
     print('📦 [EditPost] Title: $title');
     print('📦 [EditPost] Description: $description');
     print('📦 [EditPost] Media count: ${_mediaList.length}');
-
-    final updateData = {
-      'title': title,
-      'description': description,
-      'content': content,
-      'thumbnail': _thumbnailUrl ?? '',
-      'media': _mediaList,
-    };
 
     setState(() => _isLoading = true);
 
@@ -262,27 +326,21 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title
-                TextField(
+                _buildTextField(
                   controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: 'Post Title *',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  label: 'Post Title *',
+                  hint: 'Enter post title',
+                  error: _titleError,
                 ),
                 const SizedBox(height: 20),
 
                 // Description
-                TextField(
+                _buildTextField(
                   controller: _descriptionController,
-                  decoration: InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  label: 'Description',
+                  hint: 'Enter a short description',
                   maxLines: 2,
+                  error: _descriptionError,
                 ),
                 const SizedBox(height: 20),
 
@@ -472,7 +530,81 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
     );
   }
 
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+    String? error,
+  }) {
+    final hasError = error != null && error.isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          style: const TextStyle(fontSize: 15),
+          onChanged: (value) {
+            // Clear error when user starts typing
+            if (controller == _titleController) {
+              _titleError = null;
+            } else if (controller == _descriptionController) {
+              _descriptionError = null;
+            }
+            setState(() {});
+          },
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : Colors.grey[300]!,
+                width: hasError ? 2 : 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : Colors.grey[300]!,
+                width: hasError ? 2 : 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : const Color(0xFF00D09E),
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+          ),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Text(error, style: const TextStyle(color: Colors.red, fontSize: 12)),
+        ],
+      ],
+    );
+  }
+
   Widget _buildContentEditor() {
+    final hasError = _contentError != null && _contentError!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -484,7 +616,10 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
         Container(
           height: 300,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
+            border: Border.all(
+              color: hasError ? Colors.red : Colors.grey[300]!,
+              width: hasError ? 2 : 1,
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.all(16),
@@ -493,6 +628,13 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
             focusNode: _editorFocusNode,
           ),
         ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Text(
+            _contentError!,
+            style: const TextStyle(color: Colors.red, fontSize: 12),
+          ),
+        ],
       ],
     );
   }

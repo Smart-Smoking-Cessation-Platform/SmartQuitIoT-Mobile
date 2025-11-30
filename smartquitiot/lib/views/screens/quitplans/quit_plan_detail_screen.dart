@@ -18,8 +18,13 @@ import '../form_metric/_create_form_metric_dialog.dart';
 
 class QuitPlanDetailScreen extends ConsumerStatefulWidget {
   final int quitPlanId;
+  final bool isReadOnly;
 
-  const QuitPlanDetailScreen({super.key, required this.quitPlanId});
+  const QuitPlanDetailScreen({
+    super.key,
+    required this.quitPlanId,
+    this.isReadOnly = false,
+  });
 
   @override
   ConsumerState<QuitPlanDetailScreen> createState() =>
@@ -240,16 +245,18 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
         backgroundColor: const Color(0xFF00D09E),
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref
-                  .read(quitPlanDetailViewModelProvider.notifier)
-                  .loadQuitPlanDetail(widget.quitPlanId);
-            },
-          ),
-        ],
+        actions: widget.isReadOnly
+            ? null
+            : [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () {
+                    ref
+                        .read(quitPlanDetailViewModelProvider.notifier)
+                        .loadQuitPlanDetail(widget.quitPlanId);
+                  },
+                ),
+              ],
       ),
       body: state.when(
         loading: () => const Center(
@@ -282,13 +289,13 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
           }
 
           final isCompleted = _isQuitPlanCompleted(data);
+          final planInsights = _buildPlanInsightsSection(data);
           return SingleChildScrollView(
             child: Column(
               children: [
                 _buildHeader(data),
                 if (isCompleted) _buildCongratulationsBanner(data),
-                if (data.formMetricDTO != null)
-                  _buildFormMetrics(data.formMetricDTO!),
+                if (planInsights != null) planInsights,
                 _buildStats(data),
                 if (data.phases != null && data.phases!.isNotEmpty)
                   Builder(
@@ -402,101 +409,416 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
     );
   }
 
-  Widget _buildFormMetrics(FormMetricDTO metrics) {
-    final formatter = NumberFormat('#,###', 'vi_VN');
+  Widget? _buildPlanInsightsSection(QuitPlanDetail plan) {
+    final formMetric = plan.formMetricDTO;
+    final currentMetric = plan.currentMetricDTO;
+    final hasLifestyleInfo = (formMetric?.interests.isNotEmpty ?? false) ||
+        (formMetric?.triggered.isNotEmpty ?? false);
 
+    if (formMetric == null && currentMetric == null && !hasLifestyleInfo) {
+      return null;
+    }
+
+    return Column(
+      children: [
+        if (formMetric != null) _buildBaselineMetricsCard(formMetric),
+        if (formMetric != null) _buildHabitAndFinanceCard(formMetric),
+        if (hasLifestyleInfo) _buildLifestyleChipsCard(formMetric!),
+        if (currentMetric != null) _buildCurrentMetricCard(currentMetric),
+      ],
+    );
+  }
+
+  Widget _buildBaselineMetricsCard(FormMetricDTO metrics) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: _insightCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00D09E).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.analytics,
-                  color: Color(0xFF00D09E),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Smoking Metrics',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
+          _buildInsightHeader(
+            icon: Icons.insights,
+            title: 'Baseline Insights',
+            color: const Color(0xFF2563EB),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildMetricChip(
-                '${metrics.smokeAvgPerDay} cigs/day',
-                Icons.smoke_free,
-                const Color(0xFFEF4444),
-              ),
-              _buildMetricChip(
-                '${metrics.numberOfYearsOfSmoking} years',
-                Icons.calendar_today,
-                const Color(0xFF3B82F6),
-              ),
-              _buildMetricChip(
-                '${formatter.format(metrics.estimatedMoneySavedOnPlan)} đ saved',
-                Icons.savings,
-                const Color(0xFF00D09E),
-              ),
-              _buildMetricChip(
-                '${metrics.estimatedNicotineIntakePerDay.toStringAsFixed(0)} mg nicotine/day',
-                Icons.science,
-                const Color(0xFF8B5CF6),
-              ),
-            ],
+          const SizedBox(height: 12),
+          _buildMetricLine(
+            icon: Icons.smoking_rooms,
+            label: 'Avg cigarettes per day',
+            value: metrics.smokeAvgPerDay.toString(),
+            iconColor: const Color(0xFF2563EB),
           ),
+          _buildMetricLine(
+            icon: Icons.calendar_month,
+            label: 'Years of smoking',
+            value: metrics.numberOfYearsOfSmoking.toString(),
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.timer,
+            label: 'Minutes to first cigarette',
+            value: '${metrics.minutesAfterWakingToSmoke} mins',
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.inventory_2_outlined,
+            label: 'Cigarettes per pack',
+            value: metrics.cigarettesPerPackage.toString(),
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.science,
+            label: 'Nicotine per cig',
+            value: '${metrics.amountOfNicotinePerCigarettes.toStringAsFixed(2)} mg',
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.bolt,
+            label: 'Estimated nicotine per day',
+            value: '${metrics.estimatedNicotineIntakePerDay.toStringAsFixed(2)} mg',
+            iconColor: const Color(0xFF2563EB),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHabitAndFinanceCard(FormMetricDTO metrics) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: _insightCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInsightHeader(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Habits & Savings',
+            color: const Color(0xFF047857),
+          ),
+          const SizedBox(height: 12),
+          _buildMetricLine(
+            icon: Icons.payments,
+            label: 'Money per pack',
+            value: _formatCurrency(metrics.moneyPerPackage),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.savings_outlined,
+            label: 'Estimated savings this plan',
+            value: _formatCurrency(metrics.estimatedMoneySavedOnPlan),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.gavel,
+            label: 'Smoke in forbidden places',
+            value: _formatBoolLabel(metrics.smokingInForbiddenPlaces),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.mood_bad_outlined,
+            label: 'Hardest cigarette to give up',
+            value: _formatBoolLabel(metrics.cigaretteHateToGiveUp),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.wb_sunny_outlined,
+            label: 'Smoke frequently in morning',
+            value: _formatBoolLabel(metrics.morningSmokingFrequency),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.sick_outlined,
+            label: 'Still smoke when sick',
+            value: _formatBoolLabel(metrics.smokeWhenSick),
+            iconColor: const Color(0xFF047857),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLifestyleChipsCard(FormMetricDTO metrics) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: _insightCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInsightHeader(
+            icon: Icons.self_improvement,
+            title: 'Lifestyle & Triggers',
+            color: const Color(0xFF9333EA),
+          ),
+          if (metrics.interests.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Motivations & Interests',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildChipWrap(metrics.interests, const Color(0xFF9333EA)),
+          ],
           if (metrics.triggered.isNotEmpty) ...[
             const SizedBox(height: 16),
             const Text(
-              'Triggers:',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              'Smoking Triggers',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: metrics.triggered
-                  .map((t) => _buildTriggerChip(t))
-                  .toList(),
-            ),
+            _buildChipWrap(metrics.triggered, const Color(0xFFDB2777)),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildMetricChip(String label, IconData icon, Color color) {
-    return Chip(
-      avatar: Icon(icon, size: 16, color: color),
-      label: Text(label, style: TextStyle(fontSize: 12, color: color)),
-      backgroundColor: color.withOpacity(0.1),
-      side: BorderSide(color: color.withOpacity(0.3)),
+  Widget _buildCurrentMetricCard(CurrentMetricDTO metrics) {
+    final hasAnyData = [
+      metrics.avgCravingLevel,
+      metrics.avgCigarettesPerDay,
+      metrics.avgMood,
+      metrics.avgAnxiety,
+      metrics.avgConfidentLevel,
+    ].any((value) => value != null);
+
+    if (!hasAnyData) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: _insightCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInsightHeader(
+            icon: Icons.auto_graph,
+            title: 'Current Check-in',
+            color: const Color(0xFF0EA5E9),
+          ),
+          const SizedBox(height: 12),
+          if (metrics.avgCravingLevel != null)
+            _buildMetricProgressRow(
+              label: 'Craving level',
+              value: metrics.avgCravingLevel!,
+              color: Colors.redAccent,
+            ),
+          if (metrics.avgCigarettesPerDay != null)
+            _buildMetricLine(
+              icon: Icons.smoke_free,
+              label: 'Avg cigarettes per day (current)',
+              value: metrics.avgCigarettesPerDay!.toStringAsFixed(1),
+              iconColor: const Color(0xFF0EA5E9),
+            ),
+          if (metrics.avgMood != null)
+            _buildMetricProgressRow(
+              label: 'Mood',
+              value: metrics.avgMood!,
+              color: const Color(0xFF0EA5E9),
+            ),
+          if (metrics.avgAnxiety != null)
+            _buildMetricProgressRow(
+              label: 'Anxiety',
+              value: metrics.avgAnxiety!,
+              color: const Color(0xFFF59E0B),
+            ),
+          if (metrics.avgConfidentLevel != null)
+            _buildMetricProgressRow(
+              label: 'Confidence',
+              value: metrics.avgConfidentLevel!,
+              color: const Color(0xFF10B981),
+            ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildMetricProgressRow({
+    required String label,
+    required double value,
+    required Color color,
+  }) {
+    final normalized = (value / 10).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                value.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: normalized,
+              minHeight: 6,
+              backgroundColor: color.withOpacity(0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricLine({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? iconColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (iconColor ?? const Color(0xFF00D09E)).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor ?? const Color(0xFF00D09E), size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChipWrap(List<String> items, Color color) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: items
+          .map(
+            (item) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withOpacity(0.35)),
+              ),
+              child: Text(
+                item,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  BoxDecoration _insightCardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 10,
+          offset: const Offset(0, 6),
+        ),
+      ],
+      border: Border.all(
+        color: const Color(0xFFE2E8F0),
+      ),
+    );
+  }
+
+  Widget _buildInsightHeader({
+    required IconData icon,
+    required String title,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 22),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatBoolLabel(bool value) {
+    return value ? 'Yes' : 'No';
+  }
+
+  String _formatCurrency(num amount) {
+    return NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: '₫',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   Widget _buildStats(QuitPlanDetail data) {
@@ -744,7 +1066,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                   ),
                 ),
               ),
-              if (isExpanded && shouldShowFailedActions) ...[
+              if (isExpanded && shouldShowFailedActions && !widget.isReadOnly) ...[
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1194,7 +1516,10 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen> {
                     ),
                   ),
                 ],
-                if (!completed && missionId != -1) ...[
+                if (!completed &&
+                    missionId != -1 &&
+                    !widget.isReadOnly &&
+                    !_isFailedStatus(phase.status)) ...[
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,

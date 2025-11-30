@@ -8,6 +8,7 @@ import '../../../models/quit_phase.dart';
 import '../../../models/request/create_new_quit_plan_request.dart';
 import '../../../utils/phase_theme.dart';
 import '../../widgets/mission_complete_dialog.dart';
+import '../../widgets/common/full_screen_loader.dart';
 import '../diary/diary_screen.dart';
 import 'quit_plan_history_screen.dart';
 
@@ -27,11 +28,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   List<QuitPhaseDetail>?
   _previousPhases; // Track previous phases to detect new ones
 
-  int? _phaseActionInProgressId;
-  String? _phaseActionInProgressType;
-
-  static const String _phaseActionKeepKey = 'keep';
-  static const String _phaseActionRedoKey = 'redo';
 
   void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
     showDialog(
@@ -67,52 +63,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     ).show(context);
   }
 
-  void _setPhaseActionLoading(int? phaseId, String? actionKey) {
-    if (!mounted) return;
-    setState(() {
-      _phaseActionInProgressId = phaseId;
-      _phaseActionInProgressType = actionKey;
-    });
-  }
 
-  bool _isPhaseActionLoading(int? phaseId, String actionKey) {
-    return _phaseActionInProgressId == phaseId &&
-        _phaseActionInProgressType == actionKey;
-  }
-
-  bool get _hasPhaseActionInProgress =>
-      _phaseActionInProgressId != null && _phaseActionInProgressType != null;
-
-  Future<T> _withBlockingLoader<T>(
-    Future<T> Function() task, {
-    String message = 'Processing...',
-  }) async {
-    if (!mounted) {
-      return await task();
-    }
-
-    bool overlayOpen = true;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      useRootNavigator: true,
-      barrierColor: Colors.black.withOpacity(0.35),
-      builder: (_) => WillPopScope(
-        onWillPop: () async => false,
-        child: _BlockingLoader(message: message),
-      ),
-    ).whenComplete(() {
-      overlayOpen = false;
-    });
-
-    try {
-      return await task();
-    } finally {
-      if (overlayOpen && mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    }
-  }
 
   Future<void> _handleKeepPhaseAction(
     QuitPhase plan,
@@ -125,22 +76,25 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       return;
     }
 
-    _setPhaseActionLoading(phaseId, _phaseActionKeepKey);
+    if (!mounted) return;
+    FullScreenLoader.show(context, message: 'Keeping phase...');
 
     try {
-      await _withBlockingLoader(() async {
-        await ref
-            .read(quitPlanViewModelApiProvider.notifier)
-            .keepPhase(quitPlanId: planId, phaseId: phaseId);
-      });
+      await ref
+          .read(quitPlanViewModelApiProvider.notifier)
+          .keepPhase(quitPlanId: planId, phaseId: phaseId);
+      
       if (!mounted) return;
+      FullScreenLoader.hide(context);
+      
       _showSnack('Phase kept successfully.');
-      await Future.delayed(const Duration(seconds: 5));
-      ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+      
+      // Reload quit plan data
+      await ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
     } catch (e) {
+      if (!mounted) return;
+      FullScreenLoader.hide(context);
       _showSnack('Keep phase failed: ${_errorMessage(e)}', isError: true);
-    } finally {
-      _setPhaseActionLoading(null, null);
     }
   }
 
@@ -165,21 +119,26 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     }
 
     final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
-    _setPhaseActionLoading(phaseId, _phaseActionRedoKey);
+    
+    if (!mounted) return;
+    FullScreenLoader.show(context, message: 'Restarting phase...');
 
     try {
-      await _withBlockingLoader(() async {
-        await ref
-            .read(quitPlanViewModelApiProvider.notifier)
-            .redoPhase(phaseId: phaseId, anchorStart: formattedDate);
-      });
+      await ref
+          .read(quitPlanViewModelApiProvider.notifier)
+          .redoPhase(phaseId: phaseId, anchorStart: formattedDate);
+      
       if (!mounted) return;
+      FullScreenLoader.hide(context);
+      
       _showSnack('Phase restarted from $formattedDate.');
-      ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+      
+      // Reload quit plan data
+      await ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
     } catch (e) {
+      if (!mounted) return;
+      FullScreenLoader.hide(context);
       _showSnack('Redo phase failed: ${_errorMessage(e)}', isError: true);
-    } finally {
-      _setPhaseActionLoading(null, null);
     }
   }
 
@@ -231,6 +190,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     return false;
   }
 
+
   /// Detect new phases and show notification
   void _detectAndNotifyNewPhases(List<QuitPhaseDetail> currentPhases) {
     if (_previousPhases == null) {
@@ -265,32 +225,25 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
               newPhase.id != phase.id &&
               !_notifiedNewPhases.contains(newPhase.id)) {
             _notifiedNewPhases.add(newPhase.id!);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                _showSnack(
-                  '✨ New phase "${newPhase.name ?? 'Phase'}" has been created! You can continue your journey.',
-                );
-              }
-            });
           }
         }
       }
     }
 
     // Notify about completely new phases
-    for (final newPhase in newPhases) {
-      final phaseId = newPhase.id;
-      if (phaseId != null && !_notifiedNewPhases.contains(phaseId)) {
-        _notifiedNewPhases.add(phaseId);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _showSnack(
-              '✨ New phase "${newPhase.name ?? 'Phase'}" has been created!',
-            );
-          }
-        });
-      }
-    }
+    // for (final newPhase in newPhases) {
+    //   final phaseId = newPhase.id;
+    //   if (phaseId != null && !_notifiedNewPhases.contains(phaseId)) {
+    //     _notifiedNewPhases.add(phaseId);
+    //     WidgetsBinding.instance.addPostFrameCallback((_) {
+    //       if (mounted) {
+    //         _showSnack(
+    //           '✨ New phase "${newPhase.name ?? 'Phase'}" has been created!',
+    //         );
+    //       }
+    //     });
+    //   }
+    // }
 
     _previousPhases = List.from(currentPhases);
   }
@@ -390,11 +343,13 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
           // Sort phases: redo phases appear right after their failed phase
           final sortedPhases = _sortPhases(phases);
           final isCompleted = _isQuitPlanCompleted(data, sortedPhases);
+          final planInsights = _buildPlanInsightsSection(data);
           return SingleChildScrollView(
             child: Column(
               children: [
                 _buildHeader(data),
                 if (isCompleted) _buildCongratulationsBanner(data),
+                if (planInsights != null) planInsights,
                 _buildStats(sortedPhases),
                 _buildPhasesList(sortedPhases, data),
                 const SizedBox(height: 20),
@@ -575,6 +530,412 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
+  Widget? _buildPlanInsightsSection(QuitPhase plan) {
+    final formMetric = plan.formMetric;
+    final currentMetric = plan.currentMetric;
+    final hasLifestyleInfo = (formMetric?.interests.isNotEmpty ?? false) ||
+        (formMetric?.triggered.isNotEmpty ?? false);
+
+    if (formMetric == null && currentMetric == null && !hasLifestyleInfo) {
+      return null;
+    }
+
+    return Column(
+      children: [
+        if (formMetric != null) _buildBaselineMetricsCard(formMetric),
+        if (formMetric != null) _buildHabitAndFinanceCard(formMetric),
+        if (hasLifestyleInfo) _buildLifestyleChipsCard(formMetric!),
+        if (currentMetric != null) _buildCurrentMetricCard(currentMetric),
+      ],
+    );
+  }
+
+  Widget _buildBaselineMetricsCard(QuitPlanFormMetric metrics) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: _insightCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInsightHeader(
+            icon: Icons.insights,
+            title: 'Baseline Insights',
+            color: const Color(0xFF2563EB),
+          ),
+          const SizedBox(height: 12),
+          _buildMetricLine(
+            icon: Icons.smoking_rooms,
+            label: 'Avg cigarettes per day',
+            value: metrics.smokeAvgPerDay?.toString() ?? 'N/A',
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.calendar_month,
+            label: 'Years of smoking',
+            value: metrics.numberOfYearsOfSmoking?.toString() ?? 'N/A',
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.timer,
+            label: 'Minutes to first cigarette',
+            value: metrics.minutesAfterWakingToSmoke != null
+                ? '${metrics.minutesAfterWakingToSmoke} mins'
+                : 'N/A',
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.inventory_2_outlined,
+            label: 'Cigarettes per pack',
+            value: metrics.cigarettesPerPackage?.toString() ?? 'N/A',
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.science,
+            label: 'Nicotine per cig',
+            value: metrics.amountOfNicotinePerCigarettes != null
+                ? '${metrics.amountOfNicotinePerCigarettes!.toStringAsFixed(2)} mg'
+                : 'N/A',
+            iconColor: const Color(0xFF2563EB),
+          ),
+          _buildMetricLine(
+            icon: Icons.bolt,
+            label: 'Estimated nicotine per day',
+            value: metrics.estimatedNicotineIntakePerDay != null
+                ? '${metrics.estimatedNicotineIntakePerDay!.toStringAsFixed(2)} mg'
+                : 'N/A',
+            iconColor: const Color(0xFF2563EB),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHabitAndFinanceCard(QuitPlanFormMetric metrics) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: _insightCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInsightHeader(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Habits & Savings',
+            color: const Color(0xFF047857),
+          ),
+          const SizedBox(height: 12),
+          _buildMetricLine(
+            icon: Icons.payments,
+            label: 'Money per pack',
+            value: _formatCurrency(metrics.moneyPerPackage),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.savings_outlined,
+            label: 'Estimated savings this plan',
+            value: _formatCurrency(metrics.estimatedMoneySavedOnPlan),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.gavel,
+            label: 'Smoke in forbidden places',
+            value: _formatBoolLabel(metrics.smokingInForbiddenPlaces),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.mood_bad_outlined,
+            label: 'Hardest cigarette to give up',
+            value: _formatBoolLabel(metrics.cigaretteHateToGiveUp),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.wb_sunny_outlined,
+            label: 'Smoke frequently in morning',
+            value: _formatBoolLabel(metrics.morningSmokingFrequency),
+            iconColor: const Color(0xFF047857),
+          ),
+          _buildMetricLine(
+            icon: Icons.sick_outlined,
+            label: 'Still smoke when sick',
+            value: _formatBoolLabel(metrics.smokeWhenSick),
+            iconColor: const Color(0xFF047857),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLifestyleChipsCard(QuitPlanFormMetric metrics) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: _insightCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInsightHeader(
+            icon: Icons.self_improvement,
+            title: 'Lifestyle & Triggers',
+            color: const Color(0xFF9333EA),
+          ),
+          if (metrics.interests.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Motivations & Interests',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildChipWrap(metrics.interests, const Color(0xFF9333EA)),
+          ],
+          if (metrics.triggered.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Smoking Triggers',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildChipWrap(metrics.triggered, const Color(0xFFDB2777)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentMetricCard(QuitPlanCurrentMetric metrics) {
+    final hasAnyData = [
+      metrics.avgCravingLevel,
+      metrics.avgCigarettesPerDay,
+      metrics.avgMood,
+      metrics.avgAnxiety,
+      metrics.avgConfidentLevel,
+    ].any((value) => value != null);
+
+    if (!hasAnyData) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: _insightCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInsightHeader(
+            icon: Icons.auto_graph,
+            title: 'Current Check-in',
+            color: const Color(0xFF0EA5E9),
+          ),
+          const SizedBox(height: 12),
+          if (metrics.avgCravingLevel != null)
+            _buildMetricProgressRow(
+              label: 'Craving level',
+              value: metrics.avgCravingLevel!,
+              color: Colors.redAccent,
+            ),
+          if (metrics.avgCigarettesPerDay != null)
+            _buildMetricLine(
+              icon: Icons.smoke_free,
+              label: 'Avg cigarettes per day (current)',
+              value: metrics.avgCigarettesPerDay!.toStringAsFixed(1),
+              iconColor: const Color(0xFF0EA5E9),
+            ),
+          if (metrics.avgMood != null)
+            _buildMetricProgressRow(
+              label: 'Mood',
+              value: metrics.avgMood!,
+              color: const Color(0xFF0EA5E9),
+            ),
+          if (metrics.avgAnxiety != null)
+            _buildMetricProgressRow(
+              label: 'Anxiety',
+              value: metrics.avgAnxiety!,
+              color: const Color(0xFFF59E0B),
+            ),
+          if (metrics.avgConfidentLevel != null)
+            _buildMetricProgressRow(
+              label: 'Confidence',
+              value: metrics.avgConfidentLevel!,
+              color: const Color(0xFF10B981),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricProgressRow({
+    required String label,
+    required double value,
+    required Color color,
+  }) {
+    final normalized = (value / 10).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                value.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: normalized,
+              minHeight: 6,
+              backgroundColor: color.withOpacity(0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricLine({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? iconColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (iconColor ?? const Color(0xFF00D09E)).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor ?? const Color(0xFF00D09E), size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChipWrap(List<String> items, Color color) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: items
+          .map(
+            (item) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withOpacity(0.35)),
+              ),
+              child: Text(
+                item,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  BoxDecoration _insightCardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 10,
+          offset: const Offset(0, 6),
+        ),
+      ],
+      border: Border.all(
+        color: const Color(0xFFE2E8F0),
+      ),
+    );
+  }
+
+  Widget _buildInsightHeader({
+    required IconData icon,
+    required String title,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 22),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatItem(
     String label,
     String value,
@@ -616,8 +977,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
             ? (completedMissions / totalMissions)
             : 0.0;
         final phasePercent = (phaseProgress * 100).toInt();
-        final shouldShowFailedActions =
-            _isFailedStatus(phase.status) && !(phase.keepPhase ?? false);
         final shouldShowKeptBanner =
             _isFailedStatus(phase.status) && (phase.keepPhase ?? false);
 
@@ -750,21 +1109,19 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                   ),
                 ),
               ),
-              if (isExpanded && shouldShowFailedActions) ...[
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: _buildFailedPhaseActionsInline(
-                    plan,
-                    phase,
-                    phaseTheme,
-                  ),
-                ),
-              ] else if (shouldShowKeptBanner) ...[
+              if (shouldShowKeptBanner) ...[
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: _buildKeptPhaseBanner(phaseTheme),
+                ),
+              ],
+              // Show failed phase actions if phase is failed and not kept and not redo
+              if (_isFailedStatus(phase.status) && !(phase.keepPhase ?? false) && !(phase.redo ?? false)) ...[
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: _buildFailedPhaseActions(plan, phase, phaseTheme),
                 ),
               ],
               if (isExpanded) _buildPhaseDetails(plan, phase, phaseTheme),
@@ -781,6 +1138,25 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     PhaseTheme theme,
   ) {
     final days = phase.details ?? [];
+    final snapshot = phase.snapshotMetric;
+    final avgCraving =
+        phase.avgCravingLevel ?? snapshot?.avgCravingLevel;
+    final avgCigarettes =
+        phase.avgCigarettes ?? snapshot?.avgCigarettesPerDay;
+    final avgMood = phase.avgMood ?? snapshot?.avgMood;
+    final avgAnxiety = phase.avgAnxiety ?? snapshot?.avgAnxiety;
+    final avgConfidence =
+        phase.avgConfidentLevel ?? snapshot?.avgConfidentLevel;
+    final snapshotProgress = snapshot?.progress;
+    final hasStatSection = [
+      avgCraving,
+      avgCigarettes,
+      avgMood,
+      avgAnxiety,
+      avgConfidence,
+      phase.fmCigarettesTotal,
+      snapshotProgress,
+    ].any((value) => value != null);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -810,9 +1186,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
             ),
             const SizedBox(height: 12),
           ],
-          if (phase.avgCravingLevel != null ||
-              phase.avgCigarettes != null ||
-              phase.fmCigarettesTotal != null) ...[
+          if (hasStatSection) ...[
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -844,26 +1218,71 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      if (phase.avgCravingLevel != null)
+                      if (avgCraving != null)
                         Expanded(
                           child: _buildSmallStat(
                             label: 'Avg Craving',
-                            value: phase.avgCravingLevel!.toStringAsFixed(1),
+                            value: avgCraving.toStringAsFixed(1),
                             color: Colors.red,
                           ),
                         ),
-                      if (phase.avgCigarettes != null) ...[
+                      if (avgCigarettes != null) ...[
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildSmallStat(
                             label: 'Avg Cigs',
-                            value: phase.avgCigarettes!.toStringAsFixed(1),
+                            value: avgCigarettes.toStringAsFixed(1),
                             color: Colors.orange,
                           ),
                         ),
                       ],
                     ],
                   ),
+                  if (snapshotProgress != null) ...[
+                    const SizedBox(height: 6),
+                    _buildSmallStat(
+                      label: 'Phase Progress',
+                      value: '${snapshotProgress.toStringAsFixed(0)}%',
+                      color: theme.primaryColor,
+                    ),
+                  ],
+                  if (avgMood != null ||
+                      avgAnxiety != null ||
+                      avgConfidence != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        if (avgMood != null)
+                          Expanded(
+                            child: _buildSmallStat(
+                              label: 'Mood',
+                              value: avgMood.toStringAsFixed(1),
+                              color: const Color(0xFF0EA5E9),
+                            ),
+                          ),
+                        if (avgAnxiety != null) ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildSmallStat(
+                              label: 'Anxiety',
+                              value: avgAnxiety.toStringAsFixed(1),
+                              color: const Color(0xFFF59E0B),
+                            ),
+                          ),
+                        ],
+                        if (avgConfidence != null) ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildSmallStat(
+                              label: 'Confidence',
+                              value: avgConfidence.toStringAsFixed(1),
+                              color: const Color(0xFF10B981),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                   if (phase.fmCigarettesTotal != null) ...[
                     const SizedBox(height: 6),
                     _buildSmallStat(
@@ -1030,7 +1449,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
 
             const SizedBox(height: 12),
             if (selectedDayIndex < days.length)
-              _buildMissionsList(days[selectedDayIndex], theme),
+              _buildMissionsList(days[selectedDayIndex], theme, phase),
           ],
         ],
       ),
@@ -1075,7 +1494,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     });
   }
 
-  Widget _buildMissionsList(QuitDay day, PhaseTheme theme) {
+  Widget _buildMissionsList(QuitDay day, PhaseTheme theme, QuitPhaseDetail phase) {
     final missions = day.missions ?? [];
     if (missions.isEmpty) {
       return const Padding(
@@ -1088,6 +1507,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     final isDayAvailableForCompletion = _isPastOrToday(day.date);
     final allMissionsCompleted = _areAllMissionsCompleted(missions);
     final showCongratulations = isSelectedDayToday && allMissionsCompleted;
+    final isRedoPhase = phase.redo == true; // Check if this is a redo phase (reference only)
 
     return Column(
       children: [
@@ -1194,7 +1614,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                     ),
                   ),
                 ],
-                if (!completed && missionId != -1) ...[
+                if (!completed && missionId != -1 && !isRedoPhase) ...[
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,
@@ -1505,216 +1925,138 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     );
   }
 
-  Widget _buildFailedPhaseActionsInline(
+  Widget _buildFailedPhaseActions(
     QuitPhase plan,
     QuitPhaseDetail phase,
     PhaseTheme theme,
   ) {
-    final phaseId = phase.id;
-    final keepLoading = _isPhaseActionLoading(phaseId, _phaseActionKeepKey);
-    final redoLoading = _isPhaseActionLoading(phaseId, _phaseActionRedoKey);
-    final actionsDisabled = _hasPhaseActionInProgress || phaseId == null;
-
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.redAccent.withOpacity(0.12),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: Colors.redAccent.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.redAccent.withOpacity(0.3),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.error_outline, color: Colors.redAccent),
+              Icon(
+                Icons.error_outline,
+                color: Colors.redAccent,
+                size: 20,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Phase failed',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.redAccent.shade400,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Choose how you want to continue your quit journey.',
-                      style: TextStyle(fontSize: 13, color: Colors.black87),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Action required',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.redAccent.shade400,
-                    fontWeight: FontWeight.bold,
-                  ),
+              const SizedBox(width: 8),
+              Text(
+                'Phase Failed - Choose an action',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            runAlignment: WrapAlignment.center,
-            children: [
-              _buildActionCard(
-                title: 'Keep Phase',
-                description: 'Preserve all missions and continue',
-                icon: Icons.layers_outlined,
-                color: const Color(0xFF10B981),
-                onTap: actionsDisabled
-                    ? null
-                    : () => _handleKeepPhaseAction(plan, phase),
-                isLoading: keepLoading,
-                theme: theme,
-              ),
-              _buildActionCard(
-                title: 'Redo Phase',
-                description: 'Restart with a fresh anchor date',
-                icon: Icons.restart_alt,
-                color: const Color(0xFF0EA5E9),
-                onTap: actionsDisabled
-                    ? null
-                    : () => _handleRedoPhaseAction(phase),
-                isLoading: redoLoading,
-                theme: theme,
-              ),
-              _buildActionCard(
-                title: 'New Plan',
-                description: 'Start a brand new quit journey',
-                icon: Icons.auto_awesome,
-                color: const Color(0xFF8B5CF6),
-                onTap: _hasPhaseActionInProgress
-                    ? null
-                    : () => _showCreateNewPlanDialog(theme),
-                isLoading: false,
-                theme: theme,
-              ),
-            ],
+          const SizedBox(height: 12),
+          _buildFailedActionButton(
+            title: 'Keep Phase',
+            description: 'Preserve all missions and continue',
+            icon: Icons.layers_outlined,
+            color: const Color(0xFF10B981),
+            onTap: () => _handleKeepPhaseAction(plan, phase),
+          ),
+          const SizedBox(height: 8),
+          _buildFailedActionButton(
+            title: 'Redo Phase',
+            description: 'Restart this phase with a fresh date',
+            icon: Icons.restart_alt,
+            color: const Color(0xFF0EA5E9),
+            onTap: () => _handleRedoPhaseAction(phase),
+          ),
+          const SizedBox(height: 8),
+          _buildFailedActionButton(
+            title: 'Create New Quit Plan',
+            description: 'Start a brand new quit journey',
+            icon: Icons.auto_awesome,
+            color: const Color(0xFF8B5CF6),
+            onTap: () => _handleCreateNewPlan(theme),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionCard({
+  Widget _buildFailedActionButton({
     required String title,
     required String description,
     required IconData icon,
     required Color color,
-    required VoidCallback? onTap,
-    required bool isLoading,
-    required PhaseTheme theme,
+    required VoidCallback onTap,
   }) {
-    final effectiveBorderColor = isLoading
-        ? Colors.grey.shade300
-        : color.withOpacity(0.4);
-    final titleColor = color;
-    final descriptionColor = color.withOpacity(0.75);
-
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: isLoading ? 0.6 : 1,
-        child: Container(
-          width: 260,
-          constraints: const BoxConstraints(minHeight: 130),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: effectiveBorderColor, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.12),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 1,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Center(
-                  child: isLoading
-                      ? SizedBox(
-                          width: 26,
-                          height: 26,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(color),
-                          ),
-                        )
-                      : Icon(icon, color: color, size: 26),
-                ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(height: 14),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: titleColor,
-                ),
-                textAlign: TextAlign.center,
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: color.withOpacity(0.8),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.4,
-                  color: descriptionColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: color,
+              size: 16,
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _handleCreateNewPlan(PhaseTheme theme) async {
+    await _showCreateNewPlanDialog(theme);
   }
 
   Widget _buildKeptPhaseBanner(PhaseTheme theme) {
@@ -1763,7 +2105,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     final dateController = TextEditingController();
     bool useNRT = false;
     DateTime? selectedDate;
-    bool isProcessing = false;
+    bool isCreating = false;
 
     await showDialog(
       context: context,
@@ -1771,7 +2113,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+
             Future<void> selectDate() async {
+              if (isCreating) return; // Prevent date selection when creating
+              
               final now = DateTime.now();
               final pickedDate = await showDatePicker(
                 context: context,
@@ -1804,6 +2149,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
             }
 
             Future<void> handleCreate() async {
+              if (isCreating) return; // Prevent multiple submissions
+              
               if (!formKey.currentState!.validate()) {
                 return;
               }
@@ -1813,8 +2160,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                 return;
               }
 
+              // Set creating state to true
               setDialogState(() {
-                isProcessing = true;
+                isCreating = true;
               });
 
               try {
@@ -1824,27 +2172,38 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                   quitPlanName: nameController.text.trim(),
                 );
 
-                await _withBlockingLoader(() async {
-                  await ref
-                      .read(quitPlanViewModelProvider.notifier)
-                      .createNewPlan(request);
-                }, message: 'Creating quit plan...');
+                await ref
+                    .read(quitPlanViewModelProvider.notifier)
+                    .createNewPlan(request);
 
+                // Check if widget is still mounted
                 if (!mounted) return;
 
-                Navigator.of(context).pop();
-                _showSnack('New quit plan created successfully! 🎉');
+                // Close dialog after successful creation
+                Navigator.of(dialogContext).pop();
+
+                // Wait a bit for dialog to close
+                await Future.delayed(const Duration(milliseconds: 200));
 
                 // Refresh quit plan data
-                ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+                if (mounted) {
+                  await ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+                  if (mounted) {
+                    _showSnack('New quit plan created successfully! 🎉');
+                  }
+                }
               } catch (e) {
+                // Reset creating state on error
                 setDialogState(() {
-                  isProcessing = false;
+                  isCreating = false;
                 });
-                _showSnack(
-                  'Failed to create new plan: ${_errorMessage(e)}',
-                  isError: true,
-                );
+                
+                if (mounted) {
+                  _showSnack(
+                    'Failed to create new plan: ${_errorMessage(e)}',
+                    isError: true,
+                  );
+                }
               }
             }
 
@@ -1895,7 +2254,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.close, color: Colors.grey),
-                              onPressed: isProcessing
+                              onPressed: isCreating
                                   ? null
                                   : () => Navigator.of(context).pop(),
                             ),
@@ -1905,7 +2264,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                         // Plan Name Field
                         TextFormField(
                           controller: nameController,
-                          enabled: !isProcessing,
+                          enabled: !isCreating,
                           decoration: InputDecoration(
                             labelText: 'Quit Plan Name',
                             hintText: 'Enter quit plan name',
@@ -1938,9 +2297,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                         // Start Date Field
                         TextFormField(
                           controller: dateController,
-                          enabled: !isProcessing,
                           readOnly: true,
-                          onTap: selectDate,
+                          enabled: !isCreating,
+                          onTap: isCreating ? null : selectDate,
                           decoration: InputDecoration(
                             labelText: 'Start Date',
                             hintText: 'Select start date',
@@ -2007,7 +2366,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                               ),
                               Switch(
                                 value: useNRT,
-                                onChanged: isProcessing
+                                onChanged: isCreating
                                     ? null
                                     : (value) {
                                         setDialogState(() {
@@ -2025,7 +2384,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                           children: [
                             Expanded(
                               child: OutlinedButton(
-                                onPressed: isProcessing
+                                onPressed: isCreating
                                     ? null
                                     : () => Navigator.of(context).pop(),
                                 style: OutlinedButton.styleFrom(
@@ -2053,7 +2412,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: isProcessing ? null : handleCreate,
+                                onPressed: isCreating ? null : handleCreate,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: theme.primaryColor,
                                   foregroundColor: Colors.white,
@@ -2065,16 +2424,16 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
                                   ),
                                   elevation: 0,
                                 ),
-                                child: isProcessing
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
+                                child: isCreating
+                                    ? SizedBox(
+                                        height: 20,
+                                        width: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
                                           valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
+                                              const AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
                                         ),
                                       )
                                     : const Text(
@@ -2158,6 +2517,19 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
     }
 
     return 'Must be $operator $displayValue';
+  }
+
+  String _formatBoolLabel(bool? value) {
+    return value == true ? 'Yes' : 'No';
+  }
+
+  String _formatCurrency(num? amount) {
+    if (amount == null) return 'N/A';
+    return NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: '₫',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   String _formatFormulaBase(String base) {
@@ -2440,45 +2812,3 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen> {
   }
 }
 
-class _BlockingLoader extends StatelessWidget {
-  final String message;
-
-  const _BlockingLoader({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.75),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(
-                width: 42,
-                height: 42,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                message,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

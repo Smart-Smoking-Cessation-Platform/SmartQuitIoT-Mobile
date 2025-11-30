@@ -245,13 +245,20 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
 
     final quitPlan = state.quitPlan!;
     final phaseTheme = resolvePhaseTheme(quitPlan.name);
+    final currentPhaseTheme = resolvePhaseTheme(
+      quitPlan.currentPhaseDetail.name,
+    );
     final isCompleted = _isQuitPlanCompleted(quitPlan);
+    final isPhaseCompleted = _isPhaseCompleted(quitPlan);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Congratulations Banner
+        // Congratulations Banner for completed quit plan
         if (isCompleted) _buildCongratulationsBanner(quitPlan, phaseTheme),
+        // Phase completion banner (show when phase is completed but not the whole plan)
+        if (!isCompleted && isPhaseCompleted)
+          _buildPhaseCompletionBanner(quitPlan, currentPhaseTheme),
         // Header
         Row(
           children: [
@@ -973,19 +980,18 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
         .join(' ');
   }
 
+  /// Check if current phase is completed
+  /// Returns true when all missions in current phase are completed
+  bool _isPhaseCompleted(QuitPlanHomePage plan) {
+    final currentPhase = plan.currentPhaseDetail;
+    return currentPhase.missionCompleted >= currentPhase.totalMission &&
+        currentPhase.totalMission > 0;
+  }
+
   /// Check if quit plan is completed
+  /// Only returns true when Maintenance phase is completed
   bool _isQuitPlanCompleted(QuitPlanHomePage plan) {
-    // Check if plan status is COMPLETED
-    if (plan.status.toUpperCase() == 'COMPLETED') {
-      return true;
-    }
-
-    // Check if progress is 100% (all missions completed)
-    if (plan.progress >= 100.0) {
-      return true;
-    }
-
-    // Check if current phase is Maintenance and all missions are completed
+    // Only consider quit plan completed when Maintenance phase is completed
     final currentPhase = plan.currentPhaseDetail;
     final isMaintenancePhase = currentPhase.name.toLowerCase().contains(
       'maintenance',
@@ -994,11 +1000,85 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
         currentPhase.missionCompleted >= currentPhase.totalMission &&
         currentPhase.totalMission > 0;
 
-    if (isMaintenancePhase && allMissionsCompleted) {
-      return true;
-    }
+    // Quit plan is only completed when:
+    // 1. Current phase is Maintenance
+    // 2. All missions in Maintenance phase are completed
+    return isMaintenancePhase && allMissionsCompleted;
+  }
 
-    return false;
+  /// Build phase completion banner when a phase is completed
+  Widget _buildPhaseCompletionBanner(QuitPlanHomePage plan, PhaseTheme theme) {
+    final phaseName = plan.currentPhaseDetail.name;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: theme.gradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.primaryColor.withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(theme.icon, color: Colors.white, size: 28),
+              const SizedBox(width: 8),
+              const Text('🎉', style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
+              const Text('✨', style: TextStyle(fontSize: 20)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Mission Completed!',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Congratulations on completing the $phaseName phase!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.95),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Text(
+              'Keep up the great work! You\'re making amazing progress! 💪',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Build congratulations banner when quit plan is completed

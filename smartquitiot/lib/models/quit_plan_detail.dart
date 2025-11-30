@@ -11,6 +11,7 @@ class QuitPlanDetail {
   final bool active;
   final int ftndScore;
   final FormMetricDTO? formMetricDTO;
+  final CurrentMetricDTO? currentMetricDTO;
   final List<QuitPhaseDetail>? phases;
 
   QuitPlanDetail({
@@ -24,6 +25,7 @@ class QuitPlanDetail {
     required this.active,
     required this.ftndScore,
     this.formMetricDTO,
+    this.currentMetricDTO,
     this.phases,
   });
 
@@ -40,6 +42,9 @@ class QuitPlanDetail {
       ftndScore: (json['ftndScore'] is num) ? (json['ftndScore'] as num).toInt() : 0,
       formMetricDTO: json['formMetricDTO'] != null
           ? FormMetricDTO.fromJson(json['formMetricDTO'])
+          : null,
+      currentMetricDTO: json['currentMetricDTO'] != null
+          ? CurrentMetricDTO.fromJson(json['currentMetricDTO'])
           : null,
       phases: json['phases'] != null
           ? (json['phases'] as List)
@@ -61,6 +66,7 @@ class QuitPlanDetail {
       'active': active,
       'ftndScore': ftndScore,
       'formMetricDTO': formMetricDTO?.toJson(),
+      'currentMetricDTO': currentMetricDTO?.toJson(),
       'phases': phases,
     };
   }
@@ -188,6 +194,52 @@ class FormMetricDTO {
       'estimatedNicotineIntakePerDay': estimatedNicotineIntakePerDay,
       'interests': interests,
       'triggered': triggered,
+    };
+  }
+}
+
+class CurrentMetricDTO {
+  final double? avgCravingLevel;
+  final double? avgCigarettesPerDay;
+  final double? avgMood;
+  final double? avgAnxiety;
+  final double? avgConfidentLevel;
+
+  CurrentMetricDTO({
+    this.avgCravingLevel,
+    this.avgCigarettesPerDay,
+    this.avgMood,
+    this.avgAnxiety,
+    this.avgConfidentLevel,
+  });
+
+  factory CurrentMetricDTO.fromJson(Map<String, dynamic> json) {
+    return CurrentMetricDTO(
+      avgCravingLevel: json['avgCravingLevel'] != null
+          ? (json['avgCravingLevel'] as num).toDouble()
+          : null,
+      avgCigarettesPerDay: json['avgCigarettesPerDay'] != null
+          ? (json['avgCigarettesPerDay'] as num).toDouble()
+          : null,
+      avgMood: json['avgMood'] != null
+          ? (json['avgMood'] as num).toDouble()
+          : null,
+      avgAnxiety: json['avgAnxiety'] != null
+          ? (json['avgAnxiety'] as num).toDouble()
+          : null,
+      avgConfidentLevel: json['avgConfidentLevel'] != null
+          ? (json['avgConfidentLevel'] as num).toDouble()
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'avgCravingLevel': avgCravingLevel,
+      'avgCigarettesPerDay': avgCigarettesPerDay,
+      'avgMood': avgMood,
+      'avgAnxiety': avgAnxiety,
+      'avgConfidentLevel': avgConfidentLevel,
     };
   }
 }

@@ -416,11 +416,7 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
             // Interests Selection
             _buildSectionTitle('Your Interests', Icons.interests),
             const SizedBox(height: 12),
-            _buildMultiSelectSection(
-              _availableInterests,
-              _selectedInterests,
-              const Color(0xFF00B386),
-            ),
+            _buildInterestsSection(),
 
             const SizedBox(height: 24),
 
@@ -653,6 +649,84 @@ class _EditFormMetricDialogState extends State<EditFormMetricDialog> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInterestsSection() {
+    final isAllInterestsSelected = _selectedInterests.contains("All Interests");
+    final color = const Color(0xFF00B386);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: _availableInterests.map((option) {
+          final isAllInterests = option == "All Interests";
+          // Nếu "All Interests" được chọn, hiển thị tất cả như selected (UI only)
+          // Nhưng chỉ lưu "All Interests" vào _selectedInterests
+          final isSelected = isAllInterestsSelected
+              ? true // Hiển thị tất cả như selected khi "All Interests" được chọn
+              : _selectedInterests.contains(option);
+          final isDisabled =
+              isAllInterestsSelected && !isAllInterests;
+
+          return FilterChip(
+            label: Text(
+              option,
+              style: TextStyle(
+                color: isSelected
+                    ? Colors.white
+                    : Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            selected: isSelected,
+            backgroundColor: Colors.white,
+            selectedColor: color,
+            disabledColor: Colors.grey[200],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            onSelected: isDisabled
+                ? null
+                : (val) {
+                    setState(() {
+                      if (isAllInterests) {
+                        // Handle "All Interests"
+                        if (val) {
+                          // Chọn "All Interests": xóa tất cả interest khác, chỉ giữ "All Interests"
+                          _selectedInterests.clear();
+                          _selectedInterests.add(option);
+                        } else {
+                          // Bỏ chọn "All Interests": xóa nó khỏi list
+                          _selectedInterests.remove(option);
+                        }
+                      } else {
+                        // Handle các interest khác
+                        if (val) {
+                          _selectedInterests.add(option);
+                        } else {
+                          _selectedInterests.remove(option);
+                        }
+                      }
+                    });
+                  },
+          );
+        }).toList(),
       ),
     );
   }

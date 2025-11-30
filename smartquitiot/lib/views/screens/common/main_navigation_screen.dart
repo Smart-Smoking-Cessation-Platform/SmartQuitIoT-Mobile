@@ -27,6 +27,12 @@ import 'package:SmartQuitIoT/views/screens/achievements/achievement_screen.dart'
 import 'package:SmartQuitIoT/views/screens/leaderboard/leaderboard_screen.dart';
 import '../../../providers/membership_provider.dart';
 import '../../../providers/websocket_provider.dart';
+import '../../../providers/achievement_refresh_provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/diary_record_provider.dart';
+import '../../../providers/metrics_provider.dart';
+import '../../../viewmodels/today_mission_view_model.dart';
+import '../../../viewmodels/quit_plan_homepage_view_model.dart';
 import '../../../models/membership_subscription.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
@@ -40,6 +46,7 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _currentIndex = 0;
   bool _websocketInitialized = false;
+  String? _previousUserId;
 
   @override
   void initState() {
@@ -47,7 +54,40 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     // Initialize WebSocket when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeWebSocket();
+      _checkAndRefreshData();
     });
+  }
+
+  /// Check if user changed and refresh data if needed
+  void _checkAndRefreshData() {
+    final authState = ref.read(authViewModelProvider);
+    final currentUserId = authState.username; // Use username as user identifier
+
+    // If user changed (new login), refresh all card providers
+    if (currentUserId != null && currentUserId != _previousUserId) {
+      debugPrint(
+        '🔄 [MainNavigation] User changed, refreshing all card data...',
+      );
+      _previousUserId = currentUserId;
+
+      // Refresh all card providers
+      ref.invalidate(diaryTodayViewModelProvider);
+      ref.invalidate(homeMetricsProvider);
+      ref.invalidate(homeHealthRecoveryProvider);
+      ref.invalidate(todayMissionViewModelProvider);
+      ref.invalidate(quitPlanHomepageViewModelProvider);
+
+      // Trigger refresh for view models that need manual refresh
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ref.read(diaryTodayViewModelProvider.notifier).refreshTodayStatus();
+          ref
+              .read(quitPlanHomepageViewModelProvider.notifier)
+              .loadQuitPlanHomePage();
+          ref.read(todayMissionViewModelProvider.notifier).loadTodayMissions();
+        }
+      });
+    }
   }
 
   Future<void> _initializeWebSocket() async {
@@ -59,6 +99,31 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       // Initialize WebSocket manager (it will get accountId from JWT token)
       final websocketManager = ref.read(websocketManagerProvider);
       await websocketManager.initialize();
+
+      // Set up notification tap handler
+      final localNotificationService = ref.read(
+        localNotificationServiceProvider,
+      );
+      localNotificationService.onNotificationTap = (String? payload) {
+        debugPrint(
+          '🔔 [MainNavigation] Notification tapped with payload: $payload',
+        );
+
+        // Check if this is an achievement notification
+        if (payload != null && payload.contains('achievement')) {
+          // Trigger achievement refresh
+          ref
+              .read(achievementRefreshProvider.notifier)
+              .refreshOnAchievementUnlocked();
+
+          // Navigate to achievements screen with completed tab
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted && context.mounted) {
+              context.go('/achievements?tab=completed');
+            }
+          });
+        }
+      };
 
       _websocketInitialized = true;
       debugPrint('✅ [MainNavigation] WebSocket initialized successfully');
@@ -278,6 +343,28 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 const DiaryCardSection(),
                 'Metrics Tracking',
               ),
+
+              // Smart Quit Plan feature - Always show, but protected (moved up)
+              _buildPremiumProtectedCard(
+                subscription,
+                const QuitPlanCard(),
+                'Smart Quit Plan',
+              ),
+
+              _buildPremiumProtectedCard(
+                subscription,
+                const CreateQuitPlanCard(),
+                'Smart Quit Plan',
+              ),
+
+              // Missions feature - Always show, but protected (moved up)
+              _buildPremiumProtectedCard(
+                subscription,
+                const TodayMissionCard(),
+                'Missions',
+              ),
+
+              // Metrics Tracking features - Always show, but protected
               _buildPremiumProtectedCard(
                 subscription,
                 const StatsTableCard(),
@@ -290,27 +377,14 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               ),
 
               const AchievementsCard(),
-              const LeaderboardCard(),
-
-              const CreateQuitPlanCard(),
-              // Smart Quit Plan feature - Always show, but protected
-              _buildPremiumProtectedCard(
-                subscription,
-                const QuitPlanCard(),
-                'Smart Quit Plan',
-              ),
-
-              // Missions feature - Always show, but protected
-              _buildPremiumProtectedCard(
-                subscription,
-                const TodayMissionCard(),
-                'Missions',
-              ),
 
               // const FormMetricCard(),
               // Always show these
               const CommunityTrendingCard(),
               const RecentNewsCard(),
+
+              // Leaderboard at the bottom (least important)
+              const LeaderboardCard(),
             ],
           ),
         ),
@@ -339,6 +413,19 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final subscriptionAsync = ref.watch(currentSubscriptionProvider);
+
+    // Listen to auth state changes and refresh data when user logs in
+    ref.listen(authViewModelProvider, (previous, next) {
+      if (previous != null &&
+          previous.isAuthenticated != next.isAuthenticated &&
+          next.isAuthenticated) {
+        // User just logged in, refresh all data
+        debugPrint(
+          '🔄 [MainNavigation] User logged in, refreshing all card data...',
+        );
+        _checkAndRefreshData();
+      }
+    });
 
     return subscriptionAsync.when(
       loading: () => const Scaffold(

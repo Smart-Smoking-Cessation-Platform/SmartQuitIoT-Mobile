@@ -672,41 +672,69 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: interestOptions.map((option) {
-                          final isSelected = _selectedInterests.contains(
-                            option,
+                      Builder(
+                        builder: (context) {
+                          final isAllInterestsSelected = _selectedInterests
+                              .contains("All Interests");
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: interestOptions.map((option) {
+                              final isAllInterests = option == "All Interests";
+                              // Nếu "All Interests" được chọn, hiển thị tất cả như selected (UI only)
+                              // Nhưng chỉ lưu "All Interests" vào _selectedInterests
+                              final isSelected = isAllInterestsSelected
+                                  ? true // Hiển thị tất cả như selected khi "All Interests" được chọn
+                                  : _selectedInterests.contains(option);
+                              final isDisabled =
+                                  isAllInterestsSelected && !isAllInterests;
+
+                              return FilterChip(
+                                label: Text(
+                                  option,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.black87,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                selected: isSelected,
+                                backgroundColor: Colors.white,
+                                selectedColor: const Color(0xFF00D09E),
+                                disabledColor: Colors.grey[200],
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                onSelected: isDisabled
+                                    ? null
+                                    : (val) {
+                                        setState(() {
+                                          if (isAllInterests) {
+                                            // Handle "All Interests"
+                                            if (val) {
+                                              // Chọn "All Interests": xóa tất cả interest khác, chỉ giữ "All Interests"
+                                              _selectedInterests.clear();
+                                              _selectedInterests.add(option);
+                                            } else {
+                                              // Bỏ chọn "All Interests": xóa nó khỏi list
+                                              _selectedInterests.remove(option);
+                                            }
+                                          } else {
+                                            // Handle các interest khác
+                                            if (val) {
+                                              _selectedInterests.add(option);
+                                            } else {
+                                              _selectedInterests.remove(option);
+                                            }
+                                          }
+                                        });
+                                      },
+                              );
+                            }).toList(),
                           );
-                          return FilterChip(
-                            label: Text(
-                              option,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : Colors.black87,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            selected: isSelected,
-                            backgroundColor: Colors.white,
-                            selectedColor: const Color(0xFF00D09E),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: Colors.grey.shade300),
-                            ),
-                            onSelected: (val) {
-                              setState(() {
-                                if (val) {
-                                  _selectedInterests.add(option);
-                                } else {
-                                  _selectedInterests.remove(option);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
+                        },
                       ),
                       if (_submitted && _selectedInterests.isEmpty)
                         const Padding(
@@ -785,7 +813,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   cigaretteHateToGiveUp: _hateToGiveUp!,
                                   morningSmokingFrequency: _smokeMoreMorning!,
                                   smokeWhenSick: _smokeEvenSick!,
-                                  interests: _selectedInterests,
+                                  interests: _selectedInterests.contains("All Interests") ? null : _selectedInterests,
                                   amountOfNicotinePerCigarettes: double.parse(
                                     _nicotineAmountController.text.replaceAll(
                                       ',',
