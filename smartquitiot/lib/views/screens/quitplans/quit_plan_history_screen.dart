@@ -40,10 +40,10 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
         // Case 2: User logged out (from authenticated to not authenticated)
         else if (wasAuthenticated && !isAuthenticated) {
           print(
-            '🔄 [QuitPlanHistoryScreen] User logged out - clearing quit plan history...',
+            '🔒 [QuitPlanHistoryScreen] User logged out - clearing quit plan history...',
           );
-          // Reset to loading state to clear old data
-          ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+          // Clear data immediately to prevent showing old user's data
+          ref.read(quitPlanHistoryViewModelProvider.notifier).clear();
         }
         // Case 3: User switched (username changed while authenticated)
         else if (isAuthenticated &&
@@ -51,9 +51,13 @@ class _QuitPlanHistoryScreenState extends ConsumerState<QuitPlanHistoryScreen> {
             currentUsername != null &&
             previousUsername != currentUsername) {
           print(
-            '🔄 [QuitPlanHistoryScreen] User switched from $previousUsername to $currentUsername - refreshing quit plan history...',
+            '🔄 [QuitPlanHistoryScreen] User switched from $previousUsername to $currentUsername - clearing and refreshing quit plan history...',
           );
-          ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+          // Clear old data first, then load new user's data
+          ref.read(quitPlanHistoryViewModelProvider.notifier).clear();
+          Future.microtask(() {
+            ref.read(quitPlanHistoryViewModelProvider.notifier).refresh();
+          });
         }
       }
     });

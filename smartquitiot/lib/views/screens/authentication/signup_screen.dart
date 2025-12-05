@@ -174,6 +174,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your username';
                               }
+                              if (value.length < 5) {
+                                return 'Username must be at least 5 characters';
+                              }
                               return null;
                             },
                           ),
@@ -186,6 +189,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your first name';
                               }
+                              if (value.length < 5) {
+                                return 'First Name must be at least 5 characters';
+                              }
                               return null;
                             },
                           ),
@@ -197,6 +203,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your last name';
+                              }
+                              if (value.length < 5) {
+                                return 'Last Name must be at least 5 characters';
                               }
                               return null;
                             },
@@ -341,8 +350,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter a password';
                               }
-                              if (value.length < 3) {
-                                return 'Password must be at least 3 characters';
+                              if (value.length < 5) {
+                                return 'Password must be at least 5 characters';
                               }
                               return null;
                             },

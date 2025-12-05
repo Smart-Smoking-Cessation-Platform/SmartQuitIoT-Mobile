@@ -43,18 +43,20 @@ class _PremiumMembershipScreenState
             .fetchCurrentSubscription();
 
         // Navigate to success screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentSuccessScreen(
-              status: 'SUCCESS',
-              packageName: subscription.membershipPackage?.name ?? 'Free Trial',
-              amount: subscription.totalAmount?.toString() ?? '0',
-              startDate: subscription.startDate?.toIso8601String(),
-              endDate: subscription.endDate?.toIso8601String(),
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentSuccessScreen(
+                status: 'SUCCESS',
+                packageName: subscription.membershipPackage?.name ?? 'Free Trial',
+                amount: subscription.totalAmount?.toString() ?? '0',
+                startDate: subscription.startDate?.toIso8601String(),
+                endDate: subscription.endDate?.toIso8601String(),
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
