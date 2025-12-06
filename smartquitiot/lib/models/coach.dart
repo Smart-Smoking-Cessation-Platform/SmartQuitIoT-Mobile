@@ -5,7 +5,10 @@ class Coach {
   final String lastName;
   final String avatarUrl;
   final double ratingAvg;
-  final int? accountId; // NEW: id của account (dùng để tạo conversation / gửi message)
+  final int?
+  accountId; // NEW: id của account (dùng để tạo conversation / gửi message)
+  final String?
+  specializations; // Optional: từ CoachSummaryDTO nếu backend thêm vào
 
   Coach({
     required this.id,
@@ -14,20 +17,26 @@ class Coach {
     required this.avatarUrl,
     required this.ratingAvg,
     this.accountId,
+    this.specializations,
   });
 
   String get fullName => '$firstName $lastName';
 
   factory Coach.fromJson(Map<String, dynamic> json) {
     return Coach(
-      id: json['id'] is int ? json['id'] as int : int.parse(json['id'].toString()),
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.parse(json['id'].toString()),
       firstName: (json['firstName'] ?? '') as String,
       lastName: (json['lastName'] ?? '') as String,
       avatarUrl: (json['avatarUrl'] ?? '') as String,
       ratingAvg: (json['ratingAvg'] ?? 0).toDouble(),
       accountId: json.containsKey('accountId') && json['accountId'] != null
-          ? (json['accountId'] is int ? json['accountId'] as int : int.parse(json['accountId'].toString()))
+          ? (json['accountId'] is int
+                ? json['accountId'] as int
+                : int.parse(json['accountId'].toString()))
           : null,
+      specializations: json['specializations'] as String?,
     );
   }
 

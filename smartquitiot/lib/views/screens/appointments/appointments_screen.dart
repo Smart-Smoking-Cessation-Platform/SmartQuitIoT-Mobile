@@ -475,6 +475,22 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
     try {
       final svc = AppointmentService();
+
+      // ✅ THÊM DEBUG LOG
+      print(
+        '[AppointmentsScreen] _onRatePressed - appointmentId: ${a.appointmentId}',
+      );
+      print(
+        '[AppointmentsScreen] _onRatePressed - selectedStars: $selectedStars',
+      );
+      print('[AppointmentsScreen] _onRatePressed - comment: "$comment"');
+      print(
+        '[AppointmentsScreen] _onRatePressed - comment length: ${comment.length}',
+      );
+      print(
+        '[AppointmentsScreen] _onRatePressed - comment isEmpty: ${comment.isEmpty}',
+      );
+
       await svc.rateAppointment(a.appointmentId, selectedStars, comment, token);
 
       // optimistic local update: mark rated immediately

@@ -363,10 +363,20 @@ class _CoachListScreenState extends ConsumerState<CoachListScreen>
   );
 
   Coach _convertApiCoachToLocalCoach(api_models.Coach apiCoach) {
+    print('[CoachListScreen] Converting coach id=${apiCoach.id}');
+    print(
+      '[CoachListScreen] apiCoach.specializations = ${apiCoach.specializations}',
+    );
+    print(
+      '[CoachListScreen] apiCoach.specializations is null? ${apiCoach.specializations == null}',
+    );
+
     return Coach(
       id: apiCoach.id.toString(),
       name: apiCoach.fullName,
-      specialty: 'Health Coach',
+      specialty:
+          apiCoach.specializations ??
+          'Health Coach', // Use specializations if available, fallback to default
       rating: apiCoach.ratingAvg,
       reviews: 0,
       experience: 'Professional Coach',

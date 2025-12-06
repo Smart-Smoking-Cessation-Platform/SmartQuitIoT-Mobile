@@ -326,9 +326,8 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
 
   Widget _buildStatsCards(CoachDetail? detail) {
     final patientsLabel = '—';
-    final ratingLabel =
-        (detail?.ratingAvg ?? widget.coach.rating?.toString() ?? '0.0')
-            .toString();
+    final ratingValue = detail?.ratingAvg ?? widget.coach.rating ?? 0.0;
+    final ratingLabel = ratingValue.toStringAsFixed(1);
     final yearsExp =
         (detail?.experienceYears?.toString() ??
                 widget.coach.experience?.split(' ').first ??
@@ -1024,9 +1023,8 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
 
   Widget _buildStatsCards(CoachDetail? detail) {
     final patientsLabel = '—';
-    final ratingLabel =
-        (detail?.ratingAvg ?? widget.coach.rating?.toString() ?? '0.0')
-            .toString();
+    final ratingValue = detail?.ratingAvg ?? widget.coach.rating ?? 0.0;
+    final ratingLabel = ratingValue.toStringAsFixed(1);
     final yearsExp =
         (detail?.experienceYears?.toString() ??
                 widget.coach.experience?.split(' ').first ??
