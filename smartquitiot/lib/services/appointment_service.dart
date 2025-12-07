@@ -328,6 +328,56 @@ class AppointmentService {
     throw Exception(msg);
   }
 
+  /// GET /appointments/{appointmentId}/feedback - get feedback for an appointment
+  Future<Map<String, dynamic>> getFeedbackByAppointmentId(
+    int appointmentId,
+    String accessToken,
+  ) async {
+    final url = '$_baseUrl/appointments/$appointmentId/feedback';
+    final headers = {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $accessToken',
+    };
+
+    http.Response resp;
+    try {
+      resp = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 15));
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+
+    dynamic body;
+    try {
+      body = resp.body.isNotEmpty ? jsonDecode(resp.body) : null;
+    } catch (_) {
+      body = null;
+    }
+
+    debugPrint(
+      '[AppointmentService] GET $url -> status=${resp.statusCode} body=$body',
+    );
+
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      if (body is Map<String, dynamic>) {
+        // Backend trả về { success, message, data: FeedbackResponse }
+        if (body.containsKey('data')) {
+          return Map<String, dynamic>.from(body['data']);
+        }
+        // Hoặc trả về trực tiếp FeedbackResponse
+        return Map<String, dynamic>.from(body);
+      } else {
+        throw Exception('Unexpected response format from server.');
+      }
+    }
+
+    final msg = (body is Map && body.containsKey('message'))
+        ? body['message'].toString()
+        : 'Failed to fetch feedback: HTTP ${resp.statusCode}';
+    throw Exception(msg);
+  }
+
   /// DELETE /appointments/{id} - cancel by member
   Future<void> cancelAppointment(int appointmentId, String accessToken) async {
     final url = '$_baseUrl/appointments/$appointmentId';
