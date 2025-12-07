@@ -57,7 +57,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
           // 1. HEADER ẢNH BÌA
           SliverAppBar(
             backgroundColor: const Color(0xFF00D09E),
-            // Đã sửa thành 250.0 để ảnh hiện rõ (20.0 là quá nhỏ)
             expandedHeight: 20.0, 
             pinned: true,
             elevation: 0,
