@@ -189,8 +189,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your first name';
                               }
-                              if (value.length < 5) {
-                                return 'First Name must be at least 5 characters';
+                              if (value.length < 2) {
+                                return 'First Name must be at least 2 characters';
                               }
                               return null;
                             },
@@ -204,8 +204,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your last name';
                               }
-                              if (value.length < 5) {
-                                return 'Last Name must be at least 5 characters';
+                              if (value.length < 2) {
+                                return 'Last Name must be at least 2 characters';
                               }
                               return null;
                             },

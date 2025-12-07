@@ -1,9 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:logger/logger.dart'; // Import package logger
 import 'token_storage_service.dart';
 
 class MembershipApiService {
+  final Logger _logger = Logger(
+    printer: PrettyPrinter(methodCount: 0), 
+  );
+  
   final TokenStorageService _tokenStorageService = TokenStorageService();
   final String _apiBaseUrl =
       dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
@@ -15,7 +20,8 @@ class MembershipApiService {
       final response = await http.get(uri);
       return response;
     } catch (e) {
-      print('Network error fetching packages: $e');
+      // Dùng .e cho lỗi (Error)
+      _logger.e('Network error fetching packages', error: e);
       rethrow;
     }
   }
@@ -26,7 +32,7 @@ class MembershipApiService {
       final response = await http.get(uri);
       return response;
     } catch (e) {
-      print('Network error fetching plans for package $packageId: $e');
+      _logger.e('Network error fetching plans for package $packageId', error: e);
       rethrow;
     }
   }
@@ -55,7 +61,7 @@ class MembershipApiService {
       );
       return response;
     } catch (e) {
-      print('❌ Network error creating payment link: $e');
+      _logger.e('❌ Network error creating payment link', error: e);
       rethrow;
     }
   }
@@ -63,18 +69,18 @@ class MembershipApiService {
   Future<http.Response> processPayment(Map<String, dynamic> body) async {
     final uri = Uri.parse('$_baseUrl/process');
     try {
-      print('🌐 [MembershipService] Calling processPayment API...');
-      print('🔗 [MembershipService] URL: $uri');
-      print('📦 [MembershipService] Body: $body');
+      // Dùng .i cho thông tin (Info) hoặc .d cho debug
+      _logger.i('🌐 [MembershipService] Calling processPayment API...\n🔗 URL: $uri\n📦 Body: $body');
       
       final accessToken = await _tokenStorageService.getAccessToken();
 
       if (accessToken == null) {
-        print('❌ [MembershipService] No access token found');
+        _logger.e('❌ [MembershipService] No access token found');
         throw Exception('No access token found — user not logged in');
       }
 
-      print('🔑 [MembershipService] Token: ${accessToken.substring(0, 20)}...');
+      // Log token có thể nhạy cảm, nên dùng .d (debug)
+      _logger.d('🔑 [MembershipService] Token: ${accessToken.substring(0, 20)}...');
 
       final response = await http.post(
         uri,
@@ -86,15 +92,15 @@ class MembershipApiService {
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          print('⏰ [MembershipService] Request timeout after 30 seconds');
+          _logger.w('⏰ [MembershipService] Request timeout after 30 seconds'); // Dùng .w cho Warning
           throw Exception('Request timeout - please check your internet connection');
         },
       );
       
-      print('📊 [MembershipService] Response status: ${response.statusCode}');
+      _logger.i('📊 [MembershipService] Response status: ${response.statusCode}');
       return response;
     } catch (e) {
-      print('❌ [MembershipService] Network error processing payment: $e');
+      _logger.e('❌ [MembershipService] Network error processing payment', error: e);
       rethrow;
     }
   }
@@ -109,8 +115,7 @@ class MembershipApiService {
         throw Exception('No access token found — user not logged in');
       }
 
-      print('📡 [MembershipService] Fetching current subscription...');
-      print('🌐 [MembershipService] URL: $uri');
+      _logger.i('📡 [MembershipService] Fetching current subscription...\n🌐 URL: $uri');
 
       final response = await http.get(
         uri,
@@ -120,20 +125,17 @@ class MembershipApiService {
         },
       );
 
-      print('📊 [MembershipService] Response Status: ${response.statusCode}');
+      _logger.i('📊 [MembershipService] Response Status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
-        print(
-          '✅ [MembershipService] Successfully fetched current subscription',
-        );
+        _logger.d('✅ [MembershipService] Successfully fetched current subscription');
       } else {
-        print('❌ [MembershipService] Failed: ${response.body}');
+        _logger.w('❌ [MembershipService] Failed: ${response.body}');
       }
 
       return response;
     } catch (e) {
-      print(
-        '❌ [MembershipService] Network error fetching current subscription: $e',
-      );
+      _logger.e('❌ [MembershipService] Network error fetching current subscription', error: e);
       rethrow;
     }
   }
