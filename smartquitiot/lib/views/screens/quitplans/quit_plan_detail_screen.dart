@@ -72,6 +72,9 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
   }
 
   void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
+    // Don't show dialog in read-only mode
+    if (widget.isReadOnly) return;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -316,158 +319,173 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
           // Map fixed phases to actual phase data
           final phaseMap = _mapPhasesToFixedPhases(sortedPhases);
 
-          return Column(
-            children: [
-              // Header Section
-              QuitPlanHeader(plan: data),
-              
-              // Congratulations Banner
-              if (isCompleted) _buildCongratulationsBanner(data),
-              
-              // Insights Section
-              QuitPlanInsights(plan: data),
-              
-              // Stats Section
-              _buildStats(data),
-              
-              // TabBar for Phase Selection
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+          return NestedScrollView(
+            headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+              return [
+                // Header content as sliver
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      // Header Section
+                      QuitPlanHeader(plan: data),
+                      
+                      // Congratulations Banner
+                      if (isCompleted) _buildCongratulationsBanner(data),
+                      
+                      // Insights Section
+                      QuitPlanInsights(plan: data),
+                      
+                      // Stats Section - will have square bottom when TabBar docks
+                      _buildStats(data, dockedToTabBar: true),
+                    ],
+                  ),
                 ),
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  labelColor: const Color(0xFF00D09E),
-                  unselectedLabelColor: Colors.grey[600],
-                  indicatorColor: const Color(0xFF00D09E),
-                  indicatorWeight: 3,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  labelStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                  ),
-                  tabs: _fixedPhases.map((phaseName) {
-                    final phase = phaseMap[phaseName];
-                    final theme = resolvePhaseTheme(phaseName);
-                    final hasData = phase != null;
-                    
-                    return Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            theme.icon,
-                            size: 18,
-                            color: hasData
-                                ? theme.primaryColor
-                                : Colors.grey[400],
+                
+                // Sticky TabBar that docks below Header Card
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyTabBarDelegate(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
                           ),
-                          const SizedBox(width: 6),
-                          Text(phaseName),
-                          if (hasData && phase.status != null) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _isFailedStatus(phase.status)
-                                    ? Colors.redAccent.withOpacity(0.15)
-                                    : theme.primaryColor.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _formatStatus(phase.status),
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: _isFailedStatus(phase.status)
-                                      ? Colors.redAccent
-                                      : theme.primaryColor,
-                                ),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              
-              // TabBarView for Phase Details
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: _fixedPhases.map((phaseName) {
-                    final phase = phaseMap[phaseName];
-                    final theme = resolvePhaseTheme(phaseName);
-                    
-                    if (phase == null) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              theme.icon,
-                              size: 64,
-                              color: Colors.grey[300],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              '$phaseName phase not started yet',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                      child: TabBar(
+                        controller: _tabController,
+                        isScrollable: true,
+                        labelColor: const Color(0xFF00D09E),
+                        unselectedLabelColor: Colors.grey[600],
+                        indicatorColor: const Color(0xFF00D09E),
+                        indicatorWeight: 3,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        labelPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        labelStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    }
-                    
-                    return PhaseDetailView(
-                      plan: data,
-                      phase: phase,
-                      theme: theme,
-                      locallyCompletedMissionIds: locallyCompletedMissionIds,
-                      isReadOnly: widget.isReadOnly,
-                      onKeepPhase: _isFailedStatus(phase.status) && 
-                                   !(phase.keepPhase ?? false) &&
-                                   !widget.isReadOnly
-                          ? () => _handleKeepPhaseAction(data, phase)
-                          : null,
-                      onRedoPhase: _isFailedStatus(phase.status) && 
-                                  !(phase.keepPhase ?? false) &&
-                                  !widget.isReadOnly
-                          ? () => _handleRedoPhaseAction(phase)
-                          : null,
-                      onMissionCompleted: (QuitMissionItem mission, int phaseId) {
-                        _showMissionCompleteDialog(mission, phaseId);
-                      },
-                      keepLoading: _isPhaseActionLoading(phase.id, _phaseActionKeepKey),
-                      redoLoading: _isPhaseActionLoading(phase.id, _phaseActionRedoKey),
-                      hasPhaseActionInProgress: _hasPhaseActionInProgress,
-                    );
-                  }).toList(),
+                        unselectedLabelStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        tabs: _fixedPhases.map((phaseName) {
+                          final phase = phaseMap[phaseName];
+                          final theme = resolvePhaseTheme(phaseName);
+                          final hasData = phase != null;
+                          
+                          return Tab(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  theme.icon,
+                                  size: 18,
+                                  color: hasData
+                                      ? theme.primaryColor
+                                      : Colors.grey[400],
+                                ),
+                                const SizedBox(width: 6),
+                                Text(phaseName),
+                                if (hasData && phase.status != null) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _isFailedStatus(phase.status)
+                                          ? Colors.redAccent.withOpacity(0.15)
+                                          : theme.primaryColor.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      _formatStatus(phase.status),
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: _isFailedStatus(phase.status)
+                                            ? Colors.redAccent
+                                            : theme.primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: _fixedPhases.map((phaseName) {
+                final phase = phaseMap[phaseName];
+                final theme = resolvePhaseTheme(phaseName);
+                
+                if (phase == null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          theme.icon,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '$phaseName phase not started yet',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                return PhaseDetailView(
+                  plan: data,
+                  phase: phase,
+                  theme: theme,
+                  locallyCompletedMissionIds: locallyCompletedMissionIds,
+                  isReadOnly: widget.isReadOnly,
+                  onKeepPhase: _isFailedStatus(phase.status) && 
+                               !(phase.keepPhase ?? false) &&
+                               !widget.isReadOnly
+                      ? () => _handleKeepPhaseAction(data, phase)
+                      : null,
+                  onRedoPhase: _isFailedStatus(phase.status) && 
+                              !(phase.keepPhase ?? false) &&
+                              !widget.isReadOnly
+                      ? () => _handleRedoPhaseAction(phase)
+                      : null,
+                  onMissionCompleted: widget.isReadOnly
+                      ? (QuitMissionItem mission, int phaseId) {
+                          // No-op in read-only mode
+                        }
+                      : (QuitMissionItem mission, int phaseId) {
+                          _showMissionCompleteDialog(mission, phaseId);
+                        },
+                  keepLoading: _isPhaseActionLoading(phase.id, _phaseActionKeepKey),
+                  redoLoading: _isPhaseActionLoading(phase.id, _phaseActionRedoKey),
+                  hasPhaseActionInProgress: _hasPhaseActionInProgress,
+                );
+              }).toList(),
+            ),
           );
         },
       ),
@@ -477,7 +495,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
   // Removed _buildHeader - replaced by QuitPlanHeader widget
   // Removed _buildPlanInsightsSection and all related methods - replaced by QuitPlanInsights widget
 
-  Widget _buildStats(QuitPlanDetail data) {
+  Widget _buildStats(QuitPlanDetail data, {bool dockedToTabBar = false}) {
     final totalMissions = data.totalMissions;
     final completedMissions = data.completedMissions;
     final progress = totalMissions > 0
@@ -485,18 +503,29 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
         : 0.0;
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: dockedToTabBar 
+          ? const EdgeInsets.only(left: 16, right: 16, top: 16)
+          : const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: dockedToTabBar
+            ? const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+                bottomLeft: Radius.zero,
+                bottomRight: Radius.zero,
+              )
+            : BorderRadius.circular(16),
+        boxShadow: dockedToTabBar
+            ? [] // Remove shadow when docked, TabBar will have shadow
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         children: [
@@ -2007,6 +2036,30 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
   }
 
   // Removed _buildTriggerChip - not used
+}
+
+// Delegate for sticky TabBar that docks below Header Card
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _StickyTabBarDelegate({required this.child});
+
+  @override
+  double get minExtent => 56.0; // Minimum height of TabBar (with padding)
+
+  @override
+  double get maxExtent => 56.0; // Maximum height of TabBar (with padding)
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
+    return child != oldDelegate.child;
+  }
 }
 
 class _BlockingLoader extends StatelessWidget {
