@@ -22,7 +22,7 @@ class RatingDisplay extends StatelessWidget {
         Icon(Icons.star, color: Colors.amber, size: iconSize),
         const SizedBox(width: 4),
         Text(
-          '$rating',
+          rating.toStringAsFixed(1),
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black87,

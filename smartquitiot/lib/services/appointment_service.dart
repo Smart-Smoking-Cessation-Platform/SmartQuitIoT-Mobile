@@ -241,6 +241,28 @@ class AppointmentService {
         'content': comment.trim(),
     };
 
+    // ✅ THÊM DEBUG LOG ĐỂ XEM REQUEST BODY - DÙNG print() ĐỂ CHẮC CHẮN HIỂN THỊ
+    print(
+      '🔵 [AppointmentService] ========== RATE APPOINTMENT REQUEST ==========',
+    );
+    print('🔵 URL: $url');
+    print('🔵 Request Body (Map): $body');
+    print('�� Request Body (JSON): ${jsonEncode(body)}');
+    print('�� Comment parameter: "$comment"');
+    print('🔵 Comment type: ${comment.runtimeType}');
+    print('🔵 Comment is null: ${comment == null}');
+    print('🔵 Comment is empty: ${comment?.isEmpty ?? true}');
+    print('🔵 Comment trimmed: "${comment?.trim() ?? 'null'}"');
+    print(
+      '🔵 Will include content in body: ${comment != null && comment.trim().isNotEmpty}',
+    );
+    print('�� Body keys: ${body.keys.toList()}');
+    print('🔵 Body contains "content": ${body.containsKey("content")}');
+    if (body.containsKey('content')) {
+      print('�� Content value: "${body["content"]}"');
+    }
+    print('🔵 ============================================================');
+
     http.Response resp;
     try {
       resp = await http
@@ -260,6 +282,18 @@ class AppointmentService {
     debugPrint(
       '[AppointmentService] POST $url -> status=${resp.statusCode} body=$parsed',
     );
+
+    // ✅ THÊM LOG ĐỂ XEM RESPONSE CHI TIẾT
+    print('🔵 [AppointmentService] ========== RESPONSE ==========');
+    print('🔵 Status Code: ${resp.statusCode}');
+    print('�� Response Body (raw): ${resp.body}');
+    print('🔵 Response Body (parsed): $parsed');
+    if (parsed is Map<String, dynamic>) {
+      print('🔵 Success: ${parsed['success']}');
+      print('🔵 Message: ${parsed['message']}');
+      print('🔵 Data: ${parsed['data']}');
+    }
+    print('🔵 ===========================================');
 
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       // Accept success either as plain 2xx or wrapper { success: true, data: ... }

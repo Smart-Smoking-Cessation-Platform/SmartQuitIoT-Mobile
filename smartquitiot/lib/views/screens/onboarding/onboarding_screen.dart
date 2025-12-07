@@ -124,9 +124,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         }
       }
     });
-
-    // Note: Nicotine amount doesn't need formatting - it's a small decimal number
-    // Allow direct decimal input without interference
   }
 
   @override
@@ -188,32 +185,35 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _validateAndGetFirstErrorPage() {
     setState(() => _submitted = true);
 
-    // Page 3 errors
-    if (_smokeAvgController.text.isEmpty ||
-        _yearsController.text.isEmpty ||
-        _moneyController.text.isEmpty ||
-        _cigarettesPerPackController.text.isEmpty ||
-        _nicotineAmountController.text.isEmpty ||
-        _selectedFirstCigaretteOptionMinutes == null) {
-      return 2;
-    }
+    // Validate Page 3
+    bool isPage3Invalid =
+        _quitPlanNameController.text.trim().isEmpty ||
+        _smokeAvgController.text.trim().isEmpty ||
+        _yearsController.text.trim().isEmpty ||
+        _moneyController.text.trim().isEmpty ||
+        _cigarettesPerPackController.text.trim().isEmpty ||
+        _nicotineAmountController.text.trim().isEmpty ||
+        _selectedFirstCigaretteOptionMinutes == null;
 
-    // Page 4 errors
-    if (_difficultRefrain == null ||
+    if (isPage3Invalid) return 2;
+
+    // Validate Page 4
+    bool isPage4Invalid =
+        _difficultRefrain == null ||
         _hateToGiveUp == null ||
         _smokeMoreMorning == null ||
         _smokeEvenSick == null ||
-        _selectedInterests.isEmpty) {
-      return 3;
-    }
+        _selectedInterests.isEmpty;
 
-    return -1; // no error
+    if (isPage4Invalid) return 3;
+
+    return -1; // No error
   }
 
   Widget _buildLoadingWidget() {
     return Column(
       children: [
-        // Animated motivational message at top
+        // Animated motivational message
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 800),
           transitionBuilder: (Widget child, Animation<double> animation) {
@@ -239,7 +239,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 32),
 
-        // Enhanced circular progress with gradient
+        // Circular progress
         Container(
           width: 120,
           height: 120,
@@ -256,7 +256,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Outer glow
               SizedBox(
                 width: 120,
                 height: 120,
@@ -269,7 +268,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                 ),
               ),
-              // Inner circle with gradient
               Container(
                 width: 90,
                 height: 90,
@@ -326,7 +324,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 8),
 
-        // Current step message with animation
+        // Loading message
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
           child: Text(
@@ -342,7 +340,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Linear progress with steps
+        // Linear steps
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Column(
@@ -362,30 +360,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         color: isCompleted
                             ? const Color(0xFF00D09E)
                             : isCurrent
-                            ? const Color(0xFF00D09E).withOpacity(0.3)
-                            : Colors.grey[300],
+                                ? const Color(0xFF00D09E).withOpacity(0.3)
+                                : Colors.grey[300],
                       ),
                       child: isCompleted
-                          ? const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.white,
-                            )
+                          ? const Icon(Icons.check,
+                              size: 16, color: Colors.white)
                           : isCurrent
-                          ? Center(
-                              child: SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
+                              ? Center(
+                                  child: SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
                                         Color(0xFF00D09E),
                                       ),
-                                ),
-                              ),
-                            )
-                          : null,
+                                    ),
+                                  ),
+                                )
+                              : null,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -410,7 +405,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Tips container
+        // Tips box
         Container(
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -453,597 +448,589 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final quitPlanState = ref.watch(quitPlanViewModelProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1FFF3),
-      body: Column(
+      // --- CHANGE: Use Stack for Overlay Loading ---
+      body: Stack(
         children: [
-          // Header
-          Container(
-            height: 90,
-            width: double.infinity,
-            color: const Color(0xFF00D09E),
-            alignment: Alignment.center,
-            child: Text(
-              _currentIndex == 0
-                  ? 'Welcome to SmartQuit'
-                  : _currentIndex == 1
-                  ? "Talk Smoking Status"
-                  : "Questions",
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-
-          // PageView
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) => setState(() => _currentIndex = index),
+          // 1. MAIN CONTENT (Wrapped in IgnorePointer)
+          IgnorePointer(
+            ignoring: _isCreatingPlan, // Block interaction when loading
+            child: Column(
               children: [
-                // Page 1
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        height: size.height * 0.3,
-                        child: Image.asset('lib/assets/images/Group.png'),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Ready to save your health?',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                // Header
+                Container(
+                  height: 90,
+                  width: double.infinity,
+                  color: const Color(0xFF00D09E),
+                  alignment: Alignment.center,
+                  child: Text(
+                    _currentIndex == 0
+                        ? 'Welcome to SmartQuit'
+                        : _currentIndex == 1
+                            ? "Talk Smoking Status"
+                            : "Questions",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
 
-                // Page 2
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                // PageView
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    // Disable swipe when loading
+                    physics: _isCreatingPlan
+                        ? const NeverScrollableScrollPhysics()
+                        : const AlwaysScrollableScrollPhysics(),
+                    onPageChanged: (index) =>
+                        setState(() => _currentIndex = index),
                     children: [
-                      SizedBox(
-                        height: size.height * 0.3,
-                        child: Image.asset('lib/assets/images/health.png'),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Tell us about your smoking habits',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Page 3
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: ListView(
-                    children: [
-                      QuestionInputCard(
-                        question: 'Quit plan name',
-                        controller: _quitPlanNameController,
-                        hintText: 'Enter your plan name',
-                        errorText:
-                            _submitted && _quitPlanNameController.text.isEmpty
-                            ? 'You must enter a name'
-                            : null,
-                      ),
-                      QuestionInputCard(
-                        question: 'Average cigarettes smoked per day',
-                        controller: _smokeAvgController,
-                        hintText: 'Enter number of cigarettes',
-                        keyboardType: TextInputType.number,
-                        errorText:
-                            _submitted && _smokeAvgController.text.isEmpty
-                            ? 'You must enter a value'
-                            : null,
-                      ),
-                      QuestionInputCard(
-                        question: 'How many years have you smoked?',
-                        controller: _yearsController,
-                        hintText: 'Enter number of years',
-                        keyboardType: TextInputType.number,
-                        errorText: _submitted && _yearsController.text.isEmpty
-                            ? 'You must enter a value'
-                            : null,
-                      ),
-                      QuestionInputCard(
-                        question: 'Cost per cigarette pack',
-                        controller: _moneyController,
-                        hintText: 'Enter cost',
-                        keyboardType: TextInputType.number,
-                        errorText: _submitted && _moneyController.text.isEmpty
-                            ? 'You must enter a value'
-                            : null,
-                      ),
-                      QuestionInputCard(
-                        question: 'Cigarettes per pack',
-                        controller: _cigarettesPerPackController,
-                        hintText: 'Enter number of cigarettes',
-                        keyboardType: TextInputType.number,
-                        errorText:
-                            _submitted &&
-                                _cigarettesPerPackController.text.isEmpty
-                            ? 'You must enter a value'
-                            : null,
-                      ),
-                      QuestionInputCard(
-                        question: 'Amount of nicotine per cigarette (mg)',
-                        controller: _nicotineAmountController,
-                        hintText: 'Enter nicotine amount (e.g., 1.2)',
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        errorText:
-                            _submitted && _nicotineAmountController.text.isEmpty
-                            ? 'You must enter a value'
-                            : null,
-                      ),
-                      QuestionOptionsCard(
-                        question:
-                            'How soon after waking do you smoke your first cigarette?',
-                        options: firstCigaretteOptions.keys.toList(),
-                        onSelected: (option) {
-                          setState(() {
-                            _selectedFirstCigaretteOptionMinutes =
-                                firstCigaretteOptions[option]!;
-                          });
-                        },
-                        errorText:
-                            _submitted &&
-                                _selectedFirstCigaretteOptionMinutes == null
-                            ? 'You must select an option'
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Page 4
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: ListView(
-                    children: [
-                      QuestionOptionsCard(
-                        question: 'Difficult to refrain in forbidden places?',
-                        options: ['Yes', 'No'],
-                        onSelected: (option) =>
-                            setState(() => _difficultRefrain = option == 'Yes'),
-                        errorText: _submitted && _difficultRefrain == null
-                            ? 'You must select an option'
-                            : null,
-                      ),
-                      QuestionOptionsCard(
-                        question: 'Which cigarette would you hate to give up?',
-                        options: ['First in the morning', 'Any other'],
-                        onSelected: (option) => setState(
-                          () =>
-                              _hateToGiveUp = option == 'First in the morning',
-                        ),
-                        errorText: _submitted && _hateToGiveUp == null
-                            ? 'You must select an option'
-                            : null,
-                      ),
-                      QuestionOptionsCard(
-                        question:
-                            'Do you smoke more frequently in the morning?',
-                        options: ['Yes', 'No'],
-                        onSelected: (option) =>
-                            setState(() => _smokeMoreMorning = option == 'Yes'),
-                        errorText: _submitted && _smokeMoreMorning == null
-                            ? 'You must select an option'
-                            : null,
-                      ),
-                      QuestionOptionsCard(
-                        question: 'Do you smoke even if sick?',
-                        options: ['Yes', 'No'],
-                        onSelected: (option) =>
-                            setState(() => _smokeEvenSick = option == 'Yes'),
-                        errorText: _submitted && _smokeEvenSick == null
-                            ? 'You must select an option'
-                            : null,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Interests
-                      const Text(
-                        "Select your interests",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      // Page 1
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              height: size.height * 0.3,
+                              child: Image.asset('lib/assets/images/Group.png'),
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'Ready to save your health?',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Builder(
-                        builder: (context) {
-                          final isAllInterestsSelected = _selectedInterests
-                              .contains("All Interests");
-                          return Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: interestOptions.map((option) {
-                              final isAllInterests = option == "All Interests";
-                              // Nếu "All Interests" được chọn, hiển thị tất cả như selected (UI only)
-                              // Nhưng chỉ lưu "All Interests" vào _selectedInterests
-                              final isSelected = isAllInterestsSelected
-                                  ? true // Hiển thị tất cả như selected khi "All Interests" được chọn
-                                  : _selectedInterests.contains(option);
-                              final isDisabled =
-                                  isAllInterestsSelected && !isAllInterests;
 
-                              return FilterChip(
-                                label: Text(
-                                  option,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.black87,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                selected: isSelected,
-                                backgroundColor: Colors.white,
-                                selectedColor: const Color(0xFF00D09E),
-                                disabledColor: Colors.grey[200],
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.grey.shade300),
-                                ),
-                                onSelected: isDisabled
-                                    ? null
-                                    : (val) {
-                                        setState(() {
-                                          if (isAllInterests) {
-                                            // Handle "All Interests"
-                                            if (val) {
-                                              // Chọn "All Interests": xóa tất cả interest khác, chỉ giữ "All Interests"
-                                              _selectedInterests.clear();
-                                              _selectedInterests.add(option);
-                                            } else {
-                                              // Bỏ chọn "All Interests": xóa nó khỏi list
-                                              _selectedInterests.remove(option);
-                                            }
-                                          } else {
-                                            // Handle các interest khác
-                                            if (val) {
-                                              _selectedInterests.add(option);
-                                            } else {
-                                              _selectedInterests.remove(option);
-                                            }
-                                          }
-                                        });
-                                      },
-                              );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                      if (_submitted && _selectedInterests.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            'You must select at least one interest',
-                            style: TextStyle(color: Colors.red),
-                          ),
+                      // Page 2
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              height: size.height * 0.3,
+                              child:
+                                  Image.asset('lib/assets/images/health.png'),
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'Tell us about your smoking habits',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                      const SizedBox(height: 20),
-
-                      // Use NRT
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: _useNRT,
-                            onChanged: (val) =>
-                                setState(() => _useNRT = val ?? false),
-                          ),
-                          const Text("Use Nicotine Replacement Therapy"),
-                          const SizedBox(width: 5),
-                          const Tooltip(
-                            message:
-                                "NRT helps reduce withdrawal symptoms by replacing nicotine safely.",
-                            child: Icon(Icons.info_outline, size: 18),
-                          ),
-                        ],
                       ),
-                      const SizedBox(height: 40),
 
-                      // Submit
-                      _isCreatingPlan
-                          ? _buildLoadingWidget()
-                          : PrimaryButton(
-                              text: 'Finish',
-                              onPressed: () async {
-                                final errorPage =
-                                    _validateAndGetFirstErrorPage();
-                                if (errorPage != -1) {
-                                  _pageController.animateToPage(
-                                    errorPage,
-                                    duration: const Duration(milliseconds: 400),
-                                    curve: Curves.easeInOut,
-                                  );
-                                  NotificationHelper.showTopNotification(
-                                    context,
-                                    title: "Error",
-                                    message:
-                                        "Please fix the highlighted errors",
-                                    isError: true,
-                                  );
-                                  return;
-                                }
-
-                                final request = CreateQuitPlanRequest(
-                                  startDate: DateTime.now().toIso8601String(),
-                                  useNRT: _useNRT,
-                                  quitPlanName: _quitPlanNameController.text
-                                      .trim(),
-                                  smokeAvgPerDay:
-                                      int.tryParse(_smokeAvgController.text) ??
-                                      0,
-                                  numberOfYearsOfSmoking:
-                                      int.tryParse(_yearsController.text) ?? 0,
-                                  moneyPerPackage: double.parse(
-                                    _moneyController.text.replaceAll(',', ''),
-                                  ),
-                                  cigarettesPerPackage:
-                                      int.tryParse(
-                                        _cigarettesPerPackController.text,
-                                      ) ??
-                                      0,
-                                  minutesAfterWakingToSmoke:
-                                      _selectedFirstCigaretteOptionMinutes!,
-                                  smokingInForbiddenPlaces: _difficultRefrain!,
-                                  cigaretteHateToGiveUp: _hateToGiveUp!,
-                                  morningSmokingFrequency: _smokeMoreMorning!,
-                                  smokeWhenSick: _smokeEvenSick!,
-                                  interests: _selectedInterests.contains("All Interests") ? null : _selectedInterests,
-                                  amountOfNicotinePerCigarettes: double.parse(
-                                    _nicotineAmountController.text.replaceAll(
-                                      ',',
-                                      '',
-                                    ),
-                                  ),
-                                );
-
-                                // Show flushbar immediately when button is clicked
-                                Flushbar(
-                                  message:
-                                      "Creating your quit plan, it may take time. Please wait...",
-                                  duration: const Duration(seconds: 3),
-                                  backgroundColor: const Color(0xFF00D09E),
-                                  margin: const EdgeInsets.all(8),
-                                  borderRadius: BorderRadius.circular(8),
-                                  icon: const Icon(
-                                    Icons.info_outline,
-                                    color: Colors.white,
-                                  ),
-                                  flushbarPosition: FlushbarPosition.TOP,
-                                ).show(context);
-
+                      // Page 3
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: ListView(
+                          children: [
+                            QuestionInputCard(
+                              question: 'Quit plan name',
+                              controller: _quitPlanNameController,
+                              hintText: 'Enter your plan name',
+                              errorText: _submitted &&
+                                      _quitPlanNameController.text
+                                          .trim()
+                                          .isEmpty
+                                  ? 'Please enter a plan name'
+                                  : null,
+                            ),
+                            QuestionInputCard(
+                              question: 'Average cigarettes smoked per day',
+                              controller: _smokeAvgController,
+                              hintText: 'Enter number',
+                              keyboardType: TextInputType.number,
+                              errorText: _submitted &&
+                                      _smokeAvgController.text.trim().isEmpty
+                                  ? 'Please enter the number of cigarettes'
+                                  : null,
+                            ),
+                            QuestionInputCard(
+                              question: 'How many years have you smoked?',
+                              controller: _yearsController,
+                              hintText: 'Enter years',
+                              keyboardType: TextInputType.number,
+                              errorText: _submitted &&
+                                      _yearsController.text.trim().isEmpty
+                                  ? 'Please enter the number of years'
+                                  : null,
+                            ),
+                            QuestionInputCard(
+                              question: 'Cost per cigarette pack',
+                              controller: _moneyController,
+                              hintText: 'Enter cost',
+                              keyboardType: TextInputType.number,
+                              errorText: _submitted &&
+                                      _moneyController.text.trim().isEmpty
+                                  ? 'Please enter the cost'
+                                  : null,
+                            ),
+                            QuestionInputCard(
+                              question: 'Cigarettes per pack',
+                              controller: _cigarettesPerPackController,
+                              hintText: 'Enter number',
+                              keyboardType: TextInputType.number,
+                              errorText: _submitted &&
+                                      _cigarettesPerPackController.text
+                                          .trim()
+                                          .isEmpty
+                                  ? 'Please enter cigarettes per pack'
+                                  : null,
+                            ),
+                            QuestionInputCard(
+                              question: 'Amount of nicotine per cigarette (mg)',
+                              controller: _nicotineAmountController,
+                              hintText: 'Enter amount (e.g., 1.2)',
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              errorText: _submitted &&
+                                      _nicotineAmountController.text
+                                          .trim()
+                                          .isEmpty
+                                  ? 'Please enter nicotine amount'
+                                  : null,
+                            ),
+                            QuestionOptionsCard(
+                              question:
+                                  'How soon after waking do you smoke your first cigarette?',
+                              options: firstCigaretteOptions.keys.toList(),
+                              onSelected: (option) {
                                 setState(() {
-                                  _isCreatingPlan = true;
-                                  _currentStep = 0;
-                                  _creationProgress = 0.0;
-                                  _currentTipIndex = 0;
-                                  _loadingMessage = _steps[0];
+                                  _selectedFirstCigaretteOptionMinutes =
+                                      firstCigaretteOptions[option]!;
                                 });
-
-                                // Start tip rotation
-                                _startTipRotation();
-
-                                try {
-                                  // Call API and start animation in parallel
-                                  print(
-                                    '📞 [OnboardingScreen] Calling API to create quit plan...',
-                                  );
-
-                                  // Start API call (will await later)
-                                  final apiCallFuture = ref
-                                      .read(quitPlanViewModelProvider.notifier)
-                                      .createPlan(request);
-
-                                  print(
-                                    '🎬 [OnboardingScreen] Starting animation while API processes...',
-                                  );
-
-                                  // Step 1: Analyzing (0-25%) - 45s
-                                  _animateProgress(0, 0.25, _steps[0]);
-                                  await Future.delayed(
-                                    const Duration(seconds: 8),
-                                  );
-
-                                  // Step 2: Creating missions (25-50%) - 50s
-                                  if (_isCreatingPlan && mounted) {
-                                    setState(() => _currentStep = 1);
-                                    _animateProgress(0.25, 0.50, _steps[1]);
-                                    print(
-                                      '📝 [OnboardingScreen] Creating missions and phases...',
-                                    );
-                                  }
-                                  await Future.delayed(
-                                    const Duration(seconds: 8),
-                                  );
-
-                                  // Step 3: Building phases (50-75%) - 55s
-                                  if (_isCreatingPlan && mounted) {
-                                    setState(() => _currentStep = 2);
-                                    _animateProgress(0.50, 0.75, _steps[2]);
-                                    print(
-                                      '⏰ [OnboardingScreen] Building phases...',
-                                    );
-                                  }
-                                  await Future.delayed(
-                                    const Duration(seconds: 8),
-                                  );
-
-                                  // Step 4: Finalizing (75-100%) - 50s
-                                  if (_isCreatingPlan && mounted) {
-                                    setState(() => _currentStep = 3);
-                                    _animateProgress(0.75, 1.0, _steps[3]);
-                                    print(
-                                      '🔧 [OnboardingScreen] Finalizing plan...',
-                                    );
-                                  }
-                                  await Future.delayed(
-                                    const Duration(seconds: 8),
-                                  );
-
-                                  // NOW await API call to ensure it completes
-                                  print(
-                                    '⏳ [OnboardingScreen] Ensuring API call completes...',
-                                  );
-                                  await apiCallFuture;
-                                  print(
-                                    '✅ [OnboardingScreen] API call completed successfully!',
-                                  );
-
-                                  // Complete
-                                  if (mounted) {
-                                    setState(() {
-                                      _creationProgress = 1.0;
-                                      _loadingMessage =
-                                          'Quit plan ready!\nLoading your dashboard...';
-                                    });
-                                    print(
-                                      '✨ [OnboardingScreen] Quit plan ready!',
-                                    );
-                                  }
-                                  await Future.delayed(
-                                    const Duration(seconds: 8),
-                                  );
-
-                                  // Stop timers
-                                  _tipTimer?.cancel();
-                                  _motivationalTimer?.cancel();
-
-                                  // Show success notification
-                                  if (mounted) {
-                                    Flushbar(
-                                      message:
-                                          "Quit plan \"${_quitPlanNameController.text.trim()}\" created successfully!",
-                                      duration: const Duration(seconds: 3),
-                                      backgroundColor: const Color(0xFF00D09E),
-                                      margin: const EdgeInsets.all(8),
-                                      borderRadius: BorderRadius.circular(8),
-                                      icon: const Icon(
-                                        Icons.check_circle_outline,
-                                        color: Colors.white,
-                                      ),
-                                      flushbarPosition: FlushbarPosition.TOP,
-                                    ).show(context);
-                                  }
-
-                                  // Refresh ALL providers to load new data
-                                  print(
-                                    '🔄 [OnboardingScreen] Refreshing all providers with new data...',
-                                  );
-
-                                  // Refresh quit plan homepage (for quit plan card)
-                                  await ref
-                                      .read(
-                                        quitPlanHomepageViewModelProvider
-                                            .notifier,
-                                      )
-                                      .refreshQuitPlan();
-                                  print('✅ Quit plan homepage refreshed');
-
-                                  // Trigger mission refresh (for mission cards)
-                                  ref
-                                      .read(missionRefreshProvider.notifier)
-                                      .refreshAll();
-                                  print('✅ Mission refresh triggered');
-
-                                  // Trigger achievement refresh (for achievement cards)
-                                  ref
-                                      .read(achievementRefreshProvider.notifier)
-                                      .refreshAchievements();
-                                  print('✅ Achievement refresh triggered');
-
-                                  // Small delay to ensure providers update
-                                  await Future.delayed(
-                                    const Duration(seconds: 2),
-                                  );
-
-                                  print(
-                                    '🚀 [OnboardingScreen] Navigating to main screen with fresh data...',
-                                  );
-
-                                  setState(() {
-                                    _isCreatingPlan = false;
-                                  });
-
-                                  // Navigate immediately
-                                  if (mounted) {
-                                    context.go('/main');
-                                  }
-                                } catch (e) {
-                                  print(
-                                    '❌ [OnboardingScreen] Error creating quit plan: $e',
-                                  );
-
-                                  _tipTimer?.cancel();
-
-                                  setState(() {
-                                    _isCreatingPlan = false;
-                                  });
-
-                                  if (mounted) {
-                                    Flushbar(
-                                      message: 'Error: ${e.toString()}',
-                                      duration: const Duration(seconds: 3),
-                                      backgroundColor: Colors.red[600]!,
-                                      margin: const EdgeInsets.all(8),
-                                      borderRadius: BorderRadius.circular(8),
-                                      icon: const Icon(
-                                        Icons.error_outline,
-                                        color: Colors.white,
-                                      ),
-                                      flushbarPosition: FlushbarPosition.TOP,
-                                    ).show(context);
-                                  }
-                                }
                               },
+                              errorText: _submitted &&
+                                      _selectedFirstCigaretteOptionMinutes ==
+                                          null
+                                  ? 'Please select an option'
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Page 4
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: ListView(
+                          children: [
+                            QuestionOptionsCard(
+                              question:
+                                  'Difficult to refrain in forbidden places?',
+                              options: ['Yes', 'No'],
+                              onSelected: (option) => setState(
+                                  () => _difficultRefrain = option == 'Yes'),
+                              errorText: _submitted && _difficultRefrain == null
+                                  ? 'Please select an option'
+                                  : null,
+                            ),
+                            QuestionOptionsCard(
+                              question:
+                                  'Which cigarette would you hate to give up?',
+                              options: ['First in the morning', 'Any other'],
+                              onSelected: (option) => setState(() =>
+                                  _hateToGiveUp =
+                                      option == 'First in the morning'),
+                              errorText: _submitted && _hateToGiveUp == null
+                                  ? 'Please select an option'
+                                  : null,
+                            ),
+                            QuestionOptionsCard(
+                              question:
+                                  'Do you smoke more frequently in the morning?',
+                              options: ['Yes', 'No'],
+                              onSelected: (option) => setState(
+                                  () => _smokeMoreMorning = option == 'Yes'),
+                              errorText: _submitted && _smokeMoreMorning == null
+                                  ? 'Please select an option'
+                                  : null,
+                            ),
+                            QuestionOptionsCard(
+                              question: 'Do you smoke even if sick?',
+                              options: ['Yes', 'No'],
+                              onSelected: (option) => setState(
+                                  () => _smokeEvenSick = option == 'Yes'),
+                              errorText: _submitted && _smokeEvenSick == null
+                                  ? 'Please select an option'
+                                  : null,
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Interests
+                            const Text(
+                              "Select your interests",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 10),
+                            Builder(
+                              builder: (context) {
+                                final isAllInterestsSelected =
+                                    _selectedInterests.contains("All Interests");
+                                return Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: interestOptions.map((option) {
+                                    final isAllInterests =
+                                        option == "All Interests";
+                                    final isSelected = isAllInterestsSelected
+                                        ? true
+                                        : _selectedInterests.contains(option);
+                                    final isDisabled = isAllInterestsSelected &&
+                                        !isAllInterests;
+
+                                    return FilterChip(
+                                      label: Text(
+                                        option,
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      selected: isSelected,
+                                      backgroundColor: Colors.white,
+                                      selectedColor: const Color(0xFF00D09E),
+                                      disabledColor: Colors.grey[200],
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                            color: Colors.grey.shade300),
+                                      ),
+                                      onSelected: isDisabled
+                                          ? null
+                                          : (val) {
+                                              setState(() {
+                                                if (isAllInterests) {
+                                                  if (val) {
+                                                    _selectedInterests.clear();
+                                                    _selectedInterests
+                                                        .add(option);
+                                                  } else {
+                                                    _selectedInterests
+                                                        .remove(option);
+                                                  }
+                                                } else {
+                                                  if (val) {
+                                                    _selectedInterests
+                                                        .add(option);
+                                                  } else {
+                                                    _selectedInterests
+                                                        .remove(option);
+                                                  }
+                                                }
+                                              });
+                                            },
+                                    );
+                                  }).toList(),
+                                );
+                              },
+                            ),
+                            if (_submitted && _selectedInterests.isEmpty)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(top: 8.0, left: 4.0),
+                                child: Row(
+                                  children: const [
+                                    Icon(Icons.error_outline,
+                                        color: Colors.red, size: 16),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Please select at least one interest',
+                                      style: TextStyle(
+                                          color: Colors.red, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 20),
+
+                            // Use NRT
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: _useNRT,
+                                  onChanged: (val) =>
+                                      setState(() => _useNRT = val ?? false),
+                                ),
+                                const Text("Use Nicotine Replacement Therapy"),
+                                const SizedBox(width: 5),
+                                const Tooltip(
+                                  message:
+                                      "NRT helps reduce withdrawal symptoms by replacing nicotine safely.",
+                                  child: Icon(Icons.info_outline, size: 18),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 40),
+
+                            // Submit Button
+                            PrimaryButton(
+                              text: 'Finish',
+                              // Disable logic if needed, but the Overlay will cover it anyway
+                              onPressed: _isCreatingPlan
+                                  ? () {}
+                                  : () async {
+                                      final errorPage =
+                                          _validateAndGetFirstErrorPage();
+                                      if (errorPage != -1) {
+                                        _pageController.animateToPage(
+                                          errorPage,
+                                          duration:
+                                              const Duration(milliseconds: 400),
+                                          curve: Curves.easeInOut,
+                                        );
+                                        NotificationHelper.showTopNotification(
+                                          context,
+                                          title: "Missing Information",
+                                          message:
+                                              "Please fill in all required fields highlighted in red.",
+                                          isError: true,
+                                        );
+                                        return;
+                                      }
+
+                                      final request = CreateQuitPlanRequest(
+                                        startDate:
+                                            DateTime.now().toIso8601String(),
+                                        useNRT: _useNRT,
+                                        quitPlanName:
+                                            _quitPlanNameController.text.trim(),
+                                        smokeAvgPerDay: int.tryParse(
+                                                _smokeAvgController.text) ??
+                                            0,
+                                        numberOfYearsOfSmoking: int.tryParse(
+                                                _yearsController.text) ??
+                                            0,
+                                        moneyPerPackage: double.parse(
+                                          _moneyController.text
+                                              .replaceAll(',', ''),
+                                        ),
+                                        cigarettesPerPackage: int.tryParse(
+                                              _cigarettesPerPackController.text,
+                                            ) ??
+                                            0,
+                                        minutesAfterWakingToSmoke:
+                                            _selectedFirstCigaretteOptionMinutes!,
+                                        smokingInForbiddenPlaces:
+                                            _difficultRefrain!,
+                                        cigaretteHateToGiveUp: _hateToGiveUp!,
+                                        morningSmokingFrequency:
+                                            _smokeMoreMorning!,
+                                        smokeWhenSick: _smokeEvenSick!,
+                                        interests: _selectedInterests.contains(
+                                          "All Interests",
+                                        )
+                                            ? null
+                                            : _selectedInterests,
+                                        amountOfNicotinePerCigarettes:
+                                            double.parse(
+                                          _nicotineAmountController.text
+                                              .replaceAll(',', ''),
+                                        ),
+                                      );
+
+                                      // START LOADING UI
+                                      setState(() {
+                                        _isCreatingPlan = true;
+                                        _currentStep = 0;
+                                        _creationProgress = 0.0;
+                                        _currentTipIndex = 0;
+                                        _loadingMessage = _steps[0];
+                                      });
+
+                                      // Start rotation
+                                      _startTipRotation();
+
+                                      try {
+                                        print(
+                                            '📞 Calling API to create quit plan...');
+                                        final apiCallFuture = ref
+                                            .read(quitPlanViewModelProvider
+                                                .notifier)
+                                            .createPlan(request);
+
+                                        // Step 1: Analyzing (0-25%)
+                                        _animateProgress(0, 0.25, _steps[0]);
+                                        await Future.delayed(
+                                            const Duration(seconds: 8));
+
+                                        // Step 2: Creating missions (25-50%)
+                                        if (_isCreatingPlan && mounted) {
+                                          setState(() => _currentStep = 1);
+                                          _animateProgress(
+                                              0.25, 0.50, _steps[1]);
+                                        }
+                                        await Future.delayed(
+                                            const Duration(seconds: 8));
+
+                                        // Step 3: Building phases (50-75%)
+                                        if (_isCreatingPlan && mounted) {
+                                          setState(() => _currentStep = 2);
+                                          _animateProgress(
+                                              0.50, 0.75, _steps[2]);
+                                        }
+                                        await Future.delayed(
+                                            const Duration(seconds: 8));
+
+                                        // Step 4: Finalizing (75-100%)
+                                        if (_isCreatingPlan && mounted) {
+                                          setState(() => _currentStep = 3);
+                                          _animateProgress(0.75, 1.0, _steps[3]);
+                                        }
+                                        await Future.delayed(
+                                            const Duration(seconds: 8));
+
+                                        // Wait for API
+                                        await apiCallFuture;
+
+                                        // Complete
+                                        if (mounted) {
+                                          setState(() {
+                                            _creationProgress = 1.0;
+                                            _loadingMessage =
+                                                'Quit plan ready!\nLoading your dashboard...';
+                                          });
+                                        }
+                                        await Future.delayed(
+                                            const Duration(seconds: 3));
+
+                                        // Stop timers
+                                        _tipTimer?.cancel();
+                                        _motivationalTimer?.cancel();
+
+                                        if (mounted) {
+                                          Flushbar(
+                                            message:
+                                                "Quit plan created successfully!",
+                                            duration:
+                                                const Duration(seconds: 3),
+                                            backgroundColor:
+                                                const Color(0xFF00D09E),
+                                            margin: const EdgeInsets.all(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            icon: const Icon(
+                                              Icons.check_circle_outline,
+                                              color: Colors.white,
+                                            ),
+                                            flushbarPosition:
+                                                FlushbarPosition.TOP,
+                                          ).show(context);
+                                        }
+
+                                        // Refresh Providers
+                                        await ref
+                                            .read(
+                                                quitPlanHomepageViewModelProvider
+                                                    .notifier)
+                                            .refreshQuitPlan();
+                                        ref
+                                            .read(missionRefreshProvider
+                                                .notifier)
+                                            .refreshAll();
+                                        ref
+                                            .read(achievementRefreshProvider
+                                                .notifier)
+                                            .refreshAchievements();
+
+                                        await Future.delayed(
+                                            const Duration(seconds: 2));
+
+                                        setState(() {
+                                          _isCreatingPlan = false;
+                                        });
+
+                                        if (mounted) {
+                                          context.go('/main');
+                                        }
+                                      } catch (e) {
+                                        print('❌ Error: $e');
+                                        _tipTimer?.cancel();
+                                        _motivationalTimer?.cancel();
+
+                                        setState(() {
+                                          _isCreatingPlan = false;
+                                        });
+
+                                        if (mounted) {
+                                          Flushbar(
+                                            message: 'Error: ${e.toString()}',
+                                            duration:
+                                                const Duration(seconds: 3),
+                                            backgroundColor: Colors.red[600]!,
+                                            margin: const EdgeInsets.all(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            icon: const Icon(
+                                              Icons.error_outline,
+                                              color: Colors.white,
+                                            ),
+                                            flushbarPosition:
+                                                FlushbarPosition.TOP,
+                                          ).show(context);
+                                        }
+                                      }
+                                    },
                               width: 200,
                               height: 50,
                               borderRadius: 30,
                             ),
-                      if (quitPlanState is AsyncError)
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Error: ${quitPlanState.error}',
-                            style: const TextStyle(color: Colors.red),
-                          ),
+                          ],
                         ),
+                      ),
                     ],
                   ),
+                ),
+
+                // Page indicator
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child:
+                      PageIndicator(currentIndex: _currentIndex, totalPages: 4),
                 ),
               ],
             ),
           ),
 
-          // Page indicator
-          Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: PageIndicator(currentIndex: _currentIndex, totalPages: 4),
-          ),
+          // 2. LOADING OVERLAY (Full Screen)
+          if (_isCreatingPlan)
+            Positioned.fill(
+              child: Container(
+                color: const Color(
+                    0xFFF1FFF3), // Solid background matches app bg
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: _buildLoadingWidget(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
