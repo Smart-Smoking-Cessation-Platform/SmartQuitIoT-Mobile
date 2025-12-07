@@ -615,7 +615,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
               ),
               icon: const Icon(Icons.bluetooth, color: Colors.white, size: 20),
               label: const Text(
-                'Connect IOT device',
+                'Get Data From Your IoT Device',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 14,
