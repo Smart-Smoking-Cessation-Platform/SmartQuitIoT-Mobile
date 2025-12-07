@@ -1,4 +1,5 @@
 // lib/views/screens/appointments/appointments_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
@@ -25,7 +26,7 @@ class AppointmentsScreen extends StatefulWidget {
 }
 
 class _AppointmentsScreenState extends State<AppointmentsScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   bool _loading = true;
   String? _error;
@@ -36,6 +37,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   // map lưu trạng thái đã rate trong session hoặc theo response từ server
   final Map<int, bool> _ratedMap = {};
 
+  // Timer cho auto-refresh
+  Timer? _refreshTimer;
+  bool _isRefreshing = false;
+
   // colors
   static const Color primaryGreen = Color(0xFF00D09E);
   static const Color mintBg = Color(0xFFF1FFF3);
@@ -44,16 +49,171 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   @override
   void initState() {
     super.initState();
+    // Register observer để detect lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
     // Now 3 tabs: Pending (includes cancelled), In Progress, Completed
     _tabController = TabController(length: 3, vsync: this);
     _fetchAppointments();
+    // Bắt đầu auto-refresh mỗi 30 giây
+    _startAutoRefresh();
   }
 
-  Future<void> _fetchAppointments() async {
-    setState(() {
-      _loading = true;
-      _error = null;
+  @override
+  void dispose() {
+    // Cancel timer và remove observer
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Khi app resume (quay lại từ background), refresh data
+    if (state == AppLifecycleState.resumed) {
+      _refreshAppointmentsSilently();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh khi màn hình được rebuild (có thể do quay lại từ màn hình khác)
+    // Nhưng chỉ refresh nếu đã load lần đầu và không đang loading
+    if (!_loading && _appointments.isNotEmpty) {
+      // Delay một chút để tránh refresh quá nhiều
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_isRefreshing) {
+          _refreshAppointmentsSilently();
+        }
+      });
+    }
+  }
+
+  /// Bắt đầu auto-refresh định kỳ
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    // Refresh mỗi 30 giây để cập nhật trạng thái appointments
+    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted && !_isRefreshing) {
+        _refreshAppointmentsSilently();
+      }
     });
+  }
+
+  /// Refresh appointments trong background (không show loading)
+  Future<void> _refreshAppointmentsSilently() async {
+    if (_isRefreshing) return; // Tránh refresh đồng thời
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      final tokenService = TokenStorageService();
+      final token = await tokenService.getAccessToken();
+      if (token == null || token.isEmpty) {
+        return;
+      }
+
+      final service = AppointmentService();
+      final raw = await service.getMyAppointments(token);
+
+      // Parse và update ratedMap
+      final newRatedMap = <int, bool>{};
+      for (var e in raw) {
+        try {
+          final Map<String, dynamic> m = Map<String, dynamic>.from(e);
+          int? aid;
+          if (m.containsKey('appointmentId')) {
+            aid = m['appointmentId'] is int
+                ? m['appointmentId'] as int
+                : int.tryParse(m['appointmentId'].toString());
+          } else if (m.containsKey('id')) {
+            aid = m['id'] is int
+                ? m['id'] as int
+                : int.tryParse(m['id'].toString());
+          }
+          final ratingKeys = [
+            'memberRating',
+            'rating',
+            'userRating',
+            'member_rated',
+            'hasRated',
+            'rated',
+          ];
+          bool hasRating = false;
+          for (var k in ratingKeys) {
+            if (m.containsKey(k) && m[k] != null) {
+              final v = m[k];
+              if (v is bool && v == true) {
+                hasRating = true;
+                break;
+              } else if (v is num && v > 0) {
+                hasRating = true;
+                break;
+              } else if (v is String && v.isNotEmpty && v != '0') {
+                hasRating = true;
+                break;
+              }
+            }
+          }
+          if (aid != null) {
+            newRatedMap[aid] = hasRating;
+          }
+        } catch (_) {}
+      }
+
+      final parsed = raw
+          .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+
+      for (var a in parsed) {
+        if (a.hasRated != null) {
+          newRatedMap[a.appointmentId] = a.hasRated!;
+        }
+      }
+
+      // Chỉ update state nếu data thay đổi
+      if (mounted) {
+        final hasChanges =
+            _appointments.length != parsed.length ||
+            _appointments.any((old) {
+              final newAppt = parsed.firstWhere(
+                (newAppt) => newAppt.appointmentId == old.appointmentId,
+                orElse: () => old,
+              );
+              return newAppt.runtimeStatus != old.runtimeStatus;
+            });
+
+        if (hasChanges) {
+          setState(() {
+            _appointments = parsed;
+            _ratedMap.clear();
+            _ratedMap.addAll(newRatedMap);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[AutoRefresh] Failed to refresh appointments: $e');
+      // Không show error cho auto-refresh, chỉ log
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchAppointments({bool isRefresh = false}) async {
+    if (!isRefresh) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
 
     try {
       final tokenService = TokenStorageService();
@@ -1756,12 +1916,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
