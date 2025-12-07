@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../models/remaining_booking.dart';
+import '../exceptions/appointment_conflict_exception.dart';
 import 'token_storage_service.dart'; // ensure this file exists in same folder
 
 class AppointmentService {
@@ -58,6 +59,14 @@ class AppointmentService {
       } else {
         throw Exception('Unexpected response format from server.');
       }
+    }
+
+    // Xử lý trường hợp 409 Conflict (trùng thời gian)
+    if (resp.statusCode == 409) {
+      final msg = (body is Map && body.containsKey('message'))
+          ? body['message'].toString()
+          : 'You already have an appointment scheduled at this time with another coach.';
+      throw AppointmentConflictException(msg, statusCode: 409);
     }
 
     final msg = (body is Map && body.containsKey('message'))
@@ -316,6 +325,56 @@ class AppointmentService {
     final msg = (parsed is Map && parsed.containsKey('message'))
         ? parsed['message'].toString()
         : 'Failed to submit rating: HTTP ${resp.statusCode}';
+    throw Exception(msg);
+  }
+
+  /// GET /appointments/{appointmentId}/feedback - get feedback for an appointment
+  Future<Map<String, dynamic>> getFeedbackByAppointmentId(
+    int appointmentId,
+    String accessToken,
+  ) async {
+    final url = '$_baseUrl/appointments/$appointmentId/feedback';
+    final headers = {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $accessToken',
+    };
+
+    http.Response resp;
+    try {
+      resp = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 15));
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+
+    dynamic body;
+    try {
+      body = resp.body.isNotEmpty ? jsonDecode(resp.body) : null;
+    } catch (_) {
+      body = null;
+    }
+
+    debugPrint(
+      '[AppointmentService] GET $url -> status=${resp.statusCode} body=$body',
+    );
+
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      if (body is Map<String, dynamic>) {
+        // Backend trả về { success, message, data: FeedbackResponse }
+        if (body.containsKey('data')) {
+          return Map<String, dynamic>.from(body['data']);
+        }
+        // Hoặc trả về trực tiếp FeedbackResponse
+        return Map<String, dynamic>.from(body);
+      } else {
+        throw Exception('Unexpected response format from server.');
+      }
+    }
+
+    final msg = (body is Map && body.containsKey('message'))
+        ? body['message'].toString()
+        : 'Failed to fetch feedback: HTTP ${resp.statusCode}';
     throw Exception(msg);
   }
 

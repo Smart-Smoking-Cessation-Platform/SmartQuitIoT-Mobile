@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
 import '../../../models/appointment.dart';
+import '../../../models/feedback_response.dart';
 import '../../../services/appointment_service.dart';
 import '../../../services/token_storage_service.dart';
 import 'package:flutter/foundation.dart';
@@ -537,6 +538,371 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     }
   }
 
+  // ----- View Feedback flow -----
+  Future<void> _onViewFeedbackPressed(Appointment a) async {
+    final tokenService = TokenStorageService();
+    final token = await tokenService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      Flushbar(
+        message: 'You are not logged in.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
+      return;
+    }
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final svc = AppointmentService();
+      final feedbackData = await svc.getFeedbackByAppointmentId(
+        a.appointmentId,
+        token,
+      );
+      final feedback = FeedbackResponse.fromJson(feedbackData);
+
+      Navigator.pop(context); // Remove loading
+
+      // Show feedback dialog
+      _showFeedbackDialog(context, feedback, a);
+    } catch (e, st) {
+      try {
+        Navigator.pop(context); // Remove loading
+      } catch (_) {}
+      debugPrint('[ViewFeedback] failed: $e\n$st');
+      Flushbar(
+        message: 'Cannot load feedback: ${e.toString()}',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
+    }
+  }
+
+  /// Hiển thị dialog với chi tiết feedback
+  void _showFeedbackDialog(
+    BuildContext context,
+    FeedbackResponse feedback,
+    Appointment appointment,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, controller) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                controller: controller,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: primaryGreen.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.rate_review,
+                            color: primaryGreen,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Your Feedback',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              if (feedback.date != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Submitted on ${DateFormat('EEE, dd MMM yyyy • HH:mm').format(feedback.date!)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Rating stars
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.amber.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(5, (i) {
+                              final idx = i + 1;
+                              final bool active = idx <= feedback.rating;
+                              return Icon(
+                                active
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                size: 40,
+                                color: active
+                                    ? Colors.amber
+                                    : Colors.grey.shade400,
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 12),
+                          Builder(
+                            builder: (_) {
+                              final labels = [
+                                'Terrible',
+                                'Bad',
+                                'Okay',
+                                'Good',
+                                'Excellent',
+                              ];
+                              return Text(
+                                labels[feedback.rating - 1],
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.grey.shade800,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Comment (if exists)
+                    if (feedback.content != null &&
+                        feedback.content!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.comment_outlined,
+                                  size: 18,
+                                  color: Colors.grey.shade700,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Your Comment',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              feedback.content ?? '',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    // Appointment info
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: primaryGreen.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: primaryGreen.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.event_note,
+                                size: 18,
+                                color: primaryGreen,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Appointment Details',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryGreen,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildFeedbackDetailRow(
+                            Icons.person,
+                            'Coach',
+                            appointment.coachName,
+                          ),
+                          if (feedback.appointmentDate != null) ...[
+                            const SizedBox(height: 8),
+                            _buildFeedbackDetailRow(
+                              Icons.calendar_today,
+                              'Date',
+                              DateFormat(
+                                'EEE, dd MMM yyyy',
+                              ).format(feedback.appointmentDate!),
+                            ),
+                          ],
+                          if (feedback.startTime != null &&
+                              feedback.endTime != null) ...[
+                            const SizedBox(height: 8),
+                            _buildFeedbackDetailRow(
+                              Icons.access_time,
+                              'Time',
+                              '${feedback.startTime} - ${feedback.endTime}',
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Close button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'Close',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFeedbackDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey.shade600),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
   // ----- Cancel flow (member) -----
   Future<void> _onCancelPressed(Appointment a) async {
     // Show confirm dialog with custom styles. Use context properly (no `_` variable).
@@ -894,15 +1260,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  // Completed => show Rate button (if not rated) OR disabled "Rated"
+                                  // Completed => show Rate button (if not rated) OR "View Feedback" button
                                   if (isCompleted && !isCancelled) ...[
                                     hasRated
-                                        ? ElevatedButton(
-                                            onPressed: null,
-                                            child: const Text('Rated'),
+                                        ? ElevatedButton.icon(
+                                            onPressed: () =>
+                                                _onViewFeedbackPressed(a),
+                                            icon: const Icon(
+                                              Icons.rate_review,
+                                              size: 16,
+                                            ),
+                                            label: const Text('View'),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  Colors.grey.shade300,
+                                              backgroundColor: primaryGreen,
                                               foregroundColor: Colors.white,
                                               minimumSize: const Size(90, 36),
                                             ),

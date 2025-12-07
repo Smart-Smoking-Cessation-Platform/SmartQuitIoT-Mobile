@@ -706,11 +706,13 @@ import 'package:SmartQuitIoT/views/screens/appointments/time_slot_grid.dart';
 import '../../../../models/slot_available.dart';
 import '../../../../models/coach_detail.dart';
 import '../../../providers/coach_detail_provider.dart';
+import '../../../providers/booking_provider.dart';
 import 'custom_button.dart';
 import 'info_row.dart';
 import '../../../models/request/appointment_request.dart';
 import '../../../services/appointment_service.dart';
 import '../../../services/token_storage_service.dart';
+import '../../../exceptions/appointment_conflict_exception.dart';
 
 class CoachDetailScreen extends ConsumerStatefulWidget {
   final Coach coach;
@@ -1308,6 +1310,9 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
         selectedSlot = null;
       });
 
+      // Refresh remaining booking quota
+      ref.refresh(remainingBookingProvider);
+
       // Hiện dialog xác nhận — **không chuyển tới màn rating**
       showDialog(
         context: context,
@@ -1359,6 +1364,12 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
           ),
         ),
       );
+    } on AppointmentConflictException catch (e) {
+      try {
+        Navigator.of(context).pop(); // dismiss loading
+      } catch (_) {}
+      // Hiển thị dialog cảnh báo trùng lịch
+      _showConflictDialog(context, e.message, coachId, slotId, isoDate, token);
     } catch (e, st) {
       try {
         Navigator.of(context).pop(); // dismiss loading on error
@@ -1368,6 +1379,225 @@ class _CoachDetailScreenState extends ConsumerState<CoachDetailScreen> {
           ? e.toString().replaceAll('Exception: ', '')
           : 'Booking failed';
       ScaffoldMessenger.of(context);
+      Flushbar(
+        message: errMsg,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
+    }
+  }
+
+  /// Hiển thị dialog cảnh báo trùng lịch với UI đẹp
+  void _showConflictDialog(
+    BuildContext context,
+    String conflictMessage,
+    int coachId,
+    int slotId,
+    String isoDate,
+    String token,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_rounded,
+                color: Colors.orange.shade700,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Time Conflict',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              conflictMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.grey[300]!),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      _handleBookingWithForceConfirm(
+                        coachId,
+                        slotId,
+                        isoDate,
+                        token,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00D09E),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text(
+                      'Confirm Anyway',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Xử lý đặt lịch với forceConfirm=true
+  Future<void> _handleBookingWithForceConfirm(
+    int coachId,
+    int slotId,
+    String isoDate,
+    String token,
+  ) async {
+    final req = AppointmentRequest(
+      coachId: coachId,
+      slotId: slotId,
+      date: isoDate,
+      forceConfirm: true, // Gửi với forceConfirm=true
+    );
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final service = AppointmentService();
+      final resp = await service.bookAppointment(req.toJson(), token);
+
+      try {
+        Navigator.of(context).pop(); // dismiss loading
+      } catch (_) {}
+
+      final data = resp['data'] as Map<String, dynamic>?;
+      final state = ref.read(coachDetailViewModelProvider);
+      final coachDetail = state.coach;
+
+      setState(() {
+        availableSlots.removeWhere((s) => s.slotId == slotId);
+        selectedSlot = null;
+      });
+
+      // Refresh remaining booking quota
+      ref.refresh(remainingBookingProvider);
+
+      // Hiện dialog xác nhận thành công
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF00D09E),
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Booking Confirmed!',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                data != null
+                    ? 'Your consultation with ${data['coachName'] ?? (coachDetail?.fullName ?? widget.coach.name)} has been scheduled for ${data['startTime'] ?? selectedSlot} on ${data['date'] ?? isoDate}.'
+                    : 'Booking success for $isoDate.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _loadCoachDetail(dateIso: isoDate);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00D09E),
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e, st) {
+      try {
+        Navigator.of(context).pop(); // dismiss loading on error
+      } catch (_) {}
+      debugPrint('[ERROR] booking with forceConfirm failed: $e\n$st');
+      final errMsg = e is Exception
+          ? e.toString().replaceAll('Exception: ', '')
+          : 'Booking failed';
       Flushbar(
         message: errMsg,
         icon: const Icon(Icons.error_outline, color: Colors.white),

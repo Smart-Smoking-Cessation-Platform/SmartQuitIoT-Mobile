@@ -74,28 +74,34 @@ class NewsService {
       );
 
       final response = await _dio.get(url, options: options);
-      
+
       print('📊 [NewsService] Response Status: ${response.statusCode}');
       print('📦 [NewsService] Response Type: ${response.data.runtimeType}');
       print('📦 [NewsService] Raw Response: ${response.data}');
-      
+
       if (response.statusCode == 200) {
         final jsonBody = response.data as Map<String, dynamic>;
         print('✅ [NewsService] JSON Body Keys: ${jsonBody.keys.toList()}');
-        
+
         final List<dynamic> data = jsonBody['data'] ?? [];
         print('✅ [NewsService] Data length: ${data.length}');
-        print('✅ [NewsService] First item: ${data.isNotEmpty ? data[0] : "empty"}');
-        
+        print(
+          '✅ [NewsService] First item: ${data.isNotEmpty ? data[0] : "empty"}',
+        );
+
         final newsList = data.map((e) {
           print('🔄 [NewsService] Parsing item: $e');
           return News.fromJson(e);
         }).toList();
-        
-        print('✅ [NewsService] Successfully parsed ${newsList.length} news items');
+
+        print(
+          '✅ [NewsService] Successfully parsed ${newsList.length} news items',
+        );
         return newsList;
       } else {
-        throw NewsException('Failed to fetch latest news. Status: ${response.statusCode}');
+        throw NewsException(
+          'Failed to fetch latest news. Status: ${response.statusCode}',
+        );
       }
     } on DioException catch (e) {
       print('❌ [NewsService] Dio error: ${e.type}');
