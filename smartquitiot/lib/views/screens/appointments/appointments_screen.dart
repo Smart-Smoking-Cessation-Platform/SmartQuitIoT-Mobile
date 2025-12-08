@@ -1,8 +1,10 @@
 // lib/views/screens/appointments/appointments_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:another_flushbar/flushbar.dart';
 import '../../../models/appointment.dart';
+import '../../../models/feedback_response.dart';
 import '../../../services/appointment_service.dart';
 import '../../../services/token_storage_service.dart';
 import 'package:flutter/foundation.dart';
@@ -24,7 +26,7 @@ class AppointmentsScreen extends StatefulWidget {
 }
 
 class _AppointmentsScreenState extends State<AppointmentsScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   bool _loading = true;
   String? _error;
@@ -35,6 +37,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   // map lưu trạng thái đã rate trong session hoặc theo response từ server
   final Map<int, bool> _ratedMap = {};
 
+  // Timer cho auto-refresh
+  Timer? _refreshTimer;
+  bool _isRefreshing = false;
+
   // colors
   static const Color primaryGreen = Color(0xFF00D09E);
   static const Color mintBg = Color(0xFFF1FFF3);
@@ -43,16 +49,171 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   @override
   void initState() {
     super.initState();
+    // Register observer để detect lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
     // Now 3 tabs: Pending (includes cancelled), In Progress, Completed
     _tabController = TabController(length: 3, vsync: this);
     _fetchAppointments();
+    // Bắt đầu auto-refresh mỗi 30 giây
+    _startAutoRefresh();
   }
 
-  Future<void> _fetchAppointments() async {
+  @override
+  void dispose() {
+    // Cancel timer và remove observer
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Khi app resume (quay lại từ background), refresh data
+    if (state == AppLifecycleState.resumed) {
+      _refreshAppointmentsSilently();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh khi màn hình được rebuild (có thể do quay lại từ màn hình khác)
+    // Nhưng chỉ refresh nếu đã load lần đầu và không đang loading
+    if (!_loading && _appointments.isNotEmpty) {
+      // Delay một chút để tránh refresh quá nhiều
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_isRefreshing) {
+          _refreshAppointmentsSilently();
+        }
+      });
+    }
+  }
+
+  /// Bắt đầu auto-refresh định kỳ
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    // Refresh mỗi 30 giây để cập nhật trạng thái appointments
+    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted && !_isRefreshing) {
+        _refreshAppointmentsSilently();
+      }
+    });
+  }
+
+  /// Refresh appointments trong background (không show loading)
+  Future<void> _refreshAppointmentsSilently() async {
+    if (_isRefreshing) return; // Tránh refresh đồng thời
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      final tokenService = TokenStorageService();
+      final token = await tokenService.getAccessToken();
+      if (token == null || token.isEmpty) {
+        return;
+      }
+
+      final service = AppointmentService();
+      final raw = await service.getMyAppointments(token);
+
+      // Parse và update ratedMap
+      final newRatedMap = <int, bool>{};
+      for (var e in raw) {
+        try {
+          final Map<String, dynamic> m = Map<String, dynamic>.from(e);
+          int? aid;
+          if (m.containsKey('appointmentId')) {
+            aid = m['appointmentId'] is int
+                ? m['appointmentId'] as int
+                : int.tryParse(m['appointmentId'].toString());
+          } else if (m.containsKey('id')) {
+            aid = m['id'] is int
+                ? m['id'] as int
+                : int.tryParse(m['id'].toString());
+          }
+          final ratingKeys = [
+            'memberRating',
+            'rating',
+            'userRating',
+            'member_rated',
+            'hasRated',
+            'rated',
+          ];
+          bool hasRating = false;
+          for (var k in ratingKeys) {
+            if (m.containsKey(k) && m[k] != null) {
+              final v = m[k];
+              if (v is bool && v == true) {
+                hasRating = true;
+                break;
+              } else if (v is num && v > 0) {
+                hasRating = true;
+                break;
+              } else if (v is String && v.isNotEmpty && v != '0') {
+                hasRating = true;
+                break;
+              }
+            }
+          }
+          if (aid != null) {
+            newRatedMap[aid] = hasRating;
+          }
+        } catch (_) {}
+      }
+
+      final parsed = raw
+          .map((e) => Appointment.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+
+      for (var a in parsed) {
+        if (a.hasRated != null) {
+          newRatedMap[a.appointmentId] = a.hasRated!;
+        }
+      }
+
+      // Chỉ update state nếu data thay đổi
+      if (mounted) {
+        final hasChanges =
+            _appointments.length != parsed.length ||
+            _appointments.any((old) {
+              final newAppt = parsed.firstWhere(
+                (newAppt) => newAppt.appointmentId == old.appointmentId,
+                orElse: () => old,
+              );
+              return newAppt.runtimeStatus != old.runtimeStatus;
+            });
+
+        if (hasChanges) {
+          setState(() {
+            _appointments = parsed;
+            _ratedMap.clear();
+            _ratedMap.addAll(newRatedMap);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[AutoRefresh] Failed to refresh appointments: $e');
+      // Không show error cho auto-refresh, chỉ log
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchAppointments({bool isRefresh = false}) async {
+    if (!isRefresh) {
     setState(() {
       _loading = true;
       _error = null;
     });
+    }
 
     try {
       final tokenService = TokenStorageService();
@@ -224,11 +385,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       context.pushNamed(
         'meeting',
         extra: {
-          'channel': resp['channel'],
-          'token': resp['token'],
-          'uid': resp['uid'],
-          'appointmentId': a.appointmentId,
-          'expiresAt': resp['expiresAt'],
+        'channel': resp['channel'],
+        'token': resp['token'],
+        'uid': resp['uid'],
+        'appointmentId': a.appointmentId,
+        'expiresAt': resp['expiresAt'],
         },
       );
     } catch (e, st) {
@@ -257,16 +418,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         String comment = '';
         return StatefulBuilder(
           builder: (ctx2, setSt) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.46,
-              minChildSize: 0.32,
-              maxChildSize: 0.9,
-              expand: false,
-              builder: (_, controller) {
-                return Container(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
+          return DraggableScrollableSheet(
+            initialChildSize: 0.46,
+            minChildSize: 0.32,
+            maxChildSize: 0.9,
+            expand: false,
+            builder: (_, controller) {
+              return Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
@@ -276,12 +437,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                         blurRadius: 12,
                       ),
                     ],
-                  ),
-                  child: SingleChildScrollView(
-                    controller: controller,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                ),
+                child: SingleChildScrollView(
+                  controller: controller,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                         Container(
                           width: 40,
                           height: 4,
@@ -298,24 +459,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                         const Text(
                           'Please share your feedback about the coaching session so the coach can improve.',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 13, color: Colors.black54),
                         ),
-                        const SizedBox(height: 18),
-                        Column(
-                          children: [
+                      const SizedBox(height: 18),
+                      Column(
+                        children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(5, (i) {
-                                final idx = i + 1;
-                                final bool active = idx <= selectedStars;
-                                return GestureDetector(
-                                  onTap: () => setSt(() => selectedStars = idx),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 160),
+                            children: List.generate(5, (i) {
+                              final idx = i + 1;
+                              final bool active = idx <= selectedStars;
+                              return GestureDetector(
+                                onTap: () => setSt(() => selectedStars = idx),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 160),
                                     margin: const EdgeInsets.symmetric(
                                       horizontal: 6,
                                     ),
@@ -330,12 +491,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                           ? Colors.amber
                                           : Colors.grey.shade400,
                                     ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            const SizedBox(height: 8),
-                            // label
+                                ),
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 8),
+                          // label
                             Builder(
                               builder: (_) {
                                 final labels = [
@@ -354,34 +515,34 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                 );
                               },
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          maxLines: 4,
-                          onChanged: (v) => comment = v,
-                          decoration: InputDecoration(
-                            hintText: 'Write comment (optional)...',
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        maxLines: 4,
+                        onChanged: (v) => comment = v,
+                        decoration: InputDecoration(
+                          hintText: 'Write comment (optional)...',
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 12,
                             ),
-                            filled: true,
-                            fillColor: Theme.of(context).cardColor,
+                          filled: true,
+                          fillColor: Theme.of(context).cardColor,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                          ),
                         ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () => Navigator.of(ctx2).pop(null),
-                                style: OutlinedButton.styleFrom(
-                                  side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(ctx2).pop(null),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.grey.shade300),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -393,39 +554,39 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                   'Cancel',
                                   style: TextStyle(color: Colors.black87),
                                 ),
-                              ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
                                 onPressed: () => Navigator.of(ctx2).pop({
                                   'stars': selectedStars,
                                   'comment': comment.trim(),
                                 }),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00D09E),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00D09E),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                   ),
-                                  elevation: 3,
-                                ),
+                                elevation: 3,
+                              ),
                                 child: const Text(
                                   'Submit',
                                   style: TextStyle(fontWeight: FontWeight.w700),
                                 ),
-                              ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                );
-              },
-            );
+                ),
+              );
+            },
+          );
           },
         );
       },
@@ -535,6 +696,371 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         _submittingRatingAppointmentId = null;
       });
     }
+  }
+
+  // ----- View Feedback flow -----
+  Future<void> _onViewFeedbackPressed(Appointment a) async {
+    final tokenService = TokenStorageService();
+    final token = await tokenService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      Flushbar(
+        message: 'You are not logged in.',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
+      return;
+    }
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final svc = AppointmentService();
+      final feedbackData = await svc.getFeedbackByAppointmentId(
+        a.appointmentId,
+        token,
+      );
+      final feedback = FeedbackResponse.fromJson(feedbackData);
+
+      Navigator.pop(context); // Remove loading
+
+      // Show feedback dialog
+      _showFeedbackDialog(context, feedback, a);
+    } catch (e, st) {
+      try {
+        Navigator.pop(context); // Remove loading
+      } catch (_) {}
+      debugPrint('[ViewFeedback] failed: $e\n$st');
+      Flushbar(
+        message: 'Cannot load feedback: ${e.toString()}',
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        backgroundColor: const Color(0xFF00D09E),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(8),
+        flushbarPosition: FlushbarPosition.TOP,
+      ).show(context);
+    }
+  }
+
+  /// Hiển thị dialog với chi tiết feedback
+  void _showFeedbackDialog(
+    BuildContext context,
+    FeedbackResponse feedback,
+    Appointment appointment,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, controller) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                controller: controller,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: primaryGreen.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.rate_review,
+                            color: primaryGreen,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Your Feedback',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              if (feedback.date != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Submitted on ${DateFormat('EEE, dd MMM yyyy • HH:mm').format(feedback.date!)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Rating stars
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.amber.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(5, (i) {
+                              final idx = i + 1;
+                              final bool active = idx <= feedback.rating;
+                              return Icon(
+                                active
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                size: 40,
+                                color: active
+                                    ? Colors.amber
+                                    : Colors.grey.shade400,
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 12),
+                          Builder(
+                            builder: (_) {
+                              final labels = [
+                                'Terrible',
+                                'Bad',
+                                'Okay',
+                                'Good',
+                                'Excellent',
+                              ];
+                              return Text(
+                                labels[feedback.rating - 1],
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.grey.shade800,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Comment (if exists)
+                    if (feedback.content != null &&
+                        feedback.content!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.comment_outlined,
+                                  size: 18,
+                                  color: Colors.grey.shade700,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Your Comment',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              feedback.content ?? '',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    // Appointment info
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: primaryGreen.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: primaryGreen.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.event_note,
+                                size: 18,
+                                color: primaryGreen,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Appointment Details',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryGreen,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildFeedbackDetailRow(
+                            Icons.person,
+                            'Coach',
+                            appointment.coachName,
+                          ),
+                          if (feedback.appointmentDate != null) ...[
+                            const SizedBox(height: 8),
+                            _buildFeedbackDetailRow(
+                              Icons.calendar_today,
+                              'Date',
+                              DateFormat(
+                                'EEE, dd MMM yyyy',
+                              ).format(feedback.appointmentDate!),
+                            ),
+                          ],
+                          if (feedback.startTime != null &&
+                              feedback.endTime != null) ...[
+                            const SizedBox(height: 8),
+                            _buildFeedbackDetailRow(
+                              Icons.access_time,
+                              'Time',
+                              '${feedback.startTime} - ${feedback.endTime}',
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Close button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'Close',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFeedbackDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey.shade600),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 
   // ----- Cancel flow (member) -----
@@ -894,25 +1420,29 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  // Completed => show Rate button (if not rated) OR disabled "Rated"
+                                  // Completed => show Rate button (if not rated) OR "View Feedback" button
                                   if (isCompleted && !isCancelled) ...[
-                                    hasRated
-                                        ? ElevatedButton(
-                                            onPressed: null,
-                                            child: const Text('Rated'),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  Colors.grey.shade300,
-                                              foregroundColor: Colors.white,
-                                              minimumSize: const Size(90, 36),
+                      hasRated
+                                        ? ElevatedButton.icon(
+                                            onPressed: () =>
+                                                _onViewFeedbackPressed(a),
+                                            icon: const Icon(
+                                              Icons.rate_review,
+                                              size: 16,
                                             ),
-                                          )
-                                        : isSubmittingThis
-                                        ? ElevatedButton(
-                                            onPressed: null,
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: const [
+                                            label: const Text('View'),
+                        style: ElevatedButton.styleFrom(
+                                              backgroundColor: primaryGreen,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(90, 36),
+                        ),
+                      )
+                          : isSubmittingThis
+                      ? ElevatedButton(
+                      onPressed: null,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
                                                 SizedBox(
                                                   width: 16,
                                                   height: 16,
@@ -924,24 +1454,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                                         >(Colors.white),
                                                   ),
                                                 ),
-                                                SizedBox(width: 8),
-                                                Text('Submitting'),
-                                              ],
-                                            ),
+                          SizedBox(width: 8),
+                          Text('Submitting'),
+                        ],
+                      ),
                                             style: ElevatedButton.styleFrom(
                                               minimumSize: const Size(90, 36),
                                               backgroundColor: primaryGreen,
                                             ),
-                                          )
-                                        : ElevatedButton(
-                                            onPressed: () => _onRatePressed(a),
-                                            child: const Text('Rate'),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: primaryGreen,
-                                              minimumSize: const Size(90, 36),
-                                            ),
+                    )
+                          : ElevatedButton(
+                      onPressed: () => _onRatePressed(a),
+                child: const Text('Rate'),
+                style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGreen,
+                minimumSize: const Size(90, 36),
+                ),
                                           ),
-                                  ]
+                ]
                                   // Join button only if not cancelled, status IN_PROGRESS and within window
                                   else if (!isCancelled &&
                                       a.runtimeStatus != null &&
@@ -967,43 +1497,43 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                     )
                                   // Pending: show Cancel button
                                   else if (!isCancelled &&
-                                      a.runtimeStatus != null &&
+                                        a.runtimeStatus != null &&
                                       a.runtimeStatus!.toUpperCase().contains(
                                         'PENDING',
                                       ))
-                                    SizedBox(
-                                      width: 110,
-                                      height: 36,
-                                      child: ElevatedButton(
-                                        onPressed: () => _onCancelPressed(a),
-                                        child: const Text('Cancel'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red.shade200,
-                                          foregroundColor: Colors.red.shade900,
-                                          minimumSize: const Size(80, 36),
-                                          shape: RoundedRectangleBorder(
+                                      SizedBox(
+                                        width: 110,
+                                        height: 36,
+                                        child: ElevatedButton(
+                                          onPressed: () => _onCancelPressed(a),
+                                          child: const Text('Cancel'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red.shade200,
+                                            foregroundColor: Colors.red.shade900,
+                                            minimumSize: const Size(80, 36),
+                                            shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    )
-                                  else
-                                    IconButton(
-                                      onPressed: () => _showAppointmentDetail(
-                                        context,
-                                        a,
-                                        dateLabel,
-                                        timeLabel,
-                                      ),
-                                      icon: Icon(
-                                        Icons.chevron_right,
+                                      )
+                                    else
+                                      IconButton(
+                                        onPressed: () => _showAppointmentDetail(
+                                          context,
+                                          a,
+                                          dateLabel,
+                                          timeLabel,
+                                        ),
+                                        icon: Icon(
+                                          Icons.chevron_right,
                                         color: isCancelled
                                             ? Colors.grey.shade400
                                             : Colors.grey,
+                                        ),
                                       ),
-                                    ),
                                 ],
                               ),
                             ),
@@ -1115,11 +1645,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   }
 
   void _showAppointmentDetail(
-    BuildContext context,
-    Appointment a,
-    String dateLabel,
-    String timeLabel,
-  ) {
+      BuildContext context,
+      Appointment a,
+      String dateLabel,
+      String timeLabel,
+      ) {
     final isCancelled = (a.runtimeStatus ?? '').toUpperCase().contains(
       'CANCEL',
     );
@@ -1134,9 +1664,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                 // Header
                 Row(
                   children: [
@@ -1314,7 +1844,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryGreen,
                       shape: RoundedRectangleBorder(
@@ -1386,12 +1916,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
