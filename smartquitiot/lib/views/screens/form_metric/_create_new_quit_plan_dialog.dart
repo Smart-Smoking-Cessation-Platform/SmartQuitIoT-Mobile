@@ -444,7 +444,7 @@ class QuitPlanSuccessDialog extends StatelessWidget {
 
             // Success Text
             const Text(
-              '🎉 Success!',
+              ' Success!',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

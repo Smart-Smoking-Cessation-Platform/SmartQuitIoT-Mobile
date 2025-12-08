@@ -113,7 +113,7 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
       if (!mounted) return;
 
       // Navigate to success screen
-      print('🎉 [PaymentProcessing] Payment successful, navigating to success screen');
+      print(' [PaymentProcessing] Payment successful, navigating to success screen');
       context.go('/payment/success', extra: {
         'code': widget.code,
         'id': widget.id,
