@@ -93,7 +93,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
           const SnackBar(
             content: Text(
-              '🎉 New achievement unlocked! Check your achievements.',
+              ' New achievement unlocked! Check your achievements.',
             ),
             backgroundColor: Color(0xFF00D09E),
             duration: Duration(seconds: 3),

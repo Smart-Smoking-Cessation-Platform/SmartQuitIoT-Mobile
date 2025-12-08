@@ -952,7 +952,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                 if (!mounted) return;
 
                 Navigator.of(context).pop();
-                _showSnack('New quit plan created successfully! 🎉');
+                _showSnack('New quit plan created successfully! ');
 
                 await _showCreateFormMetricDialog();
 
@@ -1655,7 +1655,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              Text('🎉', style: TextStyle(fontSize: 32)),
+              Text('', style: TextStyle(fontSize: 32)),
               SizedBox(width: 8),
               Text('🎆', style: TextStyle(fontSize: 28)),
               SizedBox(width: 8),

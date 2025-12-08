@@ -1653,7 +1653,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
-                    Text('🎉', style: TextStyle(fontSize: 24)),
+                    Text('', style: TextStyle(fontSize: 24)),
                     SizedBox(width: 8),
                     Text('🎆', style: TextStyle(fontSize: 20)),
                     SizedBox(width: 8),
@@ -2289,7 +2289,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                 if (mounted) {
                   await ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
                   if (mounted) {
-                    _showSnack('New quit plan created successfully! 🎉');
+                    _showSnack('New quit plan created successfully! ');
                   }
                 }
               } catch (e) {
@@ -2792,7 +2792,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              Text('🎉', style: TextStyle(fontSize: 32)),
+              Text('', style: TextStyle(fontSize: 32)),
               SizedBox(width: 8),
               Text('🎆', style: TextStyle(fontSize: 28)),
               SizedBox(width: 8),

@@ -968,7 +968,7 @@ class _PhaseDetailViewState extends State<PhaseDetailView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
-                    Text('🎉', style: TextStyle(fontSize: 24)),
+                    Text('', style: TextStyle(fontSize: 24)),
                     SizedBox(width: 8),
                     Text('🎆', style: TextStyle(fontSize: 20)),
                     SizedBox(width: 8),

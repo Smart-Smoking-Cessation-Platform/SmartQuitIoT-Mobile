@@ -268,7 +268,7 @@ class DiaryRecordCard extends ConsumerWidget {
                             },
                             child: Text(
                               hasRecordToday
-                                  ? 'You checked in today 🎉'
+                                  ? 'You checked in today '
                                   : 'Diary Record',
                               key: ValueKey(hasRecordToday),
                               style: TextStyle(

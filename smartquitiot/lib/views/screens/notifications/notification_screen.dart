@@ -493,7 +493,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
             isLoadingMore: isLoadingMoreUnread,
             hasMore: hasMoreUnread,
             emptyMessage: 'No unread notifications',
-            emptySubtitle: 'You\'re all caught up! 🎉',
+            emptySubtitle: 'You\'re all caught up! ',
             onRefresh: () async {
               await ref
                   .read(notificationViewModelProvider.notifier)

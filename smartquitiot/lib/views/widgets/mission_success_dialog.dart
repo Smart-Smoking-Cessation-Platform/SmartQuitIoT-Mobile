@@ -118,7 +118,7 @@ class _MissionSuccessDialogState extends State<MissionSuccessDialog>
                 
                 // Congratulations Text
                 const Text(
-                  '🎉 Congratulations!',
+                  ' Congratulations!',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

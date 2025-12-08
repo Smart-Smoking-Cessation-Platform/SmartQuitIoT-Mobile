@@ -1035,7 +1035,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
             children: [
               Icon(theme.icon, color: Colors.white, size: 28),
               const SizedBox(width: 8),
-              const Text('🎉', style: TextStyle(fontSize: 24)),
+              const Text('', style: TextStyle(fontSize: 24)),
               const SizedBox(width: 8),
               const Text('✨', style: TextStyle(fontSize: 20)),
             ],
@@ -1107,7 +1107,7 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              Text('🎉', style: TextStyle(fontSize: 28)),
+              Text('', style: TextStyle(fontSize: 28)),
               SizedBox(width: 8),
               Text('🎆', style: TextStyle(fontSize: 24)),
               SizedBox(width: 8),
