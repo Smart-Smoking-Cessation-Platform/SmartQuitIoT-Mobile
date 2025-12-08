@@ -4,7 +4,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../models/remaining_booking.dart';
-import '../exceptions/appointment_conflict_exception.dart';
 import 'token_storage_service.dart'; // ensure this file exists in same folder
 
 class AppointmentService {
@@ -61,14 +60,8 @@ class AppointmentService {
       }
     }
 
-    // Xử lý trường hợp 409 Conflict (trùng thời gian)
-    if (resp.statusCode == 409) {
-      final msg = (body is Map && body.containsKey('message'))
-          ? body['message'].toString()
-          : 'You already have an appointment scheduled at this time with another coach.';
-      throw AppointmentConflictException(msg, statusCode: 409);
-    }
-
+    // Backend trả về 400 (Bad Request) cho các lỗi validation/conflict
+    // Message từ backend sẽ được hiển thị trực tiếp cho user
     final msg = (body is Map && body.containsKey('message'))
         ? body['message'].toString()
         : 'Booking failed: HTTP ${resp.statusCode}';

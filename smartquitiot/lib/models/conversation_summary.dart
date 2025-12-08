@@ -156,8 +156,39 @@ class ConversationSummary {
 
     final avatarUrl = extractCounterpartyAvatar(json);
 
-    final unreadRaw = json['unreadCount'] ?? json['unread_count'] ?? json['unread'];
-    final unreadCount = parseInt(unreadRaw, 0);
+    // Parse unreadCount with multiple fallbacks
+    dynamic unreadRaw = json['unreadCount'] ?? 
+                        json['unread_count'] ?? 
+                        json['unread'] ?? 
+                        json['unreadMessageCount'] ?? 
+                        json['unread_message_count'];
+    
+    int unreadCount = 0;
+    if (unreadRaw != null) {
+      if (unreadRaw is int) {
+        unreadCount = unreadRaw;
+      } else if (unreadRaw is double) {
+        unreadCount = unreadRaw.toInt();
+      } else if (unreadRaw is String) {
+        unreadCount = int.tryParse(unreadRaw) ?? 0;
+      } else if (unreadRaw is num) {
+        unreadCount = unreadRaw.toInt();
+      } else {
+        // Try to parse as string representation
+        try {
+          unreadCount = int.parse(unreadRaw.toString());
+        } catch (_) {
+          unreadCount = 0;
+        }
+      }
+    }
+    
+    // Debug: Log unreadCount parsing (can be removed in production)
+    // ignore: avoid_print
+    if (unreadCount > 0) {
+      // ignore: avoid_print
+      print('📬 [ConversationSummary] Parsed unreadCount: $unreadCount (raw: $unreadRaw, type: ${unreadRaw.runtimeType})');
+    }
 
     return ConversationSummary(
       id: id,
