@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; // Đã thêm import GoRouter
 import 'package:intl/intl.dart';
 import '../../../models/state/membership_state.dart';
 import '../../../providers/membership_provider.dart';
@@ -49,7 +50,8 @@ class _PremiumMembershipScreenState
             MaterialPageRoute(
               builder: (context) => PaymentSuccessScreen(
                 status: 'SUCCESS',
-                packageName: subscription.membershipPackage?.name ?? 'Free Trial',
+                packageName:
+                    subscription.membershipPackage?.name ?? 'Free Trial',
                 amount: subscription.totalAmount?.toString() ?? '0',
                 startDate: subscription.startDate?.toIso8601String(),
                 endDate: subscription.endDate?.toIso8601String(),
@@ -93,32 +95,64 @@ class _PremiumMembershipScreenState
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
-              // Header
+              // Header (Đã sửa thêm nút Back)
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 16,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    const Text(
-                      'Premium Membership',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                    // Nút Back
+                    Positioned(
+                      left: 0,
+                      child: InkWell(
+                        onTap: () {
+                          // Logic quay lại dùng GoRouter
+                          if (context.canPop()) {
+                            context.pop();
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(50),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Register membership for more features.',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 16,
-                      ),
-                      textAlign: TextAlign.center,
+
+                    // Tiêu đề chính
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Premium Membership',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24, // Giảm nhẹ size để vừa vặn hơn
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Register membership for more features.',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -126,7 +160,7 @@ class _PremiumMembershipScreenState
 
               // Membership Illustration
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
+                padding: const EdgeInsets.symmetric(vertical: 20), // Giảm padding 1 chút cho cân đối
                 child: Center(
                   child: Image.asset(
                     'lib/assets/images/membership.png',
@@ -276,8 +310,8 @@ class _PremiumMembershipScreenState
                                     borderRadius: BorderRadius.circular(24),
                                     onTap: isFree
                                         ? (_isProcessingFreeTrial
-                                              ? null
-                                              : _handleFreeTrialClick)
+                                            ? null
+                                            : _handleFreeTrialClick)
                                         : () => _navigateToPlanSelection(
                                             context,
                                             pkg.id,
@@ -299,8 +333,8 @@ class _PremiumMembershipScreenState
                                               child: const Center(
                                                 child:
                                                     CircularProgressIndicator(
-                                                      color: Color(0xFF00D09E),
-                                                    ),
+                                                  color: Color(0xFF00D09E),
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -401,8 +435,8 @@ class _PremiumMembershipScreenState
                                                     Padding(
                                                       padding:
                                                           const EdgeInsets.only(
-                                                            bottom: 4,
-                                                          ),
+                                                        bottom: 4,
+                                                      ),
                                                       child: Text(
                                                         '/ ${pkg.durationUnit.toLowerCase()}',
                                                         style: TextStyle(
@@ -417,17 +451,17 @@ class _PremiumMembershipScreenState
                                                     Container(
                                                       padding:
                                                           const EdgeInsets.symmetric(
-                                                            horizontal: 16,
-                                                            vertical: 8,
-                                                          ),
+                                                        horizontal: 16,
+                                                        vertical: 8,
+                                                      ),
                                                       decoration: BoxDecoration(
                                                         color: Colors
                                                             .green
                                                             .shade100,
                                                         borderRadius:
                                                             BorderRadius.circular(
-                                                              12,
-                                                            ),
+                                                          12,
+                                                        ),
                                                         border: Border.all(
                                                           color: Colors
                                                               .green
@@ -470,8 +504,8 @@ class _PremiumMembershipScreenState
                                               Padding(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                      vertical: 16.0,
-                                                    ),
+                                                  vertical: 16.0,
+                                                ),
                                                 child: Divider(
                                                   height: 1,
                                                   color: dividerColor,

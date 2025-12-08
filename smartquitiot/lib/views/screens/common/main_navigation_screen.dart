@@ -530,6 +530,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             unselectedItemColor: Colors.grey,
             currentIndex: _currentIndex,
             onTap: (index) {
+
+               if (index == 1) {
+                if (!_hasFeature(subscription, 'Metrics Tracking')) {
+                  context.push('/membership');
+                  return;
+                }
+              }
               // Special handling for protected tabs
               if (index == 2) {
                 // Diary tab - requires Metrics Tracking
