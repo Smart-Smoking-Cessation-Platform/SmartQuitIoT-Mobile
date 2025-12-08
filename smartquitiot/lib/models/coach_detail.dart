@@ -5,7 +5,7 @@ class CoachDetail {
   final String avatarUrl;
   final double ratingAvg;
   final String bio;
-  final String specialty;
+  final String? specializations; // From backend CoachDTO
   final int experienceYears;
 
   CoachDetail({
@@ -15,7 +15,7 @@ class CoachDetail {
     required this.avatarUrl,
     required this.ratingAvg,
     required this.bio,
-    required this.specialty,
+    this.specializations,
     required this.experienceYears,
   });
 
@@ -29,7 +29,7 @@ class CoachDetail {
       avatarUrl: json['avatarUrl'] ?? '',
       ratingAvg: (json['ratingAvg'] as num).toDouble(),
       bio: json['bio'] ?? '',
-      specialty: json['specialty'] ?? 'Health Coach',
+      specializations: json['specializations'] as String?,
       experienceYears: json['experienceYears'] ?? 0,
     );
   }

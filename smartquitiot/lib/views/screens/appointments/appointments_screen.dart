@@ -209,10 +209,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
 
   Future<void> _fetchAppointments({bool isRefresh = false}) async {
     if (!isRefresh) {
-      setState(() {
-        _loading = true;
-        _error = null;
-      });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     }
 
     try {
@@ -385,11 +385,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
       context.pushNamed(
         'meeting',
         extra: {
-          'channel': resp['channel'],
-          'token': resp['token'],
-          'uid': resp['uid'],
-          'appointmentId': a.appointmentId,
-          'expiresAt': resp['expiresAt'],
+        'channel': resp['channel'],
+        'token': resp['token'],
+        'uid': resp['uid'],
+        'appointmentId': a.appointmentId,
+        'expiresAt': resp['expiresAt'],
         },
       );
     } catch (e, st) {
@@ -418,16 +418,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
         String comment = '';
         return StatefulBuilder(
           builder: (ctx2, setSt) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.46,
-              minChildSize: 0.32,
-              maxChildSize: 0.9,
-              expand: false,
-              builder: (_, controller) {
-                return Container(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
+          return DraggableScrollableSheet(
+            initialChildSize: 0.46,
+            minChildSize: 0.32,
+            maxChildSize: 0.9,
+            expand: false,
+            builder: (_, controller) {
+              return Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
@@ -437,12 +437,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                         blurRadius: 12,
                       ),
                     ],
-                  ),
-                  child: SingleChildScrollView(
-                    controller: controller,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                ),
+                child: SingleChildScrollView(
+                  controller: controller,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                         Container(
                           width: 40,
                           height: 4,
@@ -459,24 +459,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                         const Text(
                           'Please share your feedback about the coaching session so the coach can improve.',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 13, color: Colors.black54),
                         ),
-                        const SizedBox(height: 18),
-                        Column(
-                          children: [
+                      const SizedBox(height: 18),
+                      Column(
+                        children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(5, (i) {
-                                final idx = i + 1;
-                                final bool active = idx <= selectedStars;
-                                return GestureDetector(
-                                  onTap: () => setSt(() => selectedStars = idx),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 160),
+                            children: List.generate(5, (i) {
+                              final idx = i + 1;
+                              final bool active = idx <= selectedStars;
+                              return GestureDetector(
+                                onTap: () => setSt(() => selectedStars = idx),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 160),
                                     margin: const EdgeInsets.symmetric(
                                       horizontal: 6,
                                     ),
@@ -491,12 +491,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                           ? Colors.amber
                                           : Colors.grey.shade400,
                                     ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            const SizedBox(height: 8),
-                            // label
+                                ),
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 8),
+                          // label
                             Builder(
                               builder: (_) {
                                 final labels = [
@@ -515,34 +515,34 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                 );
                               },
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          maxLines: 4,
-                          onChanged: (v) => comment = v,
-                          decoration: InputDecoration(
-                            hintText: 'Write comment (optional)...',
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        maxLines: 4,
+                        onChanged: (v) => comment = v,
+                        decoration: InputDecoration(
+                          hintText: 'Write comment (optional)...',
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 12,
                             ),
-                            filled: true,
-                            fillColor: Theme.of(context).cardColor,
+                          filled: true,
+                          fillColor: Theme.of(context).cardColor,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                          ),
                         ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () => Navigator.of(ctx2).pop(null),
-                                style: OutlinedButton.styleFrom(
-                                  side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(ctx2).pop(null),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.grey.shade300),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -554,39 +554,39 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                   'Cancel',
                                   style: TextStyle(color: Colors.black87),
                                 ),
-                              ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
                                 onPressed: () => Navigator.of(ctx2).pop({
                                   'stars': selectedStars,
                                   'comment': comment.trim(),
                                 }),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00D09E),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00D09E),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                   ),
-                                  elevation: 3,
-                                ),
+                                elevation: 3,
+                              ),
                                 child: const Text(
                                   'Submit',
                                   style: TextStyle(fontWeight: FontWeight.w700),
                                 ),
-                              ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                );
-              },
-            );
+                ),
+              );
+            },
+          );
           },
         );
       },
@@ -1422,7 +1422,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                   const SizedBox(height: 8),
                                   // Completed => show Rate button (if not rated) OR "View Feedback" button
                                   if (isCompleted && !isCancelled) ...[
-                                    hasRated
+                      hasRated
                                         ? ElevatedButton.icon(
                                             onPressed: () =>
                                                 _onViewFeedbackPressed(a),
@@ -1431,18 +1431,18 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                               size: 16,
                                             ),
                                             label: const Text('View'),
-                                            style: ElevatedButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
                                               backgroundColor: primaryGreen,
-                                              foregroundColor: Colors.white,
-                                              minimumSize: const Size(90, 36),
-                                            ),
-                                          )
-                                        : isSubmittingThis
-                                        ? ElevatedButton(
-                                            onPressed: null,
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: const [
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(90, 36),
+                        ),
+                      )
+                          : isSubmittingThis
+                      ? ElevatedButton(
+                      onPressed: null,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
                                                 SizedBox(
                                                   width: 16,
                                                   height: 16,
@@ -1454,24 +1454,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                                         >(Colors.white),
                                                   ),
                                                 ),
-                                                SizedBox(width: 8),
-                                                Text('Submitting'),
-                                              ],
-                                            ),
+                          SizedBox(width: 8),
+                          Text('Submitting'),
+                        ],
+                      ),
                                             style: ElevatedButton.styleFrom(
                                               minimumSize: const Size(90, 36),
                                               backgroundColor: primaryGreen,
                                             ),
-                                          )
-                                        : ElevatedButton(
-                                            onPressed: () => _onRatePressed(a),
-                                            child: const Text('Rate'),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: primaryGreen,
-                                              minimumSize: const Size(90, 36),
-                                            ),
+                    )
+                          : ElevatedButton(
+                      onPressed: () => _onRatePressed(a),
+                child: const Text('Rate'),
+                style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGreen,
+                minimumSize: const Size(90, 36),
+                ),
                                           ),
-                                  ]
+                ]
                                   // Join button only if not cancelled, status IN_PROGRESS and within window
                                   else if (!isCancelled &&
                                       a.runtimeStatus != null &&
@@ -1497,43 +1497,43 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                                     )
                                   // Pending: show Cancel button
                                   else if (!isCancelled &&
-                                      a.runtimeStatus != null &&
+                                        a.runtimeStatus != null &&
                                       a.runtimeStatus!.toUpperCase().contains(
                                         'PENDING',
                                       ))
-                                    SizedBox(
-                                      width: 110,
-                                      height: 36,
-                                      child: ElevatedButton(
-                                        onPressed: () => _onCancelPressed(a),
-                                        child: const Text('Cancel'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red.shade200,
-                                          foregroundColor: Colors.red.shade900,
-                                          minimumSize: const Size(80, 36),
-                                          shape: RoundedRectangleBorder(
+                                      SizedBox(
+                                        width: 110,
+                                        height: 36,
+                                        child: ElevatedButton(
+                                          onPressed: () => _onCancelPressed(a),
+                                          child: const Text('Cancel'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red.shade200,
+                                            foregroundColor: Colors.red.shade900,
+                                            minimumSize: const Size(80, 36),
+                                            shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    )
-                                  else
-                                    IconButton(
-                                      onPressed: () => _showAppointmentDetail(
-                                        context,
-                                        a,
-                                        dateLabel,
-                                        timeLabel,
-                                      ),
-                                      icon: Icon(
-                                        Icons.chevron_right,
+                                      )
+                                    else
+                                      IconButton(
+                                        onPressed: () => _showAppointmentDetail(
+                                          context,
+                                          a,
+                                          dateLabel,
+                                          timeLabel,
+                                        ),
+                                        icon: Icon(
+                                          Icons.chevron_right,
                                         color: isCancelled
                                             ? Colors.grey.shade400
                                             : Colors.grey,
+                                        ),
                                       ),
-                                    ),
                                 ],
                               ),
                             ),
@@ -1645,11 +1645,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
   }
 
   void _showAppointmentDetail(
-    BuildContext context,
-    Appointment a,
-    String dateLabel,
-    String timeLabel,
-  ) {
+      BuildContext context,
+      Appointment a,
+      String dateLabel,
+      String timeLabel,
+      ) {
     final isCancelled = (a.runtimeStatus ?? '').toUpperCase().contains(
       'CANCEL',
     );
@@ -1664,9 +1664,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
           padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                 // Header
                 Row(
                   children: [
@@ -1844,7 +1844,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryGreen,
                       shape: RoundedRectangleBorder(
