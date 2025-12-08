@@ -86,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // Show success notification
         NotificationHelper.showTopNotification(
           context,
-          title: '🎉 Success',
+          title: 'Success',
           message: 'Login successful! Redirecting...',
         );
 

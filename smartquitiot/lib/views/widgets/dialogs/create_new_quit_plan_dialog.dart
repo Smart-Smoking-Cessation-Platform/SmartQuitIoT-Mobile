@@ -130,8 +130,23 @@ class _CreateNewQuitPlanDialogState
       // Create new plan
       await ref.read(quitPlanViewModelProvider.notifier).createNewPlan(request);
 
+      // If dialog was closed while waiting, stop and clean up safely
+      if (!mounted) {
+        if (rootContext.mounted) {
+          FullScreenLoader.hide(rootContext);
+        }
+        return;
+      }
+
       // Wait a bit for state to update
       await Future.delayed(const Duration(milliseconds: 100));
+
+      if (!mounted) {
+        if (rootContext.mounted) {
+          FullScreenLoader.hide(rootContext);
+        }
+        return;
+      }
 
       // Check state
       final state = ref.read(quitPlanViewModelProvider);
@@ -158,12 +173,14 @@ class _CreateNewQuitPlanDialogState
       } else if (state.hasValue && state.value != null) {
         // Success
         // Refresh quit plan data
-        ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+        if (mounted) {
+          ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+        }
 
         // Show success message
         if (rootContext.mounted) {
           Flushbar(
-            message: 'New quit plan created successfully! 🎉',
+            message: 'New quit plan created successfully!',
             icon: const Icon(Icons.check_circle, color: Colors.white),
             backgroundColor: const Color(0xFF00D09E),
             duration: const Duration(seconds: 2),
