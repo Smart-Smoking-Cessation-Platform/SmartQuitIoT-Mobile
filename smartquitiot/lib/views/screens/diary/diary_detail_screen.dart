@@ -1,8 +1,10 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart'; // Import thư viện biểu đồ
 import 'package:SmartQuitIoT/models/diary_record.dart';
 import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
-import 'package:intl/intl.dart';
 
 class DiaryDetailScreen extends ConsumerWidget {
   final int diaryId;
@@ -89,7 +91,7 @@ class DiaryDetailScreen extends ConsumerWidget {
               const SizedBox(height: 20),
             ],
 
-            // Health Data
+            // Health Data (Raw)
             if (diary.isConnectIoTDevice) ...[
               _buildHealthSection(diary),
               const SizedBox(height: 20),
@@ -101,13 +103,21 @@ class DiaryDetailScreen extends ConsumerWidget {
               const SizedBox(height: 20),
             ],
 
-            // Statistics
+            // Statistics (Raw)
             _buildStatisticsSection(diary),
+
+            // ===> NEW DASHBOARD SECTION <===
+            const SizedBox(height: 30),
+            const Divider(thickness: 1, height: 40),
+            _buildDashboardSection(diary),
+            const SizedBox(height: 40), // Bottom padding
           ],
         ),
       ),
     );
   }
+
+  // --- EXISTING WIDGETS ---
 
   Widget _buildDateHeader(String date) {
     final parsedDate = DateTime.parse(date);
@@ -130,7 +140,6 @@ class DiaryDetailScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          // Left side - Day number
           Container(
             width: 60,
             height: 60,
@@ -154,7 +163,6 @@ class DiaryDetailScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 16),
-          // Right side - Month, Year, Day of week
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,10 +187,9 @@ class DiaryDetailScreen extends ConsumerWidget {
               ],
             ),
           ),
-          // Calendar icon
-          Icon(
+          const Icon(
             Icons.calendar_today_outlined,
-            color: const Color(0xFF00D09E),
+            color: Color(0xFF00D09E),
             size: 24,
           ),
         ],
@@ -215,9 +222,9 @@ class DiaryDetailScreen extends ConsumerWidget {
                 size: 24,
               ),
               const SizedBox(width: 12),
-              Text(
+              const Text(
                 'Smoking Status',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF2D3748),
@@ -742,6 +749,298 @@ class DiaryDetailScreen extends ConsumerWidget {
             label,
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- NEW DASHBOARD WIDGETS ---
+
+  Widget _buildDashboardSection(DiaryRecord diary) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.dashboard_customize, color: Color(0xFF00D09E), size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Metrics Analysis',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3748),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        
+        // Chart 1: Phân tích tâm lý (Bar Chart)
+        _buildPsychologyChart(diary),
+        
+        const SizedBox(height: 20),
+        
+        // Chart 2: Hiệu suất sức khỏe (Giả lập Goal Progress)
+        _buildHealthEfficiencyCards(diary),
+      ],
+    );
+  }
+
+  Widget _buildPsychologyChart(DiaryRecord diary) {
+    return Container(
+      height: 300,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Text(
+            "Psychological Overview",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 30), // Thêm khoảng trống
+          Expanded(
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: 10,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => Colors.blueGrey,
+                    tooltipPadding: const EdgeInsets.all(8),
+                    tooltipMargin: 8,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      String label;
+                      switch (group.x) {
+                        case 0: label = 'Craving'; break;
+                        case 1: label = 'Mood'; break;
+                        case 2: label = 'Confid.'; break;
+                        case 3: label = 'Anxiety'; break;
+                        default: label = '';
+                      }
+                      return BarTooltipItem(
+                        '$label\n',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: (rod.toY).toInt().toString(),
+                            style: const TextStyle(
+                              color: Color(0xFF00D09E),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        const style = TextStyle(
+                          color: Color(0xFF718096),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        );
+                        String text;
+                        switch (value.toInt()) {
+                          case 0: text = 'Craving'; break;
+                          case 1: text = 'Mood'; break;
+                          case 2: text = 'Confid.'; break;
+                          case 3: text = 'Anxiety'; break;
+                          default: text = '';
+                        }
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          space: 4,
+                          child: Text(text, style: style),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 2,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(
+                            color: Color(0xFFA0AEC0),
+                            fontSize: 10,
+                          ),
+                        );
+                      },
+                      reservedSize: 28,
+                    ),
+                  ),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 2,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Colors.grey[200],
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                borderData: FlBorderData(show: false),
+                barGroups: [
+                  _makeBarGroup(0, diary.cravingLevel.toDouble(), const Color(0xFFE91E63)),
+                  _makeBarGroup(1, diary.moodLevel.toDouble(), const Color(0xFF2196F3)),
+                  _makeBarGroup(2, diary.confidenceLevel.toDouble(), const Color(0xFF4CAF50)),
+                  _makeBarGroup(3, diary.anxietyLevel.toDouble(), const Color(0xFFFF9800)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  BarChartGroupData _makeBarGroup(int x, double y, Color color) {
+    return BarChartGroupData(
+      x: x,
+      barRods: [
+        BarChartRodData(
+          toY: y,
+          color: color,
+          width: 22,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(6),
+            topRight: Radius.circular(6),
+          ),
+          backDrawRodData: BackgroundBarChartRodData(
+            show: true,
+            toY: 10,
+            color: color.withOpacity(0.1),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHealthEfficiencyCards(DiaryRecord diary) {
+    // Giả định mục tiêu (Có thể sửa lại theo logic app của bạn)
+    const int stepGoal = 10000;
+    const double sleepGoal = 8.0; 
+    
+    double stepProgress = (diary.steps / stepGoal).clamp(0.0, 1.0);
+    double sleepProgress = (diary.sleepDuration / sleepGoal).clamp(0.0, 1.0);
+
+    return Row(
+      children: [
+        Expanded(
+          child: _buildCircularMetric(
+            "Daily Steps",
+            "${(stepProgress * 100).toInt()}%",
+            stepProgress,
+            const Color(0xFF00D09E),
+            Icons.directions_walk,
+            "${diary.steps} / $stepGoal",
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildCircularMetric(
+            "Sleep Goal",
+            "${(sleepProgress * 100).toInt()}%",
+            sleepProgress,
+            const Color(0xFF6C63FF),
+            Icons.bedtime,
+            "${diary.sleepDuration}h / ${sleepGoal}h",
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCircularMetric(String title, String percentage, double value, Color color, IconData icon, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: CircularProgressIndicator(
+                  value: value,
+                  strokeWidth: 8,
+                  backgroundColor: color.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              Icon(icon, color: color, size: 32),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            percentage,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
