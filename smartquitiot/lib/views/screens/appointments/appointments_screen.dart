@@ -1653,6 +1653,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
     final isCancelled = (a.runtimeStatus ?? '').toUpperCase().contains(
       'CANCEL',
     );
+    
+    // Debug: log createdAt value
+    debugPrint('[AppointmentDetail] appointmentId=${a.appointmentId}, createdAt=${a.createdAt}');
 
     showDialog(
       context: context,
@@ -1741,6 +1744,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen>
                   label: 'Slot',
                   value: '${a.slotId}',
                   iconColor: Colors.teal,
+                ),
+                const SizedBox(height: 16),
+                _buildDetailRow(
+                  icon: Icons.add_circle_outline,
+                  label: 'Booked at',
+                  value: a.createdAt != null
+                      ? DateFormat('EEE, dd MMM yyyy • HH:mm').format(a.createdAt!.toLocal())
+                      : 'Not available',
+                  iconColor: Colors.indigo,
                 ),
                 const SizedBox(height: 16),
                 Row(
