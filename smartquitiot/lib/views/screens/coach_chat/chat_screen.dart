@@ -577,11 +577,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Chưa có cuộc trò chuyện nào'),
+                      const Text('No conversations yet'),
                       const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: () => ref.invalidate(conversationsProvider),
-                        child: const Text('Tải lại'),
+                        child: const Text('Reload'),
                       ),
                     ],
                   ),
