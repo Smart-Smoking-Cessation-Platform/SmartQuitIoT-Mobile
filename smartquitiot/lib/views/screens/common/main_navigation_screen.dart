@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // Đổi từ Lottie sang SVG
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -167,16 +167,18 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     ];
   }
 
-  final List<String> lottiePaths = [
-    'lib/assets/animations/home.json',
-    'lib/assets/animations/chat.json',
-    'lib/assets/animations/diary.json',
-    'lib/assets/animations/craving.json',
-    'lib/assets/animations/trophy.json',
-    'lib/assets/animations/leaderboard.json',
+  // --- CẬP NHẬT PHẦN NÀY: Dùng SVG thay vì Lottie ---
+  // Lưu ý: Đảm bảo đường dẫn assets đúng với project của bạn
+  final List<String> svgPaths = [
+    'lib/assets/images/house-line.svg',        // Home
+    'lib/assets/images/chat-teardrop-dots.svg',// Chat
+    'lib/assets/images/notebook.svg',          // Diary
+    'lib/assets/images/cigarette-slash.svg',   // Quit Plan (Craving)
+    'lib/assets/images/trophy.svg',            // Achievements
+    'lib/assets/images/ranking.svg',           // Leaderboard
   ];
 
-  final List<String> lottieLabels = [
+  final List<String> navLabels = [
     'home',
     'chat',
     'diary',
@@ -184,6 +186,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     'achievements',
     'leaderboard',
   ];
+  // --------------------------------------------------
 
   /// Helper method to check if user has specific feature
   bool _hasFeature(MembershipSubscription? subscription, String featureName) {
@@ -192,16 +195,16 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
     // Check if features list contains the required feature (case-insensitive)
     return subscription!.membershipPackage!.features.any(
-      (feature) => feature.toLowerCase().contains(featureName.toLowerCase()),
+          (feature) => feature.toLowerCase().contains(featureName.toLowerCase()),
     );
   }
 
   /// Build protected screen - navigate to premium if no access
   Widget _buildProtectedScreen(
-    MembershipSubscription? subscription,
-    Widget screen,
-    String requiredFeature,
-  ) {
+      MembershipSubscription? subscription,
+      Widget screen,
+      String requiredFeature,
+      ) {
     if (_hasFeature(subscription, requiredFeature)) {
       return screen;
     }
@@ -212,10 +215,10 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   /// Wrap card with premium protection - show card but intercept taps if no feature
   Widget _buildPremiumProtectedCard(
-    MembershipSubscription? subscription,
-    Widget card,
-    String requiredFeature,
-  ) {
+      MembershipSubscription? subscription,
+      Widget card,
+      String requiredFeature,
+      ) {
     final hasFeature = _hasFeature(subscription, requiredFeature);
 
     if (hasFeature) {
@@ -438,11 +441,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         debugPrint('❌ [MainNavigation] Membership error: $error');
         debugPrint('📚 [MainNavigation] Stack trace: $stack');
 
-        // Show app with basic functionality (no premium features)
-        // This prevents the app from being completely unusable
-        final screens = _buildScreens(
-          null,
-        ); // null subscription = no premium features
+        final screens = _buildScreens(null);
 
         return Scaffold(
           body: IndexedStack(index: _currentIndex, children: screens),
@@ -452,28 +451,32 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             unselectedItemColor: Colors.grey,
             currentIndex: _currentIndex,
             onTap: (index) {
-              // All tabs redirect to premium for safety when membership API fails
               if (index == 2 || index == 3) {
                 context.push('/membership');
                 return;
               }
               setState(() => _currentIndex = index);
             },
-            items: List.generate(lottiePaths.length, (index) {
+            // --- CẬP NHẬT PHẦN HIỂN THỊ ICON (Error State) ---
+            items: List.generate(svgPaths.length, (index) {
               return BottomNavigationBarItem(
-                icon: SizedBox(
-                  height: 30,
-                  width: 30,
-                  child: Lottie.asset(
-                    lottiePaths[index],
-                    animate: _currentIndex == index,
-                  ),
+                icon: SvgPicture.asset(
+                  svgPaths[index],
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.srcIn),
                 ),
-                label: lottieLabels[index].tr(),
+                activeIcon: SvgPicture.asset(
+                  svgPaths[index],
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(Color(0xFF00D09E), BlendMode.srcIn),
+                ),
+                label: navLabels[index].tr(),
               );
             }),
+            // ------------------------------------------------
           ),
-          // Show error banner at top
           persistentFooterButtons: [
             Container(
               width: double.infinity,
@@ -507,20 +510,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         );
       },
       data: (subscription) {
-        // Debug logging for membership status
-        if (subscription == null) {
-          debugPrint(
-            '🆓 [MainNavigation] No active subscription - showing free features only',
-          );
-        } else {
-          debugPrint(
-            '💎 [MainNavigation] Active subscription: ${subscription.membershipPackage?.name ?? "Unknown"}',
-          );
-          debugPrint(
-            '🎯 [MainNavigation] Features: ${subscription.membershipPackage?.features ?? []}',
-          );
-        }
-
         final screens = _buildScreens(subscription);
         return Scaffold(
           body: IndexedStack(index: _currentIndex, children: screens),
@@ -531,7 +520,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             currentIndex: _currentIndex,
             onTap: (index) {
 
-               if (index == 1) {
+              if (index == 1) {
                 if (!_hasFeature(subscription, 'Metrics Tracking')) {
                   context.push('/membership');
                   return;
@@ -554,19 +543,27 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               }
               setState(() => _currentIndex = index);
             },
-            items: List.generate(lottiePaths.length, (index) {
+            // --- CẬP NHẬT PHẦN HIỂN THỊ ICON (Data State) ---
+            items: List.generate(svgPaths.length, (index) {
               return BottomNavigationBarItem(
-                icon: SizedBox(
-                  height: 30,
-                  width: 30,
-                  child: Lottie.asset(
-                    lottiePaths[index],
-                    animate: _currentIndex == index,
-                  ),
+                // Trạng thái thường (Màu xám)
+                icon: SvgPicture.asset(
+                  svgPaths[index],
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.srcIn),
                 ),
-                label: lottieLabels[index].tr(),
+                // Trạng thái được chọn (Màu xanh chủ đạo)
+                activeIcon: SvgPicture.asset(
+                  svgPaths[index],
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(Color(0xFF00D09E), BlendMode.srcIn),
+                ),
+                label: navLabels[index].tr(),
               );
             }),
+            // ------------------------------------------------
           ),
         );
       },
