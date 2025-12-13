@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart'; // Import thư viện biểu đồ
 import 'package:SmartQuitIoT/models/diary_record.dart';
 import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
+import 'package:SmartQuitIoT/providers/diary_refresh_provider.dart';
+import 'edit_diary_dialog.dart';
 
 class DiaryDetailScreen extends ConsumerWidget {
   final int diaryId;
@@ -31,6 +33,28 @@ class DiaryDetailScreen extends ConsumerWidget {
           ),
         ),
         centerTitle: true,
+        actions: [
+          diaryDetail.when(
+            data: (diary) => IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () async {
+                final result = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => EditDiaryDialog(diaryRecord: diary),
+                );
+                // Refresh detail and history if edit was successful
+                if (result == true) {
+                  ref.invalidate(diaryDetailProvider(diaryId));
+                  ref.invalidate(diaryHistoryProvider);
+                  ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+                }
+              },
+              tooltip: 'Edit Diary',
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: diaryDetail.when(
         data: (diary) => _buildDiaryDetail(diary),

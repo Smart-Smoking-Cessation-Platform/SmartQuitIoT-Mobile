@@ -9,6 +9,7 @@ import 'package:SmartQuitIoT/services/diary_service.dart';
 import 'package:SmartQuitIoT/core/errors/failures.dart';
 import 'package:SmartQuitIoT/models/state/diary_today_state.dart';
 import 'package:SmartQuitIoT/viewmodels/diary_today_view_model.dart';
+import 'package:SmartQuitIoT/providers/diary_refresh_provider.dart';
 
 // Service provider
 final diaryServiceProvider = Provider<DiaryService>((ref) {
@@ -102,6 +103,40 @@ class DiaryRecordNotifier
       );
       state = AsyncValue.data(result);
       _ref.read(diaryTodayViewModelProvider.notifier).refreshTodayStatus();
+    } on ServerFailure catch (e) {
+      print('❌ [DiaryRecordNotifier] ServerFailure: ${e.message}');
+      state = AsyncValue.error(e.message, StackTrace.current);
+    } catch (e) {
+      print('❌ [DiaryRecordNotifier] Error: $e');
+      state = AsyncValue.error(e.toString(), StackTrace.current);
+    }
+  }
+
+  Future<void> updateDiaryRecord(
+    int id,
+    DiaryRecordUpdateRequest request,
+  ) async {
+    print('📝 [DiaryRecordNotifier] Starting updateDiaryRecord for ID: $id...');
+    state = const AsyncValue.loading();
+    try {
+      final updatedRecord = await _repository.updateDiaryRecord(id, request);
+      print('✅ [DiaryRecordNotifier] Diary updated successfully');
+      
+      // Create a result object similar to create for consistency
+      final result = DiaryCreateResult(
+        diaryRecord: updatedRecord,
+        statusCode: 200,
+        message: 'Diary record updated successfully',
+      );
+      
+      state = AsyncValue.data(result);
+      
+      // Invalidate providers to refresh data
+      _ref.invalidate(diaryDetailProvider(id));
+      _ref.invalidate(diaryHistoryProvider);
+      _ref.invalidate(diaryChartsProvider);
+      _ref.read(diaryChartsRefreshProvider.notifier).refreshCharts();
+      _ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
     } on ServerFailure catch (e) {
       print('❌ [DiaryRecordNotifier] ServerFailure: ${e.message}');
       state = AsyncValue.error(e.message, StackTrace.current);

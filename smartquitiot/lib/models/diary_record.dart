@@ -192,3 +192,35 @@ class DiaryRecordRequest {
     };
   }
 }
+
+class DiaryRecordUpdateRequest {
+  final int cigarettesSmoked;
+  final double moneySpentOnNrt;
+  final int cravingLevel;
+  final int moodLevel;
+  final int confidenceLevel;
+  final int anxietyLevel;
+  final String note;
+
+  DiaryRecordUpdateRequest({
+    required this.cigarettesSmoked,
+    required this.moneySpentOnNrt,
+    required this.cravingLevel,
+    required this.moodLevel,
+    required this.confidenceLevel,
+    required this.anxietyLevel,
+    required this.note,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'cigarettesSmoked': cigarettesSmoked,
+      'moneySpentOnNrt': moneySpentOnNrt,
+      'cravingLevel': cravingLevel,
+      'moodLevel': moodLevel,
+      'confidenceLevel': confidenceLevel,
+      'anxietyLevel': anxietyLevel,
+      'note': note,
+    };
+  }
+}

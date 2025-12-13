@@ -254,6 +254,42 @@ class DiaryRecordRepository {
     }
   }
 
+  /// Update diary record
+  Future<DiaryRecord> updateDiaryRecord(
+    int id,
+    DiaryRecordUpdateRequest request,
+  ) async {
+    try {
+      print('📝 Updating diary record with ID: $id...');
+      final response = await _diaryService.updateDiaryRecord(id, request);
+
+      if (response.statusCode == 200) {
+        print('✅ Diary record updated successfully');
+        try {
+          // Handle response structure (may be wrapped in data field)
+          final dataMap = response.data is Map ? response.data : {};
+          final recordData = dataMap['data'] ?? response.data;
+          return DiaryRecord.fromJson(recordData);
+        } catch (parseError) {
+          print('❌ JSON Parsing Error: $parseError');
+          print('❌ Response data: ${response.data}');
+          throw ServerFailure('Failed to parse updated diary record: $parseError');
+        }
+      } else {
+        throw ServerFailure(
+          'Failed to update diary record: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      print('❌ DioException during update diary: ${e.message}');
+      print('❌ HTTP Status code: ${e.response?.statusCode}');
+      throw ServerFailure(_handleDioError(e));
+    } catch (e) {
+      print('❌ Unexpected error during update diary: $e');
+      throw ServerFailure('Unexpected error: ${e.toString()}');
+    }
+  }
+
   /// Helper: xử lý lỗi từ Dio
   String _handleDioError(DioException e) {
     if (e.response != null) {
