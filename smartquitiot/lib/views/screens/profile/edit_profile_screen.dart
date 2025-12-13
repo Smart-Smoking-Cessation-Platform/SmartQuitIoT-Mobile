@@ -199,21 +199,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
 
       // 2. Logic Validation Quiet Start < Quiet End
-      try {
-        final startParts = quietStart.split(':');
-        final endParts = quietEnd.split(':');
+      // try {
+      //   final startParts = quietStart.split(':');
+      //   final endParts = quietEnd.split(':');
 
-        final startMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-        final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+      //   final startMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+      //   final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
 
-        if (startMinutes >= endMinutes) {
-          _showFlushbar('Quiet Start Time must be before quiet end time', Colors.orange);
-          return;
-        }
-      } catch (e) {
-        _showFlushbar('Lỗi định dạng thời gian', Colors.red);
-        return;
-      }
+      //   if (startMinutes >= endMinutes) {
+      //     _showFlushbar('Quiet Start Time must be before quiet end time', Colors.orange);
+      //     return;
+      //   }
+      // } catch (e) {
+      //   _showFlushbar('Lỗi định dạng thời gian', Colors.red);
+      //   return;
+      // }
 
       await ref
           .read(reminderSettingsViewModelProvider.notifier)
