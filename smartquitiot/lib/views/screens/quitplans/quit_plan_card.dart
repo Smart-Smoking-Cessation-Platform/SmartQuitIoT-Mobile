@@ -528,67 +528,67 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
         const SizedBox(height: 20),
 
         // 🌈 Styled Progress Bar with Glow
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Overall Progress',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            Stack(
-              alignment: Alignment.centerLeft,
-              children: [
-                Container(
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: phaseTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                AnimatedBuilder(
-                  animation: _glowController,
-                  builder: (context, _) {
-                    final glow = 4 + (_glowController.value * 6);
-                    return Container(
-                      height: 12,
-                      width:
-                          MediaQuery.of(context).size.width *
-                          0.7 *
-                          quitPlan.progressPercentage,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: phaseTheme.gradient,
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: [
-                          BoxShadow(
-                            color: phaseTheme.primaryColor.withOpacity(0.5),
-                            blurRadius: glow,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                Positioned(
-                  right: 0,
-                  child: Text(
-                    '${quitPlan.progressPercent}%',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: phaseTheme.primaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        // Column(
+        //   crossAxisAlignment: CrossAxisAlignment.start,
+        //   children: [
+        //     const Text(
+        //       'Overall Progress',
+        //       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        //     ),
+        //     const SizedBox(height: 10),
+        //     Stack(
+        //       alignment: Alignment.centerLeft,
+        //       children: [
+        //         Container(
+        //           height: 12,
+        //           decoration: BoxDecoration(
+        //             color: phaseTheme.primaryColor.withOpacity(0.1),
+        //             borderRadius: BorderRadius.circular(6),
+        //           ),
+        //         ),
+        //         AnimatedBuilder(
+        //           animation: _glowController,
+        //           builder: (context, _) {
+        //             final glow = 4 + (_glowController.value * 6);
+        //             return Container(
+        //               height: 12,
+        //               width:
+        //                   MediaQuery.of(context).size.width *
+        //                   0.7 *
+        //                   quitPlan.progressPercentage,
+        //               decoration: BoxDecoration(
+        //                 gradient: LinearGradient(
+        //                   colors: phaseTheme.gradient,
+        //                   begin: Alignment.centerLeft,
+        //                   end: Alignment.centerRight,
+        //                 ),
+        //                 borderRadius: BorderRadius.circular(6),
+        //                 boxShadow: [
+        //                   BoxShadow(
+        //                     color: phaseTheme.primaryColor.withOpacity(0.5),
+        //                     blurRadius: glow,
+        //                     spreadRadius: 1,
+        //                   ),
+        //                 ],
+        //               ),
+        //             );
+        //           },
+        //         ),
+        //         Positioned(
+        //           right: 0,
+        //           child: Text(
+        //             '${quitPlan.progressPercent}%',
+        //             style: TextStyle(
+        //               fontSize: 12,
+        //               fontWeight: FontWeight.bold,
+        //               color: phaseTheme.primaryColor,
+        //             ),
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }
