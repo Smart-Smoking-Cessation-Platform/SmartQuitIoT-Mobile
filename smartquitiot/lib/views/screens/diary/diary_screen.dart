@@ -196,7 +196,10 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
     if (charts.moodLevel.isEmpty &&
         charts.confidenceLevel.isEmpty &&
         charts.cravingLevel.isEmpty &&
-        charts.anxietyLevel.isEmpty) {
+        charts.anxietyLevel.isEmpty &&
+        charts.cigarettesSmoked.isEmpty &&
+        charts.reductionPercentage.isEmpty &&
+        charts.estimatedNicotineIntake.isEmpty) {
       // Wrap empty state với ListView để pull-to-refresh work
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -275,6 +278,33 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
               const Color(0xFF9C27B0),
               Icons.mood_bad,
             ),
+          if (charts.cigarettesSmoked.isNotEmpty)
+            _buildChartCard(
+              'Cigarettes Smoked',
+              charts.cigarettesSmoked
+                  .map((e) => ChartDataPoint(e.date, e.cigarettesSmoked.toDouble()))
+                  .toList(),
+              const Color(0xFFF44336),
+              Icons.smoking_rooms,
+            ),
+          if (charts.reductionPercentage.isNotEmpty)
+            _buildChartCard(
+              'Reduction Percentage',
+              charts.reductionPercentage
+                  .map((e) => ChartDataPoint(e.date, e.reductionPercentage))
+                  .toList(),
+              const Color(0xFF4CAF50),
+              Icons.trending_down,
+            ),
+          if (charts.estimatedNicotineIntake.isNotEmpty)
+            _buildChartCard(
+              'Estimated Nicotine Intake',
+              charts.estimatedNicotineIntake
+                  .map((e) => ChartDataPoint(e.date, e.estimatedNicotineIntake))
+                  .toList(),
+              const Color(0xFF795548),
+              Icons.water_drop,
+            ),
         ],
       ),
     );
@@ -347,6 +377,40 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
     Color color,
     IconData icon,
   ) {
+    // Calculate dynamic Y-axis range based on data
+    final maxValue = data.isEmpty
+        ? 10.0
+        : data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    
+    // Determine appropriate maxY and interval based on the maximum value
+    double maxY;
+    double interval;
+    
+    if (maxValue <= 10) {
+      // For 0-10 scale (mood, confidence, craving, anxiety)
+      maxY = 10;
+      interval = 2;
+    } else if (maxValue <= 100) {
+      // For percentage (0-100)
+      maxY = 100;
+      interval = 20;
+    } else {
+      // For larger values (cigarettes, nicotine), round up to nearest 10 with padding
+      maxY = (maxValue * 1.2).ceilToDouble();
+      // Round to nearest 10 for cleaner intervals
+      maxY = ((maxY / 10).ceil() * 10).toDouble();
+      // Set interval based on maxY
+      if (maxY < 50) {
+        interval = 10;
+      } else if (maxY < 100) {
+        interval = 20;
+      } else {
+        interval = maxY / 5;
+        // Round interval to nearest 10 for cleaner display
+        interval = ((interval / 10).ceil() * 10).toDouble();
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(20),
@@ -386,7 +450,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: 2,
+                  horizontalInterval: interval,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(color: Colors.grey[200]!, strokeWidth: 1);
                   },
@@ -396,10 +460,14 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
-                      interval: 2,
+                      interval: interval,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          value.toInt().toString(),
+                          value % interval == 0
+                              ? (value.toInt() == value
+                                  ? value.toInt().toString()
+                                  : value.toStringAsFixed(1))
+                              : '',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 12,
@@ -453,7 +521,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                 minX: -0.3, // Add left padding
                 maxX: (data.length - 1).toDouble() + 0.3, // Add right padding
                 minY: 0,
-                maxY: 10,
+                maxY: maxY,
                 lineBarsData: [
                   LineChartBarData(
                     spots: data.asMap().entries.map((e) {
@@ -485,8 +553,11 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
                         final date = DateTime.parse(data[spot.x.toInt()].date);
+                        final value = spot.y % 1 == 0
+                            ? spot.y.toInt().toString()
+                            : spot.y.toStringAsFixed(1);
                         return LineTooltipItem(
-                          '${DateFormat('MMM dd').format(date)}\n${spot.y.toInt()}',
+                          '${DateFormat('MMM dd').format(date)}\n$value',
                           TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

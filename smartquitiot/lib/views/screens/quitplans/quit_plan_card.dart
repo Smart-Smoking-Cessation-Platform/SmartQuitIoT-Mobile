@@ -350,68 +350,70 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
         ),
         const SizedBox(height: 16),
 
-        // 📊 Statistics Section
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FFFE),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: phaseTheme.primaryColor.withOpacity(0.2)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.analytics_outlined,
-                    size: 18,
-                    color: phaseTheme.primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Phase Statistics',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+        // 📊 Statistics Section (only visible when status is COMPLETED)
+        if (quitPlan.status == 'COMPLETED') ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FFFE),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: phaseTheme.primaryColor.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.analytics_outlined,
+                      size: 18,
                       color: phaseTheme.primaryColor,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      label: 'Avg Craving',
-                      value: quitPlan.avgCravingLevel.toStringAsFixed(1),
-                      icon: Icons.favorite_border,
-                      color: Colors.red,
+                    const SizedBox(width: 8),
+                    Text(
+                      'Phase Statistics',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: phaseTheme.primaryColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatItem(
-                      label: 'Avg Cigarettes',
-                      value: quitPlan.avgCigarettes.toStringAsFixed(1),
-                      icon: Icons.smoking_rooms,
-                      color: Colors.orange,
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatItem(
+                        label: 'Avg Craving',
+                        value: quitPlan.avgCravingLevel.toStringAsFixed(1),
+                        icon: Icons.favorite_border,
+                        color: Colors.red,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _buildStatItem(
-                label: 'Total Cigarettes',
-                value: quitPlan.fmCigarettesTotal.toStringAsFixed(0),
-                icon: Icons.local_fire_department,
-                color: Colors.deepOrange,
-              ),
-            ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatItem(
+                        label: 'Avg Cigarettes',
+                        value: quitPlan.avgCigarettes.toStringAsFixed(1),
+                        icon: Icons.smoking_rooms,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildStatItem(
+                  label: 'Total Cigarettes',
+                  value: quitPlan.fmCigarettesTotal.toStringAsFixed(0),
+                  icon: Icons.local_fire_department,
+                  color: Colors.deepOrange,
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
 
         // 🎯 Conditions to Pass Section
         if (quitPlan.condition.rules.isNotEmpty)
@@ -528,67 +530,67 @@ class _QuitPlanCardState extends ConsumerState<QuitPlanCard>
         const SizedBox(height: 20),
 
         // 🌈 Styled Progress Bar with Glow
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Overall Progress',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            Stack(
-              alignment: Alignment.centerLeft,
-              children: [
-                Container(
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: phaseTheme.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                AnimatedBuilder(
-                  animation: _glowController,
-                  builder: (context, _) {
-                    final glow = 4 + (_glowController.value * 6);
-                    return Container(
-                      height: 12,
-                      width:
-                          MediaQuery.of(context).size.width *
-                          0.7 *
-                          quitPlan.progressPercentage,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: phaseTheme.gradient,
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: [
-                          BoxShadow(
-                            color: phaseTheme.primaryColor.withOpacity(0.5),
-                            blurRadius: glow,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                Positioned(
-                  right: 0,
-                  child: Text(
-                    '${quitPlan.progressPercent}%',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: phaseTheme.primaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        // Column(
+        //   crossAxisAlignment: CrossAxisAlignment.start,
+        //   children: [
+        //     const Text(
+        //       'Overall Progress',
+        //       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        //     ),
+        //     const SizedBox(height: 10),
+        //     Stack(
+        //       alignment: Alignment.centerLeft,
+        //       children: [
+        //         Container(
+        //           height: 12,
+        //           decoration: BoxDecoration(
+        //             color: phaseTheme.primaryColor.withOpacity(0.1),
+        //             borderRadius: BorderRadius.circular(6),
+        //           ),
+        //         ),
+        //         AnimatedBuilder(
+        //           animation: _glowController,
+        //           builder: (context, _) {
+        //             final glow = 4 + (_glowController.value * 6);
+        //             return Container(
+        //               height: 12,
+        //               width:
+        //                   MediaQuery.of(context).size.width *
+        //                   0.7 *
+        //                   quitPlan.progressPercentage,
+        //               decoration: BoxDecoration(
+        //                 gradient: LinearGradient(
+        //                   colors: phaseTheme.gradient,
+        //                   begin: Alignment.centerLeft,
+        //                   end: Alignment.centerRight,
+        //                 ),
+        //                 borderRadius: BorderRadius.circular(6),
+        //                 boxShadow: [
+        //                   BoxShadow(
+        //                     color: phaseTheme.primaryColor.withOpacity(0.5),
+        //                     blurRadius: glow,
+        //                     spreadRadius: 1,
+        //                   ),
+        //                 ],
+        //               ),
+        //             );
+        //           },
+        //         ),
+        //         Positioned(
+        //           right: 0,
+        //           child: Text(
+        //             '${quitPlan.progressPercent}%',
+        //             style: TextStyle(
+        //               fontSize: 12,
+        //               fontWeight: FontWeight.bold,
+        //               color: phaseTheme.primaryColor,
+        //             ),
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }

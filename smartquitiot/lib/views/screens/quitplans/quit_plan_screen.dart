@@ -1147,6 +1147,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
       snapshotProgress,
     ].any((value) => value != null);
 
+    final shouldShowStats = hasStatSection && phase.status == 'COMPLETED';
+
     // Calculate progress
     final totalMissions = phase.totalMissions ?? 0;
     final completedMissions = phase.completedMissions ?? 0;
@@ -1308,7 +1310,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
             ),
             const SizedBox(height: 12),
           ],
-          if (hasStatSection) ...[
+          if (shouldShowStats) ...[
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(

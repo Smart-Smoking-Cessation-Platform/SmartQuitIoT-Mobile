@@ -83,4 +83,9 @@ class DiaryService {
   Future<Response> getAllDiaryRecords() async {
     return await _dio.get(baseUrl);
   }
+
+  /// Update diary record
+  Future<Response> updateDiaryRecord(int id, DiaryRecordUpdateRequest request) async {
+    return await _dio.put('$baseUrl/$id', data: request.toJson());
+  }
 }

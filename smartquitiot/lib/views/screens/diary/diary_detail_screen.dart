@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart'; // Import thư viện biểu đồ
 import 'package:SmartQuitIoT/models/diary_record.dart';
 import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
+import 'package:SmartQuitIoT/providers/diary_refresh_provider.dart';
+import 'edit_diary_dialog.dart';
 
 class DiaryDetailScreen extends ConsumerWidget {
   final int diaryId;
@@ -31,6 +33,28 @@ class DiaryDetailScreen extends ConsumerWidget {
           ),
         ),
         centerTitle: true,
+        actions: [
+          diaryDetail.when(
+            data: (diary) => IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () async {
+                final result = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => EditDiaryDialog(diaryRecord: diary),
+                );
+                // Refresh detail and history if edit was successful
+                if (result == true) {
+                  ref.invalidate(diaryDetailProvider(diaryId));
+                  ref.invalidate(diaryHistoryProvider);
+                  ref.read(diaryRefreshProvider.notifier).refreshDiaryHistory();
+                }
+              },
+              tooltip: 'Edit Diary',
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: diaryDetail.when(
         data: (diary) => _buildDiaryDetail(diary),
@@ -59,7 +83,7 @@ class DiaryDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDiaryDetail(DiaryRecord diary) {
-    final moneyFormatter = NumberFormat('#,###', 'vi_VN');
+    final moneyFormatter = NumberFormat('#,###', 'en_US'); // Use en_US to ensure comma separator
 
     return SingleChildScrollView(
       child: Padding(
@@ -85,11 +109,9 @@ class DiaryDetailScreen extends ConsumerWidget {
               const SizedBox(height: 20),
             ],
 
-            // NRT Section
-            if (diary.isUseNrt) ...[
-              _buildNrtSection(diary, moneyFormatter),
-              const SizedBox(height: 20),
-            ],
+            // NRT Section - Always show to display money spent
+            _buildNrtSection(diary, moneyFormatter),
+            const SizedBox(height: 20),
 
             // Health Data (Raw)
             if (diary.isConnectIoTDevice) ...[
@@ -783,7 +805,7 @@ class DiaryDetailScreen extends ConsumerWidget {
         const SizedBox(height: 20),
         
         // Chart 2: Hiệu suất sức khỏe (Giả lập Goal Progress)
-        _buildHealthEfficiencyCards(diary),
+        // _buildHealthEfficiencyCards(diary),
       ],
     );
   }
@@ -949,101 +971,101 @@ class DiaryDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHealthEfficiencyCards(DiaryRecord diary) {
-    // Giả định mục tiêu (Có thể sửa lại theo logic app của bạn)
-    const int stepGoal = 10000;
-    const double sleepGoal = 8.0; 
+  // Widget _buildHealthEfficiencyCards(DiaryRecord diary) {
+  //   // Giả định mục tiêu (Có thể sửa lại theo logic app của bạn)
+  //   const int stepGoal = 10000;
+  //   const double sleepGoal = 8.0; 
     
-    double stepProgress = (diary.steps / stepGoal).clamp(0.0, 1.0);
-    double sleepProgress = (diary.sleepDuration / sleepGoal).clamp(0.0, 1.0);
+  //   double stepProgress = (diary.steps / stepGoal).clamp(0.0, 1.0);
+  //   double sleepProgress = (diary.sleepDuration / sleepGoal).clamp(0.0, 1.0);
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildCircularMetric(
-            "Daily Steps",
-            "${(stepProgress * 100).toInt()}%",
-            stepProgress,
-            const Color(0xFF00D09E),
-            Icons.directions_walk,
-            "${diary.steps} / $stepGoal",
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildCircularMetric(
-            "Sleep Goal",
-            "${(sleepProgress * 100).toInt()}%",
-            sleepProgress,
-            const Color(0xFF6C63FF),
-            Icons.bedtime,
-            "${diary.sleepDuration}h / ${sleepGoal}h",
-          ),
-        ),
-      ],
-    );
-  }
+  //   return Row(
+  //     children: [
+  //       Expanded(
+  //         child: _buildCircularMetric(
+  //           "Daily Steps",
+  //           "${(stepProgress * 100).toInt()}%",
+  //           stepProgress,
+  //           const Color(0xFF00D09E),
+  //           Icons.directions_walk,
+  //           "${diary.steps} / $stepGoal",
+  //         ),
+  //       ),
+  //       const SizedBox(width: 16),
+  //       Expanded(
+  //         child: _buildCircularMetric(
+  //           "Sleep Goal",
+  //           "${(sleepProgress * 100).toInt()}%",
+  //           sleepProgress,
+  //           const Color(0xFF6C63FF),
+  //           Icons.bedtime,
+  //           "${diary.sleepDuration}h / ${sleepGoal}h",
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  Widget _buildCircularMetric(String title, String percentage, double value, Color color, IconData icon, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: CircularProgressIndicator(
-                  value: value,
-                  strokeWidth: 8,
-                  backgroundColor: color.withOpacity(0.1),
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                  strokeCap: StrokeCap.round,
-                ),
-              ),
-              Icon(icon, color: color, size: 32),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            percentage,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildCircularMetric(String title, String percentage, double value, Color color, IconData icon, String subtitle) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(16),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.05),
+  //           blurRadius: 10,
+  //           offset: const Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Text(
+  //           title,
+  //           style: const TextStyle(
+  //             fontSize: 14,
+  //             fontWeight: FontWeight.bold,
+  //             color: Color(0xFF2D3748),
+  //           ),
+  //         ),
+  //         const SizedBox(height: 16),
+  //         Stack(
+  //           alignment: Alignment.center,
+  //           children: [
+  //             SizedBox(
+  //               width: 80,
+  //               height: 80,
+  //               child: CircularProgressIndicator(
+  //                 value: value,
+  //                 strokeWidth: 8,
+  //                 backgroundColor: color.withOpacity(0.1),
+  //                 valueColor: AlwaysStoppedAnimation<Color>(color),
+  //                 strokeCap: StrokeCap.round,
+  //               ),
+  //             ),
+  //             Icon(icon, color: color, size: 32),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 12),
+  //         Text(
+  //           percentage,
+  //           style: TextStyle(
+  //             fontSize: 20,
+  //             fontWeight: FontWeight.bold,
+  //             color: color,
+  //           ),
+  //         ),
+  //         Text(
+  //           subtitle,
+  //           style: TextStyle(
+  //             fontSize: 12,
+  //             color: Colors.grey[600],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }
