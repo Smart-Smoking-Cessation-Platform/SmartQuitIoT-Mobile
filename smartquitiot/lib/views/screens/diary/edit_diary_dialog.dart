@@ -1,5 +1,6 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:SmartQuitIoT/providers/diary_record_provider.dart';
 import 'package:SmartQuitIoT/models/diary_record.dart';
@@ -26,6 +27,7 @@ class _EditDiaryDialogState extends ConsumerState<EditDiaryDialog> {
   late double confidenceLevel;
   late double anxietyLevel;
   late final TextEditingController notesController;
+  late final TextEditingController cigarettesController;
   final TextEditingController moneyController = TextEditingController();
   final NumberFormat moneyFormatter = NumberFormat('#,###', 'en_US');
 
@@ -41,6 +43,7 @@ class _EditDiaryDialogState extends ConsumerState<EditDiaryDialog> {
     confidenceLevel = widget.diaryRecord.confidenceLevel.toDouble();
     anxietyLevel = widget.diaryRecord.anxietyLevel.toDouble();
     notesController = TextEditingController(text: widget.diaryRecord.note);
+    cigarettesController = TextEditingController(text: cigarettesSmoked.toString());
     
     if (moneySpentOnNrt > 0) {
       moneyController.text = moneyFormatter.format(moneySpentOnNrt.toInt());
@@ -50,6 +53,7 @@ class _EditDiaryDialogState extends ConsumerState<EditDiaryDialog> {
   @override
   void dispose() {
     notesController.dispose();
+    cigarettesController.dispose();
     moneyController.dispose();
     super.dispose();
   }
@@ -155,7 +159,7 @@ class _EditDiaryDialogState extends ConsumerState<EditDiaryDialog> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildSmokingSection(),
-                    const SizedBox(height: 24),
+                    if (widget.diaryRecord.haveSmoked) const SizedBox(height: 24),
 
                     _buildMoodSection(),
                     const SizedBox(height: 24),
@@ -204,6 +208,11 @@ class _EditDiaryDialogState extends ConsumerState<EditDiaryDialog> {
   }
 
   Widget _buildSmokingSection() {
+    // Only show this section if haveSmoked is true
+    if (!widget.diaryRecord.haveSmoked) {
+      return const SizedBox.shrink(); // Hide entire section if smoke-free
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: _getCardDecoration(),
@@ -226,7 +235,11 @@ class _EditDiaryDialogState extends ConsumerState<EditDiaryDialog> {
           ),
           const SizedBox(height: 16),
           TextField(
+            controller: cigarettesController,
             keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // Only allow digits
+            ],
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
             decoration: InputDecoration(
               hintText: '0',
@@ -238,10 +251,19 @@ class _EditDiaryDialogState extends ConsumerState<EditDiaryDialog> {
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
-            controller: TextEditingController(text: cigarettesSmoked.toString()),
             onChanged: (value) {
+              // Ensure non-negative integer
+              final parsed = int.tryParse(value) ?? 0;
+              final validatedValue = parsed < 0 ? 0 : parsed;
               setState(() {
-                cigarettesSmoked = int.tryParse(value) ?? 0;
+                cigarettesSmoked = validatedValue;
+                // Update controller if value was corrected
+                if (value.isNotEmpty && validatedValue.toString() != value) {
+                  cigarettesController.value = TextEditingValue(
+                    text: validatedValue.toString(),
+                    selection: TextSelection.collapsed(offset: validatedValue.toString().length),
+                  );
+                }
               });
             },
           ),
@@ -470,8 +492,10 @@ class _EditDiaryDialogState extends ConsumerState<EditDiaryDialog> {
     }
 
     final diaryNotifier = ref.read(diaryRecordNotifierProvider.notifier);
+    // If smoke free (haveSmoked is false), ensure cigarettesSmoked is 0
+    final finalCigarettesSmoked = widget.diaryRecord.haveSmoked ? cigarettesSmoked : 0;
     final request = DiaryRecordUpdateRequest(
-      cigarettesSmoked: cigarettesSmoked,
+      cigarettesSmoked: finalCigarettesSmoked,
       moneySpentOnNrt: moneySpentOnNrt,
       cravingLevel: cravingLevel.round(),
       moodLevel: moodLevel.round(),
