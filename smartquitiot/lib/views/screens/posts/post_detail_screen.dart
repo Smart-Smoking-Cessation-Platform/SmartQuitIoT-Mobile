@@ -17,6 +17,7 @@ import '../../../models/post_media.dart';
 import '../../../models/post_comment.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:SmartQuitIoT/views/widgets/common/common_video_player.dart'; 
+import 'package:go_router/go_router.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final int postId;
@@ -980,8 +981,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     }
   }
 
-  void _showDeleteConfirmation(Post post) {
-    showDialog(
+  void _showDeleteConfirmation(Post post) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
@@ -996,18 +997,14 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
             ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(postViewModelProvider.notifier).deletePost(post.id);
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text(
               'Delete',
               style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
@@ -1016,6 +1013,46 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ],
       ),
     );
+
+    if (confirmed == true && mounted) {
+      try {
+        await ref.read(postViewModelProvider.notifier).deletePost(post.id);
+        
+        // Trigger refresh for My Posts list
+        ref.read(postRefreshProvider.notifier).refreshPosts();
+        ref.read(postViewModelProvider.notifier).loadMyPosts();
+        
+        if (mounted) {
+          // Show success message
+          Flushbar(
+            message: 'Post deleted successfully!',
+            icon: const Icon(Icons.delete_sweep, color: Colors.white),
+            backgroundColor: const Color(0xFF00D09E),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(8),
+          ).show(context);
+          
+          // Navigate to My Posts screen
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              context.go('/my-posts');
+            }
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          Flushbar(
+            message: 'Error deleting post: $e',
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(8),
+          ).show(context);
+        }
+      }
+    }
   }
 
 

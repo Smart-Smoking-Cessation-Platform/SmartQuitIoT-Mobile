@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/achievement_refresh_provider.dart';
 import '../../../providers/leaderboard_provider.dart';
 import '../../../viewmodels/leaderboard_view_model.dart';
+import '../../../utils/avatar_helper.dart';
 import '../../screens/leaderboard/leaderboard_screen.dart';
 
 class LeaderboardCard extends ConsumerStatefulWidget {
@@ -237,7 +238,7 @@ class _LeaderboardRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             child: avatarUrl != null
                 ? Image.network(
-                    avatarUrl!,
+                    formatAvatarUrl(avatarUrl),
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
