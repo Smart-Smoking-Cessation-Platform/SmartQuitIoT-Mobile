@@ -3,12 +3,18 @@ class DiaryCharts {
   final List<ConfidenceData> confidenceLevel;
   final List<CravingData> cravingLevel;
   final List<AnxietyData> anxietyLevel;
+  final List<CigarettesSmokedData> cigarettesSmoked;
+  final List<ReductionPercentageData> reductionPercentage;
+  final List<EstimatedNicotineIntakeData> estimatedNicotineIntake;
 
   DiaryCharts({
     required this.moodLevel,
     required this.confidenceLevel,
     required this.cravingLevel,
     required this.anxietyLevel,
+    required this.cigarettesSmoked,
+    required this.reductionPercentage,
+    required this.estimatedNicotineIntake,
   });
 
   factory DiaryCharts.fromJson(Map<String, dynamic> json) {
@@ -24,6 +30,15 @@ class DiaryCharts {
           .toList() ?? [],
       anxietyLevel: (json['anxietyLevel'] as List<dynamic>?)
           ?.map((e) => AnxietyData.fromJson(e))
+          .toList() ?? [],
+      cigarettesSmoked: (json['cigarettesSmoked'] as List<dynamic>?)
+          ?.map((e) => CigarettesSmokedData.fromJson(e))
+          .toList() ?? [],
+      reductionPercentage: (json['reductionPercentage'] as List<dynamic>?)
+          ?.map((e) => ReductionPercentageData.fromJson(e))
+          .toList() ?? [],
+      estimatedNicotineIntake: (json['estimatedNicotineIntake'] as List<dynamic>?)
+          ?.map((e) => EstimatedNicotineIntakeData.fromJson(e))
           .toList() ?? [],
     );
   }
@@ -80,6 +95,54 @@ class AnxietyData {
   factory AnxietyData.fromJson(Map<String, dynamic> json) {
     return AnxietyData(
       anxietyLevel: json['anxietyLevel'] ?? 0,
+      date: json['date'] ?? '',
+    );
+  }
+}
+
+class CigarettesSmokedData {
+  final int cigarettesSmoked;
+  final String date;
+
+  CigarettesSmokedData({required this.cigarettesSmoked, required this.date});
+
+  factory CigarettesSmokedData.fromJson(Map<String, dynamic> json) {
+    return CigarettesSmokedData(
+      cigarettesSmoked: json['cigarettesSmoked'] ?? 0,
+      date: json['date'] ?? '',
+    );
+  }
+}
+
+class ReductionPercentageData {
+  final double reductionPercentage;
+  final String date;
+
+  ReductionPercentageData({
+    required this.reductionPercentage,
+    required this.date,
+  });
+
+  factory ReductionPercentageData.fromJson(Map<String, dynamic> json) {
+    return ReductionPercentageData(
+      reductionPercentage: (json['reductionPercentage'] ?? 0.0).toDouble(),
+      date: json['date'] ?? '',
+    );
+  }
+}
+
+class EstimatedNicotineIntakeData {
+  final double estimatedNicotineIntake;
+  final String date;
+
+  EstimatedNicotineIntakeData({
+    required this.estimatedNicotineIntake,
+    required this.date,
+  });
+
+  factory EstimatedNicotineIntakeData.fromJson(Map<String, dynamic> json) {
+    return EstimatedNicotineIntakeData(
+      estimatedNicotineIntake: (json['estimatedNicotineIntake'] ?? 0.0).toDouble(),
       date: json['date'] ?? '',
     );
   }
