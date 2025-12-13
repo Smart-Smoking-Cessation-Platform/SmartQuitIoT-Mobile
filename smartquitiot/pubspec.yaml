@@ -74,6 +74,7 @@ dependencies:
   logger: ^2.6.2
   chewie: ^1.13.0
 
+
   intl: any
 dev_dependencies:
   flutter_test:

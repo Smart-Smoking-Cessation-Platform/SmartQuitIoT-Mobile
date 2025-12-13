@@ -121,7 +121,7 @@ class _CreateQuitPlanScreenState extends ConsumerState<CreateQuitPlanScreen> {
         ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
         if (!mounted) return;
         _showMessage(
-          message: 'Quit plan created successfully! 🎉',
+          message: 'Quit plan created successfully! ',
           color: const Color(0xFF00D09E),
           icon: Icons.check_circle_outline,
         );

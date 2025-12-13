@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/leaderboard_provider.dart';
 import '../../../providers/achievement_refresh_provider.dart';
 import '../../../viewmodels/leaderboard_view_model.dart';
+import '../../../utils/avatar_helper.dart';
 import 'community_progress_section.dart';
 
 class LeaderboardScreen extends ConsumerStatefulWidget {
@@ -246,7 +247,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
                 borderRadius: BorderRadius.circular(30),
                 child: member.avatarUrl != null
                     ? Image.network(
-                        member.avatarUrl!,
+                        formatAvatarUrl(member.avatarUrl),
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,

@@ -201,6 +201,14 @@ class PostViewModel extends StateNotifier<PostState> {
         }
       }
 
+      // Remove from my posts list
+      final updatedMyPosts = <Post>[];
+      for (final post in state.myPosts) {
+        if (post.id != postId) {
+          updatedMyPosts.add(post);
+        }
+      }
+
       // Clear selected post if it's the deleted post
       Post? updatedSelectedPost = state.selectedPost;
       if (state.selectedPost != null && state.selectedPost!.id == postId) {
@@ -213,6 +221,7 @@ class PostViewModel extends StateNotifier<PostState> {
 
       state = state.copyWith(
         posts: updatedPosts,
+        myPosts: updatedMyPosts,
         selectedPost: updatedSelectedPost,
         likedPosts: updatedLikedPosts,
       );

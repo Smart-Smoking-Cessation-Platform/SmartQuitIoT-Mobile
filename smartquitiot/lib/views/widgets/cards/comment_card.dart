@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/post_comment.dart';
 import '../../../models/post_media.dart';
 import '../../../utils/date_formatter.dart';
+import '../../../utils/avatar_helper.dart';
 import '../dialogs/media_viewer_dialog.dart';
 import 'package:video_player/video_player.dart';
 
@@ -40,7 +41,7 @@ class CommentCard extends StatelessWidget {
                 backgroundImage:
                     comment.account.avatarUrl != null &&
                         comment.account.avatarUrl!.isNotEmpty
-                    ? NetworkImage(comment.account.avatarUrl!)
+                    ? NetworkImage(formatAvatarUrl(comment.account.avatarUrl))
                     : null,
                 child:
                     comment.account.avatarUrl == null ||
@@ -176,7 +177,7 @@ class CommentCard extends StatelessWidget {
                         backgroundImage:
                             reply.account.avatarUrl != null &&
                                 reply.account.avatarUrl!.isNotEmpty
-                            ? NetworkImage(reply.account.avatarUrl!)
+                            ? NetworkImage(formatAvatarUrl(reply.account.avatarUrl))
                             : null,
                         child:
                             reply.account.avatarUrl == null ||

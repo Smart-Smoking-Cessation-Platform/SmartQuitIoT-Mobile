@@ -730,11 +730,18 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         return;
       }
 
-      // Navigate back after showing notification (for edit case)
+      // Navigate to My Posts screen after successful update
       if (mounted) {
-        Future.delayed(const Duration(milliseconds: 500), () {
+        Future.delayed(const Duration(milliseconds: 500), () async {
           if (mounted) {
-            context.pop(true);
+            // Trigger refresh for all post lists
+            ref.read(postRefreshProvider.notifier).refreshPosts();
+            ref.read(postViewModelProvider.notifier).loadMyPosts();
+            
+            await Future.delayed(const Duration(milliseconds: 100));
+            
+            // Navigate to My Posts screen using GoRouter
+            context.go('/my-posts');
           }
         });
       }

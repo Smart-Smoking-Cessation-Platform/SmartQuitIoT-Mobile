@@ -6,7 +6,7 @@ class Appointment {
   final int slotId;
   final String date; // yyyy-MM-dd
   final String startTime; // "07:00:00"
-  final String endTime;   // "07:30:00"
+  final String endTime; // "07:30:00"
   String runtimeStatus;
 
   // optional server-side status (may be same as runtimeStatus or distinct)
@@ -15,6 +15,9 @@ class Appointment {
   // new fields for cancelled info
   final String? cancelledBy; // e.g. "MEMBER" or "COACH" or string
   final DateTime? cancelledAt;
+
+  // creation timestamp
+  final DateTime? createdAt;
 
   // new meeting / agora fields
   final String? channelName;
@@ -37,6 +40,7 @@ class Appointment {
     this.appointmentStatus,
     this.cancelledBy,
     this.cancelledAt,
+    this.createdAt,
     this.channelName,
     this.meetingUrl,
     this.joinWindowStart,
@@ -82,10 +86,16 @@ class Appointment {
     }
 
     return Appointment(
-      appointmentId: (j['appointmentId'] is num) ? (j['appointmentId'] as num).toInt() : int.parse(j['appointmentId'].toString()),
-      coachId: (j['coachId'] is num) ? (j['coachId'] as num).toInt() : int.parse(j['coachId'].toString()),
+      appointmentId: (j['appointmentId'] is num)
+          ? (j['appointmentId'] as num).toInt()
+          : int.parse(j['appointmentId'].toString()),
+      coachId: (j['coachId'] is num)
+          ? (j['coachId'] as num).toInt()
+          : int.parse(j['coachId'].toString()),
       coachName: j['coachName'] as String? ?? '',
-      slotId: (j['slotId'] is num) ? (j['slotId'] as num).toInt() : int.parse(j['slotId'].toString()),
+      slotId: (j['slotId'] is num)
+          ? (j['slotId'] as num).toInt()
+          : int.parse(j['slotId'].toString()),
       date: j['date'] as String? ?? '',
       startTime: j['startTime'] as String? ?? '',
       endTime: j['endTime'] as String? ?? '',
@@ -93,13 +103,38 @@ class Appointment {
       appointmentStatus: j['appointmentStatus']?.toString(),
       cancelledBy: j['cancelledBy']?.toString(),
       cancelledAt: parseInstant(j['cancelledAt']),
+      createdAt: (() {
+        // Try multiple possible keys for createdAt
+        final keys = [
+          'createdAt',
+          'created_at',
+          'bookedAt',
+          'booked_at',
+          'createdDate',
+          'created_date',
+        ];
+        for (var key in keys) {
+          if (j.containsKey(key) && j[key] != null) {
+            final parsed = parseInstant(j[key]);
+            if (parsed != null) return parsed;
+          }
+        }
+        return null;
+      })(),
       channelName: j['channelName'] as String?,
       meetingUrl: j['meetingUrl'] as String?,
       joinWindowStart: parseInstant(j['joinWindowStart']),
       joinWindowEnd: parseInstant(j['joinWindowEnd']),
       hasRated: (() {
         try {
-          final keys = ['hasRated','member_rated','rated','memberRating','rating','userRating'];
+          final keys = [
+            'hasRated',
+            'member_rated',
+            'rated',
+            'memberRating',
+            'rating',
+            'userRating',
+          ];
           for (var k in keys) {
             if (j.containsKey(k) && j[k] != null) {
               final v = j[k];
@@ -123,7 +158,9 @@ class Appointment {
 
   // helper
   bool get isCancelled {
-    final s = (appointmentStatus ?? runtimeStatus ?? '').toString().toUpperCase();
+    final s = (appointmentStatus ?? runtimeStatus ?? '')
+        .toString()
+        .toUpperCase();
     return s.contains('CANCEL');
   }
 
@@ -140,6 +177,7 @@ class Appointment {
     String? appointmentStatus,
     String? cancelledBy,
     DateTime? cancelledAt,
+    DateTime? createdAt,
     String? channelName,
     String? meetingUrl,
     DateTime? joinWindowStart,
@@ -158,11 +196,12 @@ class Appointment {
       appointmentStatus: appointmentStatus ?? this.appointmentStatus,
       cancelledBy: cancelledBy ?? this.cancelledBy,
       cancelledAt: cancelledAt ?? this.cancelledAt,
+      createdAt: createdAt ?? this.createdAt,
       channelName: channelName ?? this.channelName,
       meetingUrl: meetingUrl ?? this.meetingUrl,
       joinWindowStart: joinWindowStart ?? this.joinWindowStart,
       joinWindowEnd: joinWindowEnd ?? this.joinWindowEnd,
-      hasRated: hasRated ?? this.hasRated
+      hasRated: hasRated ?? this.hasRated,
     );
   }
 }

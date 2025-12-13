@@ -1107,7 +1107,7 @@ class _CreateDiaryScreenState extends ConsumerState<CreateDiaryScreen> {
 
       // Show success flushbar
       Flushbar(
-        message: '🎉 Diary saved successfully!',
+        message: ' Diary saved successfully!',
         icon: const Icon(Icons.check_circle, size: 28, color: Colors.white),
         margin: const EdgeInsets.all(16),
         borderRadius: BorderRadius.circular(16),

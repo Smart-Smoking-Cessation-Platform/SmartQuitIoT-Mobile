@@ -3,8 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
+// --- HÀM HELPER: Fix URL Cloudinary để tua được ---
+// Chèn 'sp_auto' vào URL để đưa metadata lên đầu file
+// --- HÀM HELPER: Fix URL Cloudinary (Bản đã sửa lỗi 400) ---
+String fixCloudinaryUrl(String url) {
+  // Chỉ xử lý nếu là link Cloudinary và chưa có tham số fix
+  if (url.contains('cloudinary.com') && url.contains('/upload/') && !url.contains('fl_progressive')) {
+    // THAY ĐỔI: Dùng 'fl_progressive' thay vì 'sp_auto'
+    // fl_progressive: Giúp video load metadata ngay lập tức (Fast Start) cho file MP4
+    return url.replaceFirst('/upload/', '/upload/fl_progressive/');
+  }
+  return url;
+}
 // ---------------------------------------------------------
-// WIDGET 1: VIDEO PREVIEW (NHỎ) - KHÔNG ĐỔI
+// WIDGET 1: VIDEO PREVIEW (NHỎ)
 // ---------------------------------------------------------
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
@@ -20,7 +32,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+    // Áp dụng fixCloudinaryUrl ở đây
+    final fixedUrl = fixCloudinaryUrl(widget.videoUrl);
+    
+    _controller = VideoPlayerController.networkUrl(Uri.parse(fixedUrl))
       ..initialize().then((_) {
         if (mounted) setState(() {});
       });
@@ -33,15 +48,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _openFullscreen() {
-    // Pause video nhỏ trước khi mở full
-    _controller.pause(); 
+    _controller.pause();
     Navigator.push(
       context,
       MaterialPageRoute(
+        // Truyền URL gốc hoặc URL đã fix đều được, 
+        // nhưng tốt nhất là để Widget con tự xử lý lại cho chắc
         builder: (context) => FullscreenVideoPlayer(videoUrl: widget.videoUrl),
       ),
     ).then((_) {
-      // Khi quay lại thì reload state nếu cần
       if (mounted) setState(() {});
     });
   }
@@ -79,7 +94,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 }
 
 // ---------------------------------------------------------
-// WIDGET 2: FULLSCREEN PLAYER (ĐÃ FIX LỖI TUA + DURATION)
+// WIDGET 2: FULLSCREEN PLAYER (ĐÃ FIX URL + LOGIC TUA)
 // ---------------------------------------------------------
 class FullscreenVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -94,29 +109,32 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
   bool _isInitialized = false;
   bool _showControls = true;
   
-  // BIẾN QUAN TRỌNG ĐỂ FIX LỖI TUA
   bool _isDragging = false; 
   double _dragValue = 0.0;
+  Timer? _hideTimer;
 
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+    // QUAN TRỌNG: Fix URL ngay khi init
+    final fixedUrl = fixCloudinaryUrl(widget.videoUrl);
+
+    _controller = VideoPlayerController.networkUrl(Uri.parse(fixedUrl))
       ..initialize().then((_) {
         if (mounted) {
           setState(() {
             _isInitialized = true;
           });
           _controller.play();
+          _startHideTimer(); // Tự ẩn controls sau 3s
         }
       });
 
-    // Lắng nghe cập nhật của video
     _controller.addListener(() {
-      if (mounted && !_isDragging) {
-        // Chỉ setState cập nhật UI khi người dùng KHÔNG đang kéo thanh trượt
+      // Logic: Chỉ update UI từ video khi user KHÔNG kéo slider
+      if (mounted && !_isDragging && _controller.value.isPlaying) {
         setState(() {});
       }
     });
@@ -125,6 +143,7 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
   @override
   void dispose() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _hideTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -133,10 +152,32 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
     setState(() {
       if (_controller.value.isPlaying) {
         _controller.pause();
+        _hideTimer?.cancel(); // Pause thì hiện controls mãi
+        _showControls = true;
       } else {
         _controller.play();
+        _startHideTimer();
       }
-      _showControls = true;
+    });
+  }
+
+  void _toggleControls() {
+    setState(() {
+      _showControls = !_showControls;
+    });
+    if (_showControls && _controller.value.isPlaying) {
+      _startHideTimer();
+    }
+  }
+
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && _controller.value.isPlaying && !_isDragging) {
+        setState(() {
+          _showControls = false;
+        });
+      }
     });
   }
 
@@ -149,31 +190,29 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Lấy tổng thời gian video
     final duration = _controller.value.duration;
     final totalSeconds = duration.inSeconds.toDouble();
 
-    // 2. Tính vị trí hiện tại: 
-    // Nếu đang kéo (_isDragging) -> lấy giá trị ngón tay (_dragValue)
-    // Nếu đang chạy tự động -> lấy từ controller
+    // Nếu totalSeconds > 0 nghĩa là đã load xong metadata -> cho phép tua
+    // Nhờ fixCloudinaryUrl, giá trị này sẽ có ngay lập tức thay vì 0
+    final bool canSeek = totalSeconds > 0;
+
     double currentSeconds = _isDragging 
         ? _dragValue 
         : _controller.value.position.inSeconds.toDouble();
 
-    // 3. Fix lỗi an toàn (tránh Slider bị lỗi khi duration = 0)
+    // Safety check
     if (currentSeconds < 0) currentSeconds = 0;
     if (totalSeconds > 0 && currentSeconds > totalSeconds) currentSeconds = totalSeconds;
-    
-    // Nếu video chưa load duration xong thì disable thanh slider tạm thời
-    final bool canSeek = totalSeconds > 0;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: !_isInitialized
           ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E))))
           : GestureDetector(
-              onTap: () => setState(() => _showControls = !_showControls),
+              onTap: _toggleControls,
               child: Stack(
+                alignment: Alignment.center,
                 children: [
                   Center(
                     child: AspectRatio(
@@ -182,7 +221,10 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
                     ),
                   ),
 
-                  // CONTROLS OVERLAY
+                  // Lớp phủ tối mờ để controls dễ nhìn hơn
+                  if (_showControls)
+                    Container(color: Colors.black26),
+
                   if (_showControls) ...[
                     // Nút Close
                     Positioned(
@@ -193,87 +235,82 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
                       ),
                     ),
 
-                    // Nút Play ở giữa (chỉ hiện khi pause)
-                    if (!_controller.value.isPlaying && !_isDragging)
-                      Center(
-                        child: IconButton(
-                          iconSize: 80,
-                          icon: const Icon(Icons.play_circle_fill, color: Colors.white54),
-                          onPressed: _togglePlayPause,
+                    // Nút Play ở giữa màn hình
+                    Center(
+                      child: IconButton(
+                        iconSize: 70,
+                        icon: Icon(
+                          _controller.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                          color: Colors.white.withOpacity(0.8),
                         ),
+                        onPressed: _togglePlayPause,
                       ),
+                    ),
 
                     // THANH ĐIỀU KHIỂN DƯỚI ĐÁY
                     Positioned(
-                      bottom: 0, left: 0, right: 0,
-                      child: Container(
-                        color: Colors.black54,
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                        child: Row(
-                          children: [
-                            // Nút Play/Pause nhỏ
-                            GestureDetector(
-                              onTap: _togglePlayPause,
-                              child: Icon(
-                                _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
+                      bottom: 20, left: 20, right: 20,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                _formatDuration(Duration(seconds: currentSeconds.toInt())),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-
-                            // Thời gian hiện tại
-                            Text(
-                              _formatDuration(Duration(seconds: currentSeconds.toInt())),
-                              style: const TextStyle(color: Colors.white),
-                            ),
-
-                            // SLIDER (Thanh tua)
-                            Expanded(
-                              child: Slider(
-                                activeColor: const Color(0xFF00D09E),
-                                inactiveColor: Colors.grey,
-                                min: 0,
-                                max: canSeek ? totalSeconds : 1.0, // Nếu chưa có duration thì max = 1 để ko lỗi
-                                value: canSeek ? currentSeconds : 0.0,
-                                
-                                // BẮT ĐẦU KÉO -> Dừng update từ video
-                                onChangeStart: (value) {
-                                  setState(() {
-                                    _isDragging = true;
-                                    _dragValue = value;
-                                  });
-                                },
-                                
-                                // ĐANG KÉO -> Cập nhật số hiển thị theo tay
-                                onChanged: (value) {
-                                  if (!canSeek) return;
-                                  setState(() {
-                                    _dragValue = value;
-                                  });
-                                },
-                                
-                                // THẢ TAY -> Mới thực sự tua video
-                                onChangeEnd: (value) {
-                                  if (!canSeek) return;
-                                  _controller.seekTo(Duration(seconds: value.toInt()));
-                                  setState(() {
-                                    _isDragging = false;
-                                  });
-                                  // Tự động play lại nếu đang pause
-                                  if (!_controller.value.isPlaying) {
-                                     _controller.play();
-                                  }
-                                },
+                              Expanded(
+                                child: SliderTheme(
+                                  data: SliderTheme.of(context).copyWith(
+                                    trackHeight: 4.0,
+                                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0),
+                                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0),
+                                    thumbColor: const Color(0xFF00D09E),
+                                    activeTrackColor: const Color(0xFF00D09E),
+                                    inactiveTrackColor: Colors.white24,
+                                  ),
+                                  child: Slider(
+                                    min: 0,
+                                    // Nếu chưa load xong duration, max = 1 để ko lỗi range
+                                    max: canSeek ? totalSeconds : 1.0, 
+                                    value: canSeek ? currentSeconds : 0.0,
+                                    
+                                    onChangeStart: (value) {
+                                      _hideTimer?.cancel(); // Đang kéo thì đừng ẩn controls
+                                      setState(() {
+                                        _isDragging = true;
+                                        _dragValue = value;
+                                      });
+                                    },
+                                    
+                                    onChanged: (value) {
+                                      if (!canSeek) return;
+                                      setState(() {
+                                        _dragValue = value;
+                                      });
+                                    },
+                                    
+                                    onChangeEnd: (value) {
+                                      if (!canSeek) return;
+                                      _controller.seekTo(Duration(seconds: value.toInt()));
+                                      setState(() {
+                                        _isDragging = false;
+                                      });
+                                      if (!_controller.value.isPlaying) {
+                                         _controller.play();
+                                      }
+                                      _startHideTimer(); // Kéo xong thì đếm ngược để ẩn controls
+                                    },
+                                  ),
+                                ),
                               ),
-                            ),
-
-                            // Tổng thời gian
-                            Text(
-                              _formatDuration(_controller.value.duration),
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
+                              Text(
+                                _formatDuration(_controller.value.duration),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],

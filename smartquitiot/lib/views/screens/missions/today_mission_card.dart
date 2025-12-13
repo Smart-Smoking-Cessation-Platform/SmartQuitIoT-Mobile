@@ -272,7 +272,7 @@ class _TodayMissionCardState extends ConsumerState<TodayMissionCard> {
           const Icon(Icons.celebration, color: Colors.white, size: 48),
           const SizedBox(height: 16),
           const Text(
-            '🎉 Outstanding Achievement!',
+            ' Outstanding Achievement!',
             style: TextStyle(
               color: Colors.white,
               fontSize: 22,

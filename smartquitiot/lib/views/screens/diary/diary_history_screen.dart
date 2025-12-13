@@ -298,6 +298,7 @@ class _DiaryHistoryScreenState extends ConsumerState<DiaryHistoryScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
+            // Navigate to detail view (view-only mode)
             Navigator.push(
               context,
               MaterialPageRoute(

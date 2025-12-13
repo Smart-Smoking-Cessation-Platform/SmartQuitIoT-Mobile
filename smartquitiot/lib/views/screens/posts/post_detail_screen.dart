@@ -16,6 +16,8 @@ import 'dart:io';
 import '../../../models/post_media.dart';
 import '../../../models/post_comment.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:SmartQuitIoT/views/widgets/common/common_video_player.dart'; 
+import 'package:go_router/go_router.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final int postId;
@@ -280,42 +282,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         } else if (item.mediaType == 'VIDEO') {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: () {
-                // Open full screen video viewer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MediaViewerDialog(
-                      mediaList: media,
-                      initialIndex: index,
-                    ),
-                  ),
-                );
-              },
-              child: Stack(
-                children: [
-                  _VideoPlayerWidget(videoUrl: item.mediaUrl),
-                  // Fullscreen icon overlay
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.fullscreen,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: CommonVideoPlayerWidget(videoUrl: item.mediaUrl), // Sử dụng Widget mới
           );
         } else {
           return const SizedBox.shrink();
@@ -1014,8 +981,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     }
   }
 
-  void _showDeleteConfirmation(Post post) {
-    showDialog(
+  void _showDeleteConfirmation(Post post) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
@@ -1030,18 +997,14 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
             ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(postViewModelProvider.notifier).deletePost(post.id);
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text(
               'Delete',
               style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
@@ -1050,6 +1013,46 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ],
       ),
     );
+
+    if (confirmed == true && mounted) {
+      try {
+        await ref.read(postViewModelProvider.notifier).deletePost(post.id);
+        
+        // Trigger refresh for My Posts list
+        ref.read(postRefreshProvider.notifier).refreshPosts();
+        ref.read(postViewModelProvider.notifier).loadMyPosts();
+        
+        if (mounted) {
+          // Show success message
+          Flushbar(
+            message: 'Post deleted successfully!',
+            icon: const Icon(Icons.delete_sweep, color: Colors.white),
+            backgroundColor: const Color(0xFF00D09E),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(8),
+          ).show(context);
+          
+          // Navigate to My Posts screen
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              context.go('/my-posts');
+            }
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          Flushbar(
+            message: 'Error deleting post: $e',
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(8),
+          ).show(context);
+        }
+      }
+    }
   }
 
 
@@ -1060,169 +1063,4 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   Widget _buildEmptyState() => const Center(
     child: Text('Post not found', style: TextStyle(color: Colors.grey)),
   );
-}
-
-class _VideoPlayerWidget extends StatefulWidget {
-  final String videoUrl;
-
-  const _VideoPlayerWidget({required this.videoUrl});
-
-  @override
-  State<_VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
-}
-
-class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
-  VideoPlayerController? _controller;
-  bool _isInitialized = false;
-  bool _hasError = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeVideo();
-  }
-
-  Future<void> _initializeVideo() async {
-    try {
-      _controller = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-      );
-      await _controller!.initialize();
-      // Set default volume to 1.0 (unmuted)
-      await _controller!.setVolume(1.0);
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
-      }
-    } catch (e) {
-      print('❌ [VideoPlayerWidget] Error loading video: $e');
-      if (mounted) {
-        setState(() {
-          _hasError = true;
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_hasError) {
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 50, color: Colors.grey),
-              SizedBox(height: 8),
-              Text(
-                'Failed to load video',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (!_isInitialized || _controller == null) {
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00D09E)),
-          ),
-        ),
-      );
-    }
-
-    return AspectRatio(
-      aspectRatio: _controller!.value.aspectRatio,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Stack(
-          children: [
-            VideoPlayer(_controller!),
-            // Tap anywhere to play/pause
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (_controller!.value.isPlaying) {
-                      _controller!.pause();
-                    } else {
-                      _controller!.play();
-                    }
-                  });
-                },
-                child: Container(color: Colors.transparent),
-              ),
-            ),
-            // Play/Pause icon overlay (only show when paused)
-            if (!_controller!.value.isPlaying)
-              Center(
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                ),
-              ),
-            // Volume control button
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (_controller!.value.volume > 0) {
-                      _controller!.setVolume(0);
-                    } else {
-                      _controller!.setVolume(1.0);
-                    }
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(
-                    _controller!.value.volume > 0
-                        ? Icons.volume_up
-                        : Icons.volume_off,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
