@@ -10,20 +10,25 @@ class HealthRecoveryResponse {
   factory HealthRecoveryResponse.fromJson(Map<String, dynamic> json) {
     try {
       print('🔍 [HealthRecovery] Parsing response with keys: ${json.keys}');
-      
-      final healthRecoveries = (json['healthRecoveries'] as List<dynamic>? ?? [])
-          .map((item) => HealthRecovery.fromJson(item))
-          .toList();
-      
-      print('✅ [HealthRecovery] Parsed ${healthRecoveries.length} health recoveries');
-      
+
+      final healthRecoveries =
+          (json['healthRecoveries'] as List<dynamic>? ?? [])
+              .map((item) => HealthRecovery.fromJson(item))
+              .toList();
+
+      print(
+        '✅ [HealthRecovery] Parsed ${healthRecoveries.length} health recoveries',
+      );
+
       final metricsJson = json['metrics'];
-      print('🔍 [HealthRecovery] Metrics data: ${metricsJson != null ? "present" : "null"}');
-      
+      print(
+        '🔍 [HealthRecovery] Metrics data: ${metricsJson != null ? "present" : "null"}',
+      );
+
       final metrics = DetailedMetrics.fromJson(metricsJson ?? {});
-      
+
       print('✅ [HealthRecovery] Parsed metrics successfully');
-      
+
       return HealthRecoveryResponse(
         healthRecoveries: healthRecoveries,
         metrics: metrics,
@@ -37,7 +42,9 @@ class HealthRecoveryResponse {
 
   Map<String, dynamic> toJson() {
     return {
-      'healthRecoveries': healthRecoveries.map((item) => item.toJson()).toList(),
+      'healthRecoveries': healthRecoveries
+          .map((item) => item.toJson())
+          .toList(),
       'metrics': metrics.toJson(),
     };
   }
@@ -48,9 +55,9 @@ class HealthRecovery {
   final String name;
   final double? value;
   final String description;
-  final String timeTriggered;
+  final DateTime? timeTriggered;
   final double recoveryTime;
-  final String targetTime;
+  final DateTime? targetTime;
 
   HealthRecovery({
     required this.id,
@@ -63,14 +70,20 @@ class HealthRecovery {
   });
 
   factory HealthRecovery.fromJson(Map<String, dynamic> json) {
+    DateTime? tryParseDateTime(dynamic value) {
+      if (value == null) return null;
+      if (value is DateTime) return value;
+      return DateTime.tryParse(value.toString());
+    }
+
     return HealthRecovery(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       value: json['value'] != null ? (json['value'] as num).toDouble() : null,
       description: json['description'] ?? '',
-      timeTriggered: json['timeTriggered'] ?? '',
+      timeTriggered: tryParseDateTime(json['timeTriggered']),
       recoveryTime: (json['recoveryTime'] ?? 0.0).toDouble(),
-      targetTime: json['targetTime'] ?? '',
+      targetTime: tryParseDateTime(json['targetTime']),
     );
   }
 
@@ -80,9 +93,9 @@ class HealthRecovery {
       'name': name,
       'value': value,
       'description': description,
-      'timeTriggered': timeTriggered,
+      'timeTriggered': timeTriggered?.toIso8601String(),
       'recoveryTime': recoveryTime,
-      'targetTime': targetTime,
+      'targetTime': targetTime?.toIso8601String(),
     };
   }
 
@@ -110,11 +123,12 @@ class DetailedMetrics {
   final int id;
   final int streaks;
   final int relapseCountInPhase;
+  final int totalMissionCompleted;
   final double avgCravingLevel;
   final double avgMood;
   final double avgAnxiety;
   final double avgConfidentLevel;
-  final int avgCigarettesPerDay;
+  final double avgCigarettesPerDay;
   final int currentCravingLevel;
   final int currentMoodLevel;
   final int currentConfidenceLevel;
@@ -137,6 +151,7 @@ class DetailedMetrics {
     required this.id,
     required this.streaks,
     required this.relapseCountInPhase,
+    required this.totalMissionCompleted,
     required this.avgCravingLevel,
     required this.avgMood,
     required this.avgAnxiety,
@@ -169,16 +184,24 @@ class DetailedMetrics {
       if (value is double) return value.toInt();
       return int.tryParse(value.toString()) ?? 0;
     }
-    
+
+    double toDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      return double.tryParse(value.toString()) ?? 0.0;
+    }
+
     return DetailedMetrics(
       id: toInt(json['id']),
       streaks: toInt(json['streaks']),
       relapseCountInPhase: toInt(json['relapseCountInPhase']),
-      avgCravingLevel: (json['avgCravingLevel'] ?? 0.0).toDouble(),
-      avgMood: (json['avgMood'] ?? 0.0).toDouble(),
-      avgAnxiety: (json['avgAnxiety'] ?? 0.0).toDouble(),
-      avgConfidentLevel: (json['avgConfidentLevel'] ?? 0.0).toDouble(),
-      avgCigarettesPerDay: toInt(json['avgCigarettesPerDay']),
+      totalMissionCompleted: toInt(json['total_mission_completed']),
+      avgCravingLevel: toDouble(json['avgCravingLevel']),
+      avgMood: toDouble(json['avgMood']),
+      avgAnxiety: toDouble(json['avgAnxiety']),
+      avgConfidentLevel: toDouble(json['avgConfidentLevel']),
+      avgCigarettesPerDay: toDouble(json['avgCigarettesPerDay']),
       currentCravingLevel: toInt(json['currentCravingLevel']),
       currentMoodLevel: toInt(json['currentMoodLevel']),
       currentConfidenceLevel: toInt(json['currentConfidenceLevel']),
@@ -188,12 +211,12 @@ class DetailedMetrics {
       spo2: toInt(json['spo2']),
       activityMinutes: toInt(json['activityMinutes']),
       respiratoryRate: toInt(json['respiratoryRate']),
-      sleepDuration: (json['sleepDuration'] ?? 0.0).toDouble(),
+      sleepDuration: toDouble(json['sleepDuration']),
       sleepQuality: toInt(json['sleepQuality']),
-      annualSaved: (json['annualSaved'] ?? 0.0).toDouble(),
-      moneySaved: (json['moneySaved'] ?? 0.0).toDouble(),
-      reductionPercentage: (json['reductionPercentage'] ?? 0.0).toDouble(),
-      smokeFreeDayPercentage: (json['smokeFreeDayPercentage'] ?? 0.0).toDouble(),
+      annualSaved: toDouble(json['annualSaved']),
+      moneySaved: toDouble(json['moneySaved']),
+      reductionPercentage: toDouble(json['reductionPercentage']),
+      smokeFreeDayPercentage: toDouble(json['smokeFreeDayPercentage']),
       createdAt: json['createdAt'] ?? '',
       updatedAt: json['updatedAt'] ?? '',
     );
@@ -204,6 +227,7 @@ class DetailedMetrics {
       'id': id,
       'streaks': streaks,
       'relapseCountInPhase': relapseCountInPhase,
+      'total_mission_completed': totalMissionCompleted,
       'avgCravingLevel': avgCravingLevel,
       'avgMood': avgMood,
       'avgAnxiety': avgAnxiety,
@@ -230,9 +254,4 @@ class DetailedMetrics {
   }
 }
 
-enum RecoveryStatus {
-  upcoming,
-  started,
-  inProgress,
-  completed,
-}
+enum RecoveryStatus { upcoming, started, inProgress, completed }
