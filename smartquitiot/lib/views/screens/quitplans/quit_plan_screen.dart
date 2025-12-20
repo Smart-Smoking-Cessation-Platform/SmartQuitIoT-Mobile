@@ -1630,7 +1630,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     final isDayAvailableForCompletion = _isPastOrToday(day.date);
     final allMissionsCompleted = _areAllMissionsCompleted(missions);
     final showCongratulations = isSelectedDayToday && allMissionsCompleted;
-    final isRedoPhase = phase.redo == true; // Check if this is a redo phase (reference only)
+    final isRedoPhase = phase.redo == true;
+
+    // ✅ Logic mới: Kiểm tra xem Phase đã hoàn thành chưa
+    final isPhaseCompleted = phase.status == 'COMPLETED';
 
     return Column(
       children: [
@@ -1684,7 +1687,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
           final missionId = mission.id ?? -1;
           final completed =
               mission.status == 'COMPLETED' ||
-              locallyCompletedMissionIds.contains(missionId);
+                  locallyCompletedMissionIds.contains(missionId);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -1737,7 +1740,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                     ),
                   ),
                 ],
-                if (!completed && missionId != -1 && !isRedoPhase) ...[
+
+                // ✅ Đã cập nhật điều kiện ở đây:
+                // Thêm: && !isPhaseCompleted
+                if (!completed && missionId != -1 && !isRedoPhase && !isPhaseCompleted) ...[
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,

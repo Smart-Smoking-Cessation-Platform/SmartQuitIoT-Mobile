@@ -372,43 +372,76 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
   }
 
   Widget _buildChartCard(
-    String title,
-    List<ChartDataPoint> data,
-    Color color,
-    IconData icon,
-  ) {
-    // Calculate dynamic Y-axis range based on data
-    final maxValue = data.isEmpty
-        ? 10.0
-        : data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    
-    // Determine appropriate maxY and interval based on the maximum value
+      String title,
+      List<ChartDataPoint> data,
+      Color color,
+      IconData icon,
+      ) {
+    // 1. Kiểm tra dữ liệu rỗng
+    if (data.isEmpty) return const SizedBox();
+
+    // 2. Tìm Min/Max thực tế của dữ liệu
+    double minVal = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
+    double maxVal = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+
+    // 3. Cờ kiểm tra xem có số âm không
+    bool hasNegative = minVal < 0;
+
+    // Khai báo biến
+    double minY;
     double maxY;
     double interval;
-    
-    if (maxValue <= 10) {
-      // For 0-10 scale (mood, confidence, craving, anxiety)
-      maxY = 10;
-      interval = 2;
-    } else if (maxValue <= 100) {
-      // For percentage (0-100)
-      maxY = 100;
-      interval = 20;
-    } else {
-      // For larger values (cigarettes, nicotine), round up to nearest 10 with padding
-      maxY = (maxValue * 1.2).ceilToDouble();
-      // Round to nearest 10 for cleaner intervals
-      maxY = ((maxY / 10).ceil() * 10).toDouble();
-      // Set interval based on maxY
-      if (maxY < 50) {
-        interval = 10;
-      } else if (maxY < 100) {
+
+    // =========================================================================
+    // CASE 1: LOGIC CŨ (Giữ nguyên cho các chart dương như Mood, Cigarettes...)
+    // =========================================================================
+    if (!hasNegative) {
+      minY = 0; // Logic cũ luôn set min là 0
+
+      // --- [Đoạn này copy từ code gốc của bạn] ---
+      if (maxVal <= 10) {
+        maxY = 10;
+        interval = 2;
+      } else if (maxVal <= 100) {
+        maxY = 100;
         interval = 20;
       } else {
-        interval = maxY / 5;
-        // Round interval to nearest 10 for cleaner display
-        interval = ((interval / 10).ceil() * 10).toDouble();
+        maxY = (maxVal * 1.2).ceilToDouble();
+        maxY = ((maxY / 10).ceil() * 10).toDouble();
+
+        if (maxY < 50) {
+          interval = 10;
+        } else if (maxY < 100) {
+          interval = 20;
+        } else {
+          interval = maxY / 5;
+          interval = ((interval / 10).ceil() * 10).toDouble();
+        }
       }
+    }
+    // =========================================================================
+    // CASE 2: LOGIC MỚI (Chỉ chạy khi dữ liệu bị ÂM, ví dụ Reduction Rate -300)
+    // =========================================================================
+    else {
+      // Tính khoảng cách giữa Max và Min
+      double range = maxVal - minVal;
+
+      // Thêm padding 10% trên dưới để đường line không chạm mép
+      double padding = range * 0.1;
+
+      maxY = maxVal + padding;
+      minY = minVal - padding;
+
+      // Làm tròn số Min/Max về hàng chục cho đẹp (Ví dụ -312 -> -320)
+      maxY = ((maxY / 10).ceil() * 10).toDouble();
+      minY = ((minY / 10).floor() * 10).toDouble();
+
+      // Tính interval chia làm 5 phần
+      interval = (maxY - minY) / 5;
+
+      // Làm tròn interval
+      interval = ((interval / 10).ceil() * 10).toDouble();
+      if (interval == 0) interval = 10;
     }
 
     return Container(
@@ -452,6 +485,14 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                   drawVerticalLine: false,
                   horizontalInterval: interval,
                   getDrawingHorizontalLine: (value) {
+                    // Logic UI: Nếu đang ở chế độ số âm, vẽ đường 0 đậm hơn chút cho dễ nhìn
+                    if (hasNegative && (value >= -1 && value <= 1)) {
+                      return FlLine(
+                          color: Colors.grey[400]!,
+                          strokeWidth: 1.5,
+                          dashArray: [4, 4] // Nét đứt
+                      );
+                    }
                     return FlLine(color: Colors.grey[200]!, strokeWidth: 1);
                   },
                 ),
@@ -459,19 +500,24 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 40,
+                      // Nếu có số âm (ví dụ -300) thì cần lề rộng hơn (45) so với bình thường (40)
+                      reservedSize: hasNegative ? 48 : 40,
                       interval: interval,
                       getTitlesWidget: (value, meta) {
+                        // Ẩn số nếu nó trùng với mép trên hoặc dưới cùng để đỡ bị cắt
+                        if (value == maxY || value == minY) return const SizedBox();
+
                         return Text(
                           value % interval == 0
                               ? (value.toInt() == value
-                                  ? value.toInt().toString()
-                                  : value.toStringAsFixed(1))
+                              ? value.toInt().toString()
+                              : value.toStringAsFixed(1))
                               : '',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 12,
                           ),
+                          textAlign: TextAlign.right,
                         );
                       },
                     ),
@@ -480,13 +526,11 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
-                      interval: 1, // Show labels only at integer positions
+                      interval: 1,
                       getTitlesWidget: (value, meta) {
-                        // Only show labels at exact integer positions (data points)
                         if (value != value.toInt()) {
                           return const Text('');
                         }
-
                         if (value.toInt() >= 0 && value.toInt() < data.length) {
                           final date = DateTime.parse(data[value.toInt()].date);
                           return Padding(
@@ -518,10 +562,13 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                     left: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
-                minX: -0.3, // Add left padding
-                maxX: (data.length - 1).toDouble() + 0.3, // Add right padding
-                minY: 0,
+                minX: -0.3,
+                maxX: (data.length - 1).toDouble() + 0.3,
+
+                // QUAN TRỌNG: Dùng biến minY đã tính toán thay vì fix cứng số 0
+                minY: minY,
                 maxY: maxY,
+
                 lineBarsData: [
                   LineChartBarData(
                     spots: data.asMap().entries.map((e) {
@@ -536,7 +583,8 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCirclePainter(
                           radius: 4,
-                          color: color,
+                          // Nếu giá trị âm, hiển thị màu đỏ cho user chú ý (hoặc giữ nguyên màu color nếu muốn)
+                          color: (hasNegative && spot.y < 0) ? Colors.redAccent : color,
                           strokeWidth: 2,
                           strokeColor: Colors.white,
                         );
@@ -558,7 +606,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
                             : spot.y.toStringAsFixed(1);
                         return LineTooltipItem(
                           '${DateFormat('MMM dd').format(date)}\n$value',
-                          TextStyle(
+                          const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
