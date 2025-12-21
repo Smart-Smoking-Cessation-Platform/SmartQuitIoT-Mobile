@@ -129,6 +129,7 @@ class DetailedMetrics {
   final double avgAnxiety;
   final double avgConfidentLevel;
   final double avgCigarettesPerDay;
+  final double avgNicotineMgPerDay;
   final int currentCravingLevel;
   final int currentMoodLevel;
   final int currentConfidenceLevel;
@@ -143,6 +144,7 @@ class DetailedMetrics {
   final double annualSaved;
   final double moneySaved;
   final double reductionPercentage;
+  final double reductionInLastSmoked;
   final double smokeFreeDayPercentage;
   final String createdAt;
   final String updatedAt;
@@ -157,6 +159,7 @@ class DetailedMetrics {
     required this.avgAnxiety,
     required this.avgConfidentLevel,
     required this.avgCigarettesPerDay,
+    required this.avgNicotineMgPerDay,
     required this.currentCravingLevel,
     required this.currentMoodLevel,
     required this.currentConfidenceLevel,
@@ -171,6 +174,7 @@ class DetailedMetrics {
     required this.annualSaved,
     required this.moneySaved,
     required this.reductionPercentage,
+    required this.reductionInLastSmoked,
     required this.smokeFreeDayPercentage,
     required this.createdAt,
     required this.updatedAt,
@@ -202,6 +206,9 @@ class DetailedMetrics {
       avgAnxiety: toDouble(json['avgAnxiety']),
       avgConfidentLevel: toDouble(json['avgConfidentLevel']),
       avgCigarettesPerDay: toDouble(json['avgCigarettesPerDay']),
+      avgNicotineMgPerDay: toDouble(
+        json['avgNicotineMgPerDay'] ?? json['avg_nicotine_mg_per_day'],
+      ),
       currentCravingLevel: toInt(json['currentCravingLevel']),
       currentMoodLevel: toInt(json['currentMoodLevel']),
       currentConfidenceLevel: toInt(json['currentConfidenceLevel']),
@@ -216,6 +223,9 @@ class DetailedMetrics {
       annualSaved: toDouble(json['annualSaved']),
       moneySaved: toDouble(json['moneySaved']),
       reductionPercentage: toDouble(json['reductionPercentage']),
+      reductionInLastSmoked: toDouble(
+        json['reductionInLastSmoked'] ?? json['reduction_in_last_smoked'],
+      ),
       smokeFreeDayPercentage: toDouble(json['smokeFreeDayPercentage']),
       createdAt: json['createdAt'] ?? '',
       updatedAt: json['updatedAt'] ?? '',
@@ -233,6 +243,7 @@ class DetailedMetrics {
       'avgAnxiety': avgAnxiety,
       'avgConfidentLevel': avgConfidentLevel,
       'avgCigarettesPerDay': avgCigarettesPerDay,
+      'avgNicotineMgPerDay': avgNicotineMgPerDay,
       'currentCravingLevel': currentCravingLevel,
       'currentMoodLevel': currentMoodLevel,
       'currentConfidenceLevel': currentConfidenceLevel,
@@ -247,6 +258,7 @@ class DetailedMetrics {
       'annualSaved': annualSaved,
       'moneySaved': moneySaved,
       'reductionPercentage': reductionPercentage,
+      'reductionInLastSmoked': reductionInLastSmoked,
       'smokeFreeDayPercentage': smokeFreeDayPercentage,
       'createdAt': createdAt,
       'updatedAt': updatedAt,

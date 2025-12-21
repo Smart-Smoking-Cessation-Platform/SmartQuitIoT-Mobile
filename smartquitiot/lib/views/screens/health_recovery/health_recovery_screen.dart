@@ -215,11 +215,11 @@ class HealthRecoveryScreen extends ConsumerWidget {
           _buildVitalsGrid(response.metrics),
           const SizedBox(height: 24),
 
-          _buildSectionHeader(icon: Icons.insights, title: 'Current State'),
-          const SizedBox(height: 16),
-          _buildCurrentStateGrid(response.metrics),
-          const SizedBox(height: 24),
+          // _buildSectionHeader(icon: Icons.insights, title: 'Current State'),
+          // const SizedBox(height: 16),
 
+          // _buildCurrentStateGrid(response.metrics),
+          // const SizedBox(height: 24),
           _buildSectionHeader(
             icon: Icons.payments,
             title: 'Financial & Impact',
@@ -449,6 +449,15 @@ class HealthRecoveryScreen extends ConsumerWidget {
       childAspectRatio: 1.0,
       children: [
         _buildColorfulProgressStat(
+          'Avg Nicotine (mg/day)',
+          metrics.avgNicotineMgPerDay > 0
+              ? metrics.avgNicotineMgPerDay.toStringAsFixed(2)
+              : '-',
+          Icons.science,
+          const Color(0xFF00D09E),
+          const Color(0xFF00B894),
+        ),
+        _buildColorfulProgressStat(
           'Money Saved',
           _formatCurrency(metrics.moneySaved),
           Icons.savings,
@@ -471,7 +480,7 @@ class HealthRecoveryScreen extends ConsumerWidget {
         ),
         _buildColorfulProgressStat(
           'Reduction %',
-          '${metrics.reductionPercentage.toStringAsFixed(0)}%',
+          '${metrics.reductionInLastSmoked.toStringAsFixed(1)}%',
           Icons.trending_down,
           const Color(0xFF6C5CE7),
           const Color(0xFF5A4FCF),
