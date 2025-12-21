@@ -197,19 +197,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 16),
 
                       /// Forgot password
-                      Center(
-                        child: TextButton(
-                          onPressed: () => context.push('/forgot'),
-                          child: Text(
-                            'forgot_password'.tr(),
-                            style: const TextStyle(
-                              color: greenColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-
+                      // Center(
+                      //   child: TextButton(
+                      //     onPressed: () => context.push('/forgot'),
+                      //     child: Text(
+                      //       'forgot_password'.tr(),
+                      //       style: const TextStyle(
+                      //         color: greenColor,
+                      //         fontWeight: FontWeight.w600,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
                       const SizedBox(height: 8),
                       const AuthDivider(),
                       const SizedBox(height: 24),

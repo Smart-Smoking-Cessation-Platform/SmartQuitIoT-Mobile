@@ -10,7 +10,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
@@ -69,7 +70,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             await Future.delayed(const Duration(milliseconds: 1500));
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => OtpScreen(email: _emailController.text)),
+              MaterialPageRoute(
+                builder: (_) => OtpScreen(email: _emailController.text),
+              ),
             );
           } else {
             final error = ref.read(authViewModelProvider).error;
@@ -102,14 +105,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 height: 120,
                 decoration: const BoxDecoration(color: Color(0xFF00D09E)),
                 child: const Center(
-                  child: Text(
-                    'Forgot Password',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  // child: Text(
+                  //   'Forgot Password',
+                  //   style: TextStyle(
+                  //     color: Colors.white,
+                  //     fontSize: 24,
+                  //     fontWeight: FontWeight.bold,
+                  //   ),
+                  // ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -152,7 +155,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 child: SizedBox(
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: (_isButtonEnabled && !_isLoading) ? _sendResetLink : null,
+                    onPressed: (_isButtonEnabled && !_isLoading)
+                        ? _sendResetLink
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00D09E),
                       foregroundColor: Colors.white,
@@ -163,33 +168,35 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 3,
-                      ),
-                    )
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          )
                         : const Text(
-                      'Send OTP',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
+                            'Send OTP',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
               Center(
-                child:TextButton(
-  onPressed: () => context.go('/login'), // ✅ Dùng GoRouter
-  child: const Text(
-    'Back to Login',
-    style: TextStyle(
-      color: Color(0xFF00D09E),
-      fontWeight: FontWeight.w600,
-    ),
-  ),
-),
-
+                child: TextButton(
+                  onPressed: () => context.go('/login'), // ✅ Dùng GoRouter
+                  child: const Text(
+                    'Back to Login',
+                    style: TextStyle(
+                      color: Color(0xFF00D09E),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 32),
             ],

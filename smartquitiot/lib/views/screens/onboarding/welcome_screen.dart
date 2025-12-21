@@ -205,31 +205,30 @@ class WelcomeScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
 
                   /// Forgot Password
-                  Center(
-                    child: GestureDetector(
-                      onTap: isLoading ? null : () => context.push('/forgot'),
-                      child: RichText(
-                        text: TextSpan(
-                          text: '${'forgot_password'.tr()} ',
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontSize: 14,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'click_here'.tr(),
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
+                  // Center(
+                  //   child: GestureDetector(
+                  //     onTap: isLoading ? null : () => context.push('/forgot'),
+                  //     child: RichText(
+                  //       text: TextSpan(
+                  //         text: '${'forgot_password'.tr()} ',
+                  //         style: const TextStyle(
+                  //           color: Colors.black87,
+                  //           fontSize: 14,
+                  //         ),
+                  //         children: [
+                  //           TextSpan(
+                  //             text: 'click_here'.tr(),
+                  //             style: const TextStyle(
+                  //               color: Colors.black87,
+                  //               fontSize: 14,
+                  //               fontWeight: FontWeight.w800,
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
                   const Spacer(),
                 ],
               ),

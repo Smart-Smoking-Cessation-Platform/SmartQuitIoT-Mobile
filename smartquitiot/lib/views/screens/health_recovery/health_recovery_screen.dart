@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:SmartQuitIoT/providers/metrics_provider.dart';
 import 'package:SmartQuitIoT/models/health_recovery.dart';
 
@@ -27,12 +28,113 @@ class HealthRecoveryScreen extends ConsumerWidget {
         centerTitle: true,
       ),
       body: healthRecoveriesAsync.when(
-        data: (healthRecoveryResponse) => _buildContent(context, healthRecoveryResponse),
+        data: (healthRecoveryResponse) =>
+            _buildContent(context, healthRecoveryResponse),
         loading: () => const Center(
           child: CircularProgressIndicator(color: Color(0xFF00D09E)),
         ),
         error: (error, stack) => _buildErrorState(context, ref),
       ),
+    );
+  }
+
+  Widget _buildColorfulComparisonStat({
+    required String title,
+    required IconData icon,
+    required int currentValue,
+    required String currentSuffix,
+    required double avgValue,
+    required String avgSuffix,
+    required Color startColor,
+    required Color endColor,
+  }) {
+    final currentText = currentValue > 0 ? '$currentValue$currentSuffix' : '-';
+    final avgText = avgValue > 0
+        ? '${avgValue.toStringAsFixed(1)}$avgSuffix'
+        : '-';
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutBack,
+      builder: (context, animValue, child) {
+        return Transform.scale(
+          scale: 0.8 + (animValue * 0.2),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [startColor, endColor],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: startColor.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 30),
+                ),
+                const SizedBox(height: 10),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Current: $currentText',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Avg: $avgText',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -61,11 +163,7 @@ class HealthRecoveryScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             const Text(
               'Start logging your diary entries to track your health improvements and recovery milestones!',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey, height: 1.5),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -75,7 +173,10 @@ class HealthRecoveryScreen extends ConsumerWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00D09E),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),
                 ),
@@ -106,6 +207,27 @@ class HealthRecoveryScreen extends ConsumerWidget {
           _buildOverallProgressCard(response.metrics),
           const SizedBox(height: 20),
 
+          _buildSectionHeader(
+            icon: Icons.monitor_heart,
+            title: 'Health Vitals',
+          ),
+          const SizedBox(height: 16),
+          _buildVitalsGrid(response.metrics),
+          const SizedBox(height: 24),
+
+          // _buildSectionHeader(icon: Icons.insights, title: 'Current State'),
+          // const SizedBox(height: 16),
+
+          // _buildCurrentStateGrid(response.metrics),
+          // const SizedBox(height: 24),
+          _buildSectionHeader(
+            icon: Icons.payments,
+            title: 'Financial & Impact',
+          ),
+          const SizedBox(height: 16),
+          _buildFinancialImpactGrid(response.metrics),
+          const SizedBox(height: 24),
+
           // Health Recoveries List
           const Text(
             'Health Recovery Milestones',
@@ -120,11 +242,28 @@ class HealthRecoveryScreen extends ConsumerWidget {
           if (response.healthRecoveries.isEmpty)
             _buildEmptyRecoveries()
           else
-            ...response.healthRecoveries.map((recovery) => 
-              _buildRecoveryCard(recovery)
+            ...response.healthRecoveries.map(
+              (recovery) => _buildRecoveryCard(recovery),
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionHeader({required IconData icon, required String title}) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFF00D09E), size: 26),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFF2D3748),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 
@@ -147,7 +286,7 @@ class HealthRecoveryScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        
+
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -162,6 +301,13 @@ class HealthRecoveryScreen extends ConsumerWidget {
               Icons.local_fire_department,
               const Color(0xFFFF6B6B),
               const Color(0xFFEE5A6F),
+            ),
+            _buildColorfulProgressStat(
+              'Missions',
+              '${metrics.totalMissionCompleted}',
+              Icons.checklist,
+              const Color(0xFF00B894),
+              const Color(0xFF00A085),
             ),
             _buildColorfulProgressStat(
               'Avg Craving',
@@ -184,7 +330,160 @@ class HealthRecoveryScreen extends ConsumerWidget {
               const Color(0xFF9B59B6),
               const Color(0xFF8E44AD),
             ),
+            _buildColorfulProgressStat(
+              'Avg Anxiety',
+              '${metrics.avgAnxiety.toStringAsFixed(1)}/10',
+              Icons.self_improvement,
+              const Color(0xFF5DADE2),
+              const Color(0xFF2E86C1),
+            ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVitalsGrid(DetailedMetrics metrics) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.05,
+      children: [
+        _buildColorfulProgressStat(
+          'Heart Rate',
+          metrics.heartRate > 0 ? '${metrics.heartRate} bpm' : '-',
+          Icons.favorite,
+          const Color(0xFFE74C3C),
+          const Color(0xFFC0392B),
+        ),
+        _buildColorfulProgressStat(
+          'SpO₂',
+          metrics.spo2 > 0 ? '${metrics.spo2}%' : '-',
+          Icons.air,
+          const Color(0xFF3498DB),
+          const Color(0xFF2E86C1),
+        ),
+        _buildColorfulProgressStat(
+          'Steps',
+          metrics.steps > 0 ? _formatNumber(metrics.steps) : '-',
+          Icons.directions_walk,
+          const Color(0xFF2ECC71),
+          const Color(0xFF27AE60),
+        ),
+        _buildColorfulProgressStat(
+          'Sleep',
+          metrics.sleepDuration > 0
+              ? '${metrics.sleepDuration.toStringAsFixed(1)} h'
+              : '-',
+          Icons.bedtime,
+          const Color(0xFF9B59B6),
+          const Color(0xFF8E44AD),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCurrentStateGrid(DetailedMetrics metrics) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 0.95,
+      children: [
+        _buildColorfulComparisonStat(
+          title: 'Craving',
+          icon: Icons.psychology,
+          currentValue: metrics.currentCravingLevel,
+          currentSuffix: '/10',
+          avgValue: metrics.avgCravingLevel,
+          avgSuffix: '/10',
+          startColor: const Color(0xFF4ECDC4),
+          endColor: const Color(0xFF44A9A0),
+        ),
+        _buildColorfulComparisonStat(
+          title: 'Mood',
+          icon: Icons.sentiment_satisfied,
+          currentValue: metrics.currentMoodLevel,
+          currentSuffix: '/10',
+          avgValue: metrics.avgMood,
+          avgSuffix: '/10',
+          startColor: const Color(0xFFFFA500),
+          endColor: const Color(0xFFFF8C00),
+        ),
+        _buildColorfulComparisonStat(
+          title: 'Confidence',
+          icon: Icons.psychology_alt,
+          currentValue: metrics.currentConfidenceLevel,
+          currentSuffix: '/10',
+          avgValue: metrics.avgConfidentLevel,
+          avgSuffix: '/10',
+          startColor: const Color(0xFF9B59B6),
+          endColor: const Color(0xFF8E44AD),
+        ),
+        _buildColorfulComparisonStat(
+          title: 'Anxiety',
+          icon: Icons.self_improvement,
+          currentValue: metrics.currentAnxietyLevel,
+          currentSuffix: '/10',
+          avgValue: metrics.avgAnxiety,
+          avgSuffix: '/10',
+          startColor: const Color(0xFF5DADE2),
+          endColor: const Color(0xFF2E86C1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFinancialImpactGrid(DetailedMetrics metrics) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.0,
+      children: [
+        _buildColorfulProgressStat(
+          'Avg Nicotine (mg/day)',
+          metrics.avgNicotineMgPerDay > 0
+              ? metrics.avgNicotineMgPerDay.toStringAsFixed(2)
+              : '-',
+          Icons.science,
+          const Color(0xFF00D09E),
+          const Color(0xFF00B894),
+        ),
+        _buildColorfulProgressStat(
+          'Money Saved',
+          _formatCurrency(metrics.moneySaved),
+          Icons.savings,
+          const Color(0xFF00B894),
+          const Color(0xFF00A085),
+        ),
+        _buildColorfulProgressStat(
+          'Annual Saved',
+          _formatCurrency(metrics.annualSaved),
+          Icons.account_balance_wallet,
+          const Color(0xFF16A085),
+          const Color(0xFF0E6655),
+        ),
+        _buildColorfulProgressStat(
+          'Smoke-Free %',
+          '${metrics.smokeFreeDayPercentage.toStringAsFixed(0)}%',
+          Icons.verified,
+          const Color(0xFF2ECC71),
+          const Color(0xFF27AE60),
+        ),
+        _buildColorfulProgressStat(
+          'Reduction %',
+          '${metrics.reductionInLastSmoked.toStringAsFixed(1)}%',
+          Icons.trending_down,
+          const Color(0xFF6C5CE7),
+          const Color(0xFF5A4FCF),
         ),
       ],
     );
@@ -233,17 +532,24 @@ class HealthRecoveryScreen extends ConsumerWidget {
                   child: Icon(icon, color: Colors.white, size: 32),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,
@@ -275,11 +581,7 @@ class HealthRecoveryScreen extends ConsumerWidget {
       ),
       child: const Column(
         children: [
-          Icon(
-            Icons.health_and_safety_outlined,
-            size: 64,
-            color: Colors.grey,
-          ),
+          Icon(Icons.health_and_safety_outlined, size: 64, color: Colors.grey),
           SizedBox(height: 16),
           Text(
             'No Recovery Data Yet',
@@ -292,10 +594,7 @@ class HealthRecoveryScreen extends ConsumerWidget {
           SizedBox(height: 8),
           Text(
             'Keep logging your diary entries to unlock health recovery milestones!',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
         ],
@@ -362,7 +661,10 @@ class HealthRecoveryScreen extends ConsumerWidget {
               ),
               if (recovery.value != null) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: _getStatusColor(recovery.status),
                     borderRadius: BorderRadius.circular(20),
@@ -380,17 +682,14 @@ class HealthRecoveryScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           Row(
             children: [
               Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
               const SizedBox(width: 6),
               Text(
                 'Recovery Time: ${recovery.formattedRecoveryTime}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
               ),
               const Spacer(),
               Text(
@@ -403,7 +702,23 @@ class HealthRecoveryScreen extends ConsumerWidget {
               ),
             ],
           ),
-          
+
+          if (recovery.targetTime != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.flag_outlined, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Target: ${_formatDateTime(recovery.targetTime)}',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
           if (recovery.value != null) ...[
             const SizedBox(height: 12),
             LinearProgressIndicator(
@@ -419,8 +734,25 @@ class HealthRecoveryScreen extends ConsumerWidget {
     );
   }
 
+  String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return '-';
+    return DateFormat('MMM d, yyyy • HH:mm').format(dateTime.toLocal());
+  }
+
+  String _formatCurrency(double value) {
+    final formatter = NumberFormat.currency(symbol: '₫', decimalDigits: 0);
+    return formatter.format(value);
+  }
+
+  String _formatNumber(int value) {
+    return NumberFormat.decimalPattern().format(value);
+  }
+
   String _formatRecoveryName(String name) {
-    return name.replaceAll('_', ' ').toLowerCase().split(' ')
+    return name
+        .replaceAll('_', ' ')
+        .toLowerCase()
+        .split(' ')
         .map((word) => word[0].toUpperCase() + word.substring(1))
         .join(' ');
   }
