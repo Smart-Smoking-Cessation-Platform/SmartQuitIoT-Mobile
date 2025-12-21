@@ -38,7 +38,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     'Maintenance',
   ];
 
-
   void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
     showDialog(
       context: context,
@@ -73,8 +72,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     ).show(context);
   }
 
-
-
   Future<void> _handleKeepPhaseAction(
     QuitPhase plan,
     QuitPhaseDetail phase,
@@ -93,12 +90,12 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
       await ref
           .read(quitPlanViewModelApiProvider.notifier)
           .keepPhase(quitPlanId: planId, phaseId: phaseId);
-      
+
       if (!mounted) return;
       FullScreenLoader.hide(context);
-      
+
       _showSnack('Phase kept successfully.');
-      
+
       // Reload quit plan data
       await ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
     } catch (e) {
@@ -129,7 +126,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     }
 
     final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
-    
+
     if (!mounted) return;
     FullScreenLoader.show(context, message: 'Restarting phase...');
 
@@ -137,12 +134,12 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
       await ref
           .read(quitPlanViewModelApiProvider.notifier)
           .redoPhase(phaseId: phaseId, anchorStart: formattedDate);
-      
+
       if (!mounted) return;
       FullScreenLoader.hide(context);
-      
+
       _showSnack('Phase restarted from $formattedDate.');
-      
+
       // Reload quit plan data
       await ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
     } catch (e) {
@@ -199,7 +196,6 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     }
     return false;
   }
-
 
   /// Detect new phases and show notification
   void _detectAndNotifyNewPhases(List<QuitPhaseDetail> currentPhases) {
@@ -362,10 +358,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
           final sortedPhases = _sortPhases(phases);
           final isCompleted = _isQuitPlanCompleted(data, sortedPhases);
           final planInsights = _buildPlanInsightsSection(data);
-          
+
           // Map fixed phases to actual phase data
           final phaseMap = _mapPhasesToFixedPhases(sortedPhases);
-          
+
           return NestedScrollView(
             headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
               return [
@@ -381,7 +377,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                     ],
                   ),
                 ),
-                
+
                 // Sticky TabBar that docks below Header Card
                 SliverPersistentHeader(
                   pinned: true,
@@ -407,7 +403,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                         indicatorWeight: 3,
                         indicatorSize: TabBarIndicatorSize.tab,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         labelStyle: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -420,7 +419,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                           final phase = phaseMap[phaseName];
                           final theme = resolvePhaseTheme(phaseName);
                           final hasData = phase != null;
-                          
+
                           return Tab(
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -444,7 +443,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                                     decoration: BoxDecoration(
                                       color: _isFailedStatus(phase.status)
                                           ? Colors.redAccent.withOpacity(0.15)
-                                          : theme.primaryColor.withOpacity(0.15),
+                                          : theme.primaryColor.withOpacity(
+                                              0.15,
+                                            ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -474,17 +475,13 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
               children: _fixedPhases.map((phaseName) {
                 final phase = phaseMap[phaseName];
                 final theme = resolvePhaseTheme(phaseName);
-                
+
                 if (phase == null) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          theme.icon,
-                          size: 64,
-                          color: Colors.grey[300],
-                        ),
+                        Icon(theme.icon, size: 64, color: Colors.grey[300]),
                         const SizedBox(height: 16),
                         Text(
                           '$phaseName phase not started yet',
@@ -497,7 +494,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                     ),
                   );
                 }
-                
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: _buildPhaseDetails(data, phase, theme),
@@ -612,7 +609,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     );
   }
 
-  Widget _buildStats(List<QuitPhaseDetail> phases, {bool dockedToTabBar = false}) {
+  Widget _buildStats(
+    List<QuitPhaseDetail> phases, {
+    bool dockedToTabBar = false,
+  }) {
     final totalMissions = phases.fold<int>(
       0,
       (sum, p) => sum + (p.totalMissions ?? 0),
@@ -626,7 +626,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
         : 0.0;
 
     return Container(
-      margin: dockedToTabBar 
+      margin: dockedToTabBar
           ? const EdgeInsets.only(left: 16, right: 16, top: 16)
           : const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -693,7 +693,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
   Widget? _buildPlanInsightsSection(QuitPhase plan) {
     final formMetric = plan.formMetric;
     final currentMetric = plan.currentMetric;
-    final hasLifestyleInfo = (formMetric?.interests.isNotEmpty ?? false) ||
+    final hasLifestyleInfo =
+        (formMetric?.interests.isNotEmpty ?? false) ||
         (formMetric?.triggered.isNotEmpty ?? false);
 
     if (formMetric == null && currentMetric == null && !hasLifestyleInfo) {
@@ -900,18 +901,19 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
             color: const Color(0xFF0EA5E9),
           ),
           const SizedBox(height: 12),
-          if (metrics.avgCravingLevel != null)
-            _buildMetricProgressRow(
-              label: 'Craving level',
-              value: metrics.avgCravingLevel!,
-              color: Colors.redAccent,
-            ),
           if (metrics.avgCigarettesPerDay != null)
             _buildMetricLine(
               icon: Icons.smoke_free,
               label: 'Avg cigarettes per day (current)',
               value: metrics.avgCigarettesPerDay!.toStringAsFixed(1),
               iconColor: const Color(0xFF0EA5E9),
+            ),
+          const SizedBox(height: 12),
+          if (metrics.avgCravingLevel != null)
+            _buildMetricProgressRow(
+              label: 'Craving level',
+              value: metrics.avgCravingLevel!,
+              color: Colors.redAccent,
             ),
           if (metrics.avgMood != null)
             _buildMetricProgressRow(
@@ -999,16 +1001,17 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
               color: (iconColor ?? const Color(0xFF00D09E)).withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: iconColor ?? const Color(0xFF00D09E), size: 18),
+            child: Icon(
+              icon,
+              color: iconColor ?? const Color(0xFF00D09E),
+              size: 18,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black54,
-              ),
+              style: const TextStyle(fontSize: 13, color: Colors.black54),
             ),
           ),
           Text(
@@ -1062,9 +1065,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
           offset: const Offset(0, 6),
         ),
       ],
-      border: Border.all(
-        color: const Color(0xFFE2E8F0),
-      ),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
     );
   }
 
@@ -1128,10 +1129,8 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
   ) {
     final days = phase.details ?? [];
     final snapshot = phase.snapshotMetric;
-    final avgCraving =
-        phase.avgCravingLevel ?? snapshot?.avgCravingLevel;
-    final avgCigarettes =
-        phase.avgCigarettes ?? snapshot?.avgCigarettesPerDay;
+    final avgCraving = phase.avgCravingLevel ?? snapshot?.avgCravingLevel;
+    final avgCigarettes = phase.avgCigarettes ?? snapshot?.avgCigarettesPerDay;
     final avgMood = phase.avgMood ?? snapshot?.avgMood;
     final avgAnxiety = phase.avgAnxiety ?? snapshot?.avgAnxiety;
     final avgConfidence =
@@ -1270,311 +1269,314 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
             ),
           ),
         ),
-        
+
         // Kept Phase Banner
         if (shouldShowKeptBanner) ...[
           const SizedBox(height: 12),
           _buildKeptPhaseBanner(theme),
         ],
-        
+
         // Failed Phase Actions
-        if (_isFailedStatus(phase.status) && 
-            !(phase.keepPhase ?? false) && 
+        if (_isFailedStatus(phase.status) &&
+            !(phase.keepPhase ?? false) &&
             !(phase.redo ?? false)) ...[
           const SizedBox(height: 12),
           _buildFailedPhaseActions(plan, phase, theme),
         ],
-        
+
         // Phase Details Content
         const SizedBox(height: 12),
-          if ((phase.reason ?? '').isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.info_outline, color: theme.primaryColor, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      phase.reason ?? '',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
+        if ((phase.reason ?? '').isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 12),
-          ],
-          if (shouldShowStats) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FFFE),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.analytics_outlined,
-                        size: 16,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, color: theme.primaryColor, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    phase.reason ?? '',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (shouldShowStats) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FFFE),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.analytics_outlined,
+                      size: 16,
+                      color: theme.primaryColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Phase Statistics',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
                         color: theme.primaryColor,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Phase Statistics',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (avgCraving != null)
+                      Expanded(
+                        child: _buildSmallStat(
+                          label: 'Avg Craving',
+                          value: avgCraving.toStringAsFixed(1),
+                          color: Colors.red,
+                        ),
+                      ),
+                    if (avgCigarettes != null) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildSmallStat(
+                          label: 'Avg Cigs',
+                          value: avgCigarettes.toStringAsFixed(1),
+                          color: Colors.orange,
                         ),
                       ),
                     ],
+                  ],
+                ),
+                if (snapshotProgress != null) ...[
+                  const SizedBox(height: 6),
+                  _buildSmallStat(
+                    label: 'Phase Progress',
+                    value: '${snapshotProgress.toStringAsFixed(0)}%',
+                    color: theme.primaryColor,
                   ),
-                  const SizedBox(height: 8),
+                ],
+                if (avgMood != null ||
+                    avgAnxiety != null ||
+                    avgConfidence != null) ...[
+                  const SizedBox(height: 6),
                   Row(
                     children: [
-                      if (avgCraving != null)
+                      if (avgMood != null)
                         Expanded(
                           child: _buildSmallStat(
-                            label: 'Avg Craving',
-                            value: avgCraving.toStringAsFixed(1),
-                            color: Colors.red,
+                            label: 'Mood',
+                            value: avgMood.toStringAsFixed(1),
+                            color: const Color(0xFF0EA5E9),
                           ),
                         ),
-                      if (avgCigarettes != null) ...[
+                      if (avgAnxiety != null) ...[
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildSmallStat(
-                            label: 'Avg Cigs',
-                            value: avgCigarettes.toStringAsFixed(1),
-                            color: Colors.orange,
+                            label: 'Anxiety',
+                            value: avgAnxiety.toStringAsFixed(1),
+                            color: const Color(0xFFF59E0B),
+                          ),
+                        ),
+                      ],
+                      if (avgConfidence != null) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildSmallStat(
+                            label: 'Confidence',
+                            value: avgConfidence.toStringAsFixed(1),
+                            color: const Color(0xFF10B981),
                           ),
                         ),
                       ],
                     ],
                   ),
-                  if (snapshotProgress != null) ...[
-                    const SizedBox(height: 6),
-                    _buildSmallStat(
-                      label: 'Phase Progress',
-                      value: '${snapshotProgress.toStringAsFixed(0)}%',
+                ],
+                if (phase.fmCigarettesTotal != null) ...[
+                  const SizedBox(height: 6),
+                  _buildSmallStat(
+                    label: 'Total Cigarettes',
+                    value: phase.fmCigarettesTotal!.toStringAsFixed(0),
+                    color: Colors.deepOrange,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (phase.condition != null &&
+            (phase.condition!.rules?.isNotEmpty ?? false)) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.verified_outlined,
+                      size: 16,
                       color: theme.primaryColor,
                     ),
-                  ],
-                  if (avgMood != null ||
-                      avgAnxiety != null ||
-                      avgConfidence != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        if (avgMood != null)
-                          Expanded(
-                            child: _buildSmallStat(
-                              label: 'Mood',
-                              value: avgMood.toStringAsFixed(1),
-                              color: const Color(0xFF0EA5E9),
-                            ),
-                          ),
-                        if (avgAnxiety != null) ...[
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildSmallStat(
-                              label: 'Anxiety',
-                              value: avgAnxiety.toStringAsFixed(1),
-                              color: const Color(0xFFF59E0B),
-                            ),
-                          ),
-                        ],
-                        if (avgConfidence != null) ...[
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildSmallStat(
-                              label: 'Confidence',
-                              value: avgConfidence.toStringAsFixed(1),
-                              color: const Color(0xFF10B981),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                  if (phase.fmCigarettesTotal != null) ...[
-                    const SizedBox(height: 6),
-                    _buildSmallStat(
-                      label: 'Total Cigarettes',
-                      value: phase.fmCigarettesTotal!.toStringAsFixed(0),
-                      color: Colors.deepOrange,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          if (phase.condition != null &&
-              (phase.condition!.rules?.isNotEmpty ?? false)) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.verified_outlined,
-                        size: 16,
+                    const SizedBox(width: 6),
+                    Text(
+                      'Conditions to Pass',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
                         color: theme.primaryColor,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Conditions to Pass',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _buildPhaseConditions(
-                    phase.condition!,
-                    theme,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildPhaseConditions(
+                  phase.condition!,
+                  theme,
+                  phase.fmCigarettesTotal ?? 0,
+                  phase.durationDay ?? 0,
+                  // Try to get smokeAvgPerDay from formMetricDTO if available
+                  _calculateSmokeAvgPerDay(
                     phase.fmCigarettesTotal ?? 0,
                     phase.durationDay ?? 0,
-                    // Try to get smokeAvgPerDay from formMetricDTO if available
-                    // Otherwise calculate from fmCigarettesTotal / durationDay
-                    _calculateSmokeAvgPerDay(
-                      phase.fmCigarettesTotal ?? 0,
-                      phase.durationDay ?? 0,
+                  ),
+                  currentAvgMood: (avgMood != null && avgMood > 0)
+                      ? avgMood
+                      : plan.currentMetric?.avgMood,
+                  currentAvgCigarettesPerDay:
+                      (avgCigarettes != null && avgCigarettes > 0)
+                      ? avgCigarettes
+                      : plan.currentMetric?.avgCigarettesPerDay,
+                  currentProgress: snapshotProgress ?? (phaseProgress * 100),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (days.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Center(
+              child: Text(
+                'No missions available yet',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+          )
+        else ...[
+          const Text(
+            'Days:',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 70, // tăng chút để vừa chữ day + date
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: days.length,
+              itemBuilder: (context, dayIdx) {
+                final day = days[dayIdx];
+                final isSelected = selectedDayIndex == dayIdx;
+                final missions = day.missions ?? [];
+                final completed = missions
+                    .where(
+                      (m) =>
+                          m.status == 'COMPLETED' ||
+                          locallyCompletedMissionIds.contains(m.id),
+                    )
+                    .length;
+
+                return GestureDetector(
+                  onTap: () => setState(() => selectedDayIndex = dayIdx),
+                  child: Container(
+                    width: 80, // tăng chút rộng để ngày không bị ép
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected ? theme.primaryColor : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: theme.primaryColor.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Day ${day.dayIndex}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatDate(day.date),
+
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected ? Colors.white : Colors.grey[700],
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+                        Text(
+                          '$completed/${missions.length}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? Colors.white70
+                                : theme.primaryColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-            const SizedBox(height: 8),
-          ],
-          if (days.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Center(
-                child: Text(
-                  'No missions available yet',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-            )
-          else ...[
-            const Text(
-              'Days:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 70, // tăng chút để vừa chữ day + date
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: days.length,
-                itemBuilder: (context, dayIdx) {
-                  final day = days[dayIdx];
-                  final isSelected = selectedDayIndex == dayIdx;
-                  final missions = day.missions ?? [];
-                  final completed = missions
-                      .where(
-                        (m) =>
-                            m.status == 'COMPLETED' ||
-                            locallyCompletedMissionIds.contains(m.id),
-                      )
-                      .length;
+          ),
 
-                  return GestureDetector(
-                    onTap: () => setState(() => selectedDayIndex = dayIdx),
-                    child: Container(
-                      width: 80, // tăng chút rộng để ngày không bị ép
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? theme.primaryColor
-                            : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: theme.primaryColor.withOpacity(0.3),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : [],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Day ${day.dayIndex}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _formatDate(day.date),
-
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.grey[700],
-                            ),
-                          ),
-
-                          const SizedBox(height: 4),
-                          Text(
-                            '$completed/${missions.length}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected
-                                  ? Colors.white70
-                                  : theme.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 12),
-            if (selectedDayIndex < days.length)
-              _buildMissionsList(days[selectedDayIndex], theme, phase),
-          ],
+          const SizedBox(height: 12),
+          if (selectedDayIndex < days.length)
+            _buildMissionsList(days[selectedDayIndex], theme, phase),
+        ],
       ],
     );
   }
@@ -1617,7 +1619,11 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     });
   }
 
-  Widget _buildMissionsList(QuitDay day, PhaseTheme theme, QuitPhaseDetail phase) {
+  Widget _buildMissionsList(
+    QuitDay day,
+    PhaseTheme theme,
+    QuitPhaseDetail phase,
+  ) {
     final missions = day.missions ?? [];
     if (missions.isEmpty) {
       return const Padding(
@@ -1687,7 +1693,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
           final missionId = mission.id ?? -1;
           final completed =
               mission.status == 'COMPLETED' ||
-                  locallyCompletedMissionIds.contains(missionId);
+              locallyCompletedMissionIds.contains(missionId);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -1743,7 +1749,10 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
 
                 // ✅ Đã cập nhật điều kiện ở đây:
                 // Thêm: && !isPhaseCompleted
-                if (!completed && missionId != -1 && !isRedoPhase && !isPhaseCompleted) ...[
+                if (!completed &&
+                    missionId != -1 &&
+                    !isRedoPhase &&
+                    !isPhaseCompleted) ...[
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,
@@ -1822,8 +1831,11 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     PhaseTheme theme,
     double fmCigarettesTotal,
     int durationDay,
-    int smokeAvgPerDay,
-  ) {
+    int smokeAvgPerDay, {
+    double? currentAvgMood,
+    double? currentAvgCigarettesPerDay,
+    double? currentProgress,
+  }) {
     final rules = condition.rules ?? [];
 
     // Calculate baseline total: use fmCigarettesTotal if available, otherwise calculate from smokeAvgPerDay * durationDay
@@ -1875,6 +1887,11 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                 rule,
                 theme,
                 fmCigarettesTotal: baselineTotal,
+                smokeAvgPerDay: smokeAvgPerDay,
+                durationDay: durationDay,
+                currentAvgMood: currentAvgMood,
+                currentAvgCigarettesPerDay: currentAvgCigarettesPerDay,
+                currentProgress: currentProgress,
               ),
             )
             .toList(),
@@ -1887,7 +1904,19 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     PhaseTheme theme, {
     int indent = 0,
     required double fmCigarettesTotal,
+    required int smokeAvgPerDay,
+    required int durationDay,
+    double? currentAvgMood,
+    double? currentAvgCigarettesPerDay,
+    double? currentProgress,
   }) {
+    final currentValue = _getCurrentValueForPhaseRuleField(
+      rule.field,
+      currentAvgMood: currentAvgMood,
+      currentAvgCigarettesPerDay: currentAvgCigarettesPerDay,
+      currentProgress: currentProgress,
+    );
+
     return Container(
       margin: EdgeInsets.only(left: indent * 12.0, bottom: 6),
       padding: const EdgeInsets.all(10),
@@ -1922,6 +1951,11 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                     theme,
                     indent: indent + 1,
                     fmCigarettesTotal: fmCigarettesTotal,
+                    smokeAvgPerDay: smokeAvgPerDay,
+                    durationDay: durationDay,
+                    currentAvgMood: currentAvgMood,
+                    currentAvgCigarettesPerDay: currentAvgCigarettesPerDay,
+                    currentProgress: currentProgress,
                   ),
                 )
                 .toList(),
@@ -1951,6 +1985,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                         _formatPhaseRuleCondition(
                           rule,
                           fmCigarettesTotal: fmCigarettesTotal,
+                          smokeAvgPerDay: smokeAvgPerDay,
+                          durationDay: durationDay,
+                          currentValue: currentValue,
                         ),
                         style: TextStyle(fontSize: 10, color: Colors.grey[700]),
                       ),
@@ -1963,6 +2000,37 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
         ],
       ),
     );
+  }
+
+  double? _getCurrentValueForPhaseRuleField(
+    String? field, {
+    double? currentAvgMood,
+    double? currentAvgCigarettesPerDay,
+    double? currentProgress,
+  }) {
+    final normalized = (field ?? '').toLowerCase();
+    if (normalized == 'progress') return currentProgress;
+
+    if (normalized.contains('mood')) return currentAvgMood;
+    if (normalized.contains('cigarettes')) return currentAvgCigarettesPerDay;
+
+    return null;
+  }
+
+  String _formatCurrentRuleValue(String? field, double value) {
+    final normalized = (field ?? '').toLowerCase();
+
+    if (normalized == 'progress') {
+      return 'Current: ${value.toStringAsFixed(1)}%';
+    }
+    if (normalized.contains('mood')) {
+      return 'Current: ${value.toStringAsFixed(1)}/10';
+    }
+    if (normalized.contains('cigarettes')) {
+      return 'Current: ${value.toStringAsFixed(1)} cig/day';
+    }
+
+    return 'Current: ${value.toStringAsFixed(1)}';
   }
 
   Widget _buildPhaseInfoChips(QuitPhaseDetail phase, PhaseTheme theme) {
@@ -2053,11 +2121,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.error_outline,
-                color: Colors.redAccent,
-                size: 20,
-              ),
+              Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Phase Failed - Choose an action',
@@ -2113,10 +2177,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
         decoration: BoxDecoration(
           color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
-          ),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
         ),
         child: Row(
           children: [
@@ -2152,11 +2213,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: color,
-              size: 16,
-            ),
+            Icon(Icons.arrow_forward_ios, color: color, size: 16),
           ],
         ),
       ),
@@ -2221,10 +2278,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-
             Future<void> selectDate() async {
               if (isCreating) return; // Prevent date selection when creating
-              
+
               final now = DateTime.now();
               final pickedDate = await showDatePicker(
                 context: context,
@@ -2258,7 +2314,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
 
             Future<void> handleCreate() async {
               if (isCreating) return; // Prevent multiple submissions
-              
+
               if (!formKey.currentState!.validate()) {
                 return;
               }
@@ -2295,7 +2351,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
 
                 // Refresh quit plan data
                 if (mounted) {
-                  await ref.read(quitPlanViewModelApiProvider.notifier).loadQuitPlan();
+                  await ref
+                      .read(quitPlanViewModelApiProvider.notifier)
+                      .loadQuitPlan();
                   if (mounted) {
                     _showSnack('New quit plan created successfully! ');
                   }
@@ -2305,7 +2363,7 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                 setDialogState(() {
                   isCreating = false;
                 });
-                
+
                 if (mounted) {
                   _showSnack(
                     'Failed to create new plan: ${_errorMessage(e)}',
@@ -2539,9 +2597,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
                                           valueColor:
-                                              const AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                              const AlwaysStoppedAnimation<
+                                                Color
+                                              >(Colors.white),
                                         ),
                                       )
                                     : const Text(
@@ -2587,6 +2645,9 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
   String _formatPhaseRuleCondition(
     PhaseRule rule, {
     required double fmCigarettesTotal,
+    required int smokeAvgPerDay,
+    required int durationDay,
+    double? currentValue,
   }) {
     final operator = rule.operator ?? '';
 
@@ -2600,18 +2661,70 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
       );
 
       if (base == 'fm_cigarettes_total') {
+        // For avg cigarettes rules, showing a per-day target is clearer than total cigarettes.
+        final hasBaselinePerDay = smokeAvgPerDay > 0;
+        final hasDuration = durationDay > 0;
+
+        if (hasBaselinePerDay) {
+          final baselinePerDay = smokeAvgPerDay.toDouble();
+          final targetPerDay = baselinePerDay * percent;
+          final targetPerDayRounded = targetPerDay.toStringAsFixed(1);
+          final baselinePerDayRounded = baselinePerDay.toStringAsFixed(0);
+
+          var result =
+              'Target: $operator $targetPerDayRounded cig/day\n($percentLabel% of your baseline: $baselinePerDayRounded cig/day)';
+
+          if (hasDuration) {
+            final targetTotal = targetPerDay * durationDay;
+            result =
+                '$result\nOver $durationDay days: $operator ${targetTotal.toStringAsFixed(1)} cigarettes';
+          } else if (fmCigarettesTotal > 0) {
+            // Fallback: if we only know baseline total, still show it.
+            final computed = fmCigarettesTotal * percent;
+            result =
+                '$result\nBaseline total: ${fmCigarettesTotal.toStringAsFixed(0)} cigarettes → Target: ${computed.toStringAsFixed(1)} cigarettes';
+          }
+
+          if (currentValue != null) {
+            result =
+                '$result\n${_formatCurrentRuleValue(rule.field, currentValue)}';
+          }
+          return result;
+        }
+
+        // If we don't have baseline per-day, fall back to total baseline.
         if (fmCigarettesTotal > 0) {
           final computed = fmCigarettesTotal * percent;
           final computedRounded = computed.toStringAsFixed(1);
-          // Show the computed value prominently with clear explanation
-          return 'Must be $operator $computedRounded cigarettes\n($percentLabel% of your baseline: ${fmCigarettesTotal.toStringAsFixed(0)} cigarettes)';
-        } else {
-          // If baseline is not available, still show the percentage
-          return 'Must be $operator $percentLabel% of baseline total cigarettes';
+          var result =
+              'Target: $operator $computedRounded cigarettes\n($percentLabel% of your baseline total: ${fmCigarettesTotal.toStringAsFixed(0)} cigarettes)';
+          if (hasDuration) {
+            final perDay = computed / durationDay;
+            result =
+                '$result\nApprox per day: $operator ${perDay.toStringAsFixed(1)} cig/day';
+          }
+          if (currentValue != null) {
+            result =
+                '$result\n${_formatCurrentRuleValue(rule.field, currentValue)}';
+          }
+          return result;
         }
+
+        var result = 'Target: $operator $percentLabel% of baseline cigarettes';
+        if (currentValue != null) {
+          result =
+              '$result\n${_formatCurrentRuleValue(rule.field, currentValue)}';
+        }
+        return result;
       }
 
-      return 'Must be $operator $percentLabel% $op ${_formatFormulaBase(base)}';
+      var result =
+          'Must be $operator $percentLabel% $op ${_formatFormulaBase(base)}';
+      if (currentValue != null) {
+        result =
+            '$result\n${_formatCurrentRuleValue(rule.field, currentValue)}';
+      }
+      return result;
     }
 
     final value = rule.value;
@@ -2624,7 +2737,11 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
       displayValue = '${value.toString()}%';
     }
 
-    return 'Must be $operator $displayValue';
+    var result = 'Must be $operator $displayValue';
+    if (currentValue != null) {
+      result = '$result\n${_formatCurrentRuleValue(rule.field, currentValue)}';
+    }
+    return result;
   }
 
   String _formatBoolLabel(bool? value) {
@@ -2680,62 +2797,74 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
     List<QuitPhaseDetail> sortedPhases,
   ) {
     final Map<String, QuitPhaseDetail?> phaseMap = {};
-    
+
     // Initialize all fixed phases as null
     for (final fixedPhase in _fixedPhases) {
       phaseMap[fixedPhase] = null;
     }
-    
+
     // Map actual phases to fixed phases by matching phase names
     for (final phase in sortedPhases) {
       final phaseName = (phase.name ?? '').trim();
       if (phaseName.isEmpty) continue;
-      
+
       // Try exact match first
       if (phaseMap.containsKey(phaseName)) {
         // If there's already a phase mapped, prefer the one that's not failed or the most recent one
         final existing = phaseMap[phaseName];
-        if (existing == null || 
-            (_isFailedStatus(existing.status) && !_isFailedStatus(phase.status)) ||
-            (existing.startDate != null && phase.startDate != null &&
-             DateTime.parse(phase.startDate!).isAfter(DateTime.parse(existing.startDate!)))) {
+        if (existing == null ||
+            (_isFailedStatus(existing.status) &&
+                !_isFailedStatus(phase.status)) ||
+            (existing.startDate != null &&
+                phase.startDate != null &&
+                DateTime.parse(
+                  phase.startDate!,
+                ).isAfter(DateTime.parse(existing.startDate!)))) {
           phaseMap[phaseName] = phase;
         }
         continue;
       }
-      
+
       // Try case-insensitive match
       final normalizedPhaseName = phaseName.toLowerCase();
       for (final fixedPhase in _fixedPhases) {
         if (normalizedPhaseName == fixedPhase.toLowerCase()) {
           final existing = phaseMap[fixedPhase];
-          if (existing == null || 
-              (_isFailedStatus(existing.status) && !_isFailedStatus(phase.status)) ||
-              (existing.startDate != null && phase.startDate != null &&
-               DateTime.parse(phase.startDate!).isAfter(DateTime.parse(existing.startDate!)))) {
+          if (existing == null ||
+              (_isFailedStatus(existing.status) &&
+                  !_isFailedStatus(phase.status)) ||
+              (existing.startDate != null &&
+                  phase.startDate != null &&
+                  DateTime.parse(
+                    phase.startDate!,
+                  ).isAfter(DateTime.parse(existing.startDate!)))) {
             phaseMap[fixedPhase] = phase;
           }
           break;
         }
       }
-      
+
       // Try partial match (e.g., "Peak Craving" matches "Peak Craving Phase")
       for (final fixedPhase in _fixedPhases) {
         final normalizedFixed = fixedPhase.toLowerCase();
-        if (normalizedPhaseName.contains(normalizedFixed) || 
+        if (normalizedPhaseName.contains(normalizedFixed) ||
             normalizedFixed.contains(normalizedPhaseName)) {
           final existing = phaseMap[fixedPhase];
-          if (existing == null || 
-              (_isFailedStatus(existing.status) && !_isFailedStatus(phase.status)) ||
-              (existing.startDate != null && phase.startDate != null &&
-               DateTime.parse(phase.startDate!).isAfter(DateTime.parse(existing.startDate!)))) {
+          if (existing == null ||
+              (_isFailedStatus(existing.status) &&
+                  !_isFailedStatus(phase.status)) ||
+              (existing.startDate != null &&
+                  phase.startDate != null &&
+                  DateTime.parse(
+                    phase.startDate!,
+                  ).isAfter(DateTime.parse(existing.startDate!)))) {
             phaseMap[fixedPhase] = phase;
           }
           break;
         }
       }
     }
-    
+
     return phaseMap;
   }
 
@@ -2999,7 +3128,10 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return child;
   }
 
@@ -3008,4 +3140,3 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
     return child != oldDelegate.child;
   }
 }
-

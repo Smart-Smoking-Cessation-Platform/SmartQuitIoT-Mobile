@@ -6,6 +6,10 @@ import 'package:SmartQuitIoT/repositories/metrics_repository.dart';
 import 'package:SmartQuitIoT/services/metrics_service.dart';
 import 'package:SmartQuitIoT/providers/auth_provider.dart';
 
+final metricsAuthTokenProvider = Provider<String?>((ref) {
+  return ref.watch(authViewModelProvider.select((s) => s.accessToken));
+});
+
 // Service Provider
 final metricsServiceProvider = Provider<MetricsService>((ref) {
   return MetricsService(ref.read(authRepositoryProvider));
@@ -20,32 +24,38 @@ final metricsRepositoryProvider = Provider<MetricsRepository>((ref) {
 });
 
 // Home Metrics Provider
-final homeMetricsProvider = FutureProvider<HomeMetrics>((ref) async {
+final homeMetricsProvider = FutureProvider.autoDispose<HomeMetrics>((
+  ref,
+) async {
+  ref.watch(metricsAuthTokenProvider);
+
   final repository = ref.read(metricsRepositoryProvider);
   return await repository.getHomeMetrics();
 });
 
 // Health Recoveries Provider
-final healthRecoveriesProvider = FutureProvider<HealthRecoveryResponse>((
-  ref,
-) async {
-  // Listen for refresh trigger
-  ref.watch(metricsRefreshProvider);
+final healthRecoveriesProvider =
+    FutureProvider.autoDispose<HealthRecoveryResponse>((ref) async {
+      ref.watch(metricsAuthTokenProvider);
 
-  final repository = ref.read(metricsRepositoryProvider);
-  return await repository.getHealthRecoveries();
-});
+      // Listen for refresh trigger
+      ref.watch(metricsRefreshProvider);
+
+      final repository = ref.read(metricsRepositoryProvider);
+      return await repository.getHealthRecoveries();
+    });
 
 // Home Health Recovery Provider
-final homeHealthRecoveryProvider = FutureProvider<HomeHealthRecovery>((
-  ref,
-) async {
-  // Listen for refresh trigger
-  ref.watch(metricsRefreshProvider);
+final homeHealthRecoveryProvider =
+    FutureProvider.autoDispose<HomeHealthRecovery>((ref) async {
+      ref.watch(metricsAuthTokenProvider);
 
-  final repository = ref.read(metricsRepositoryProvider);
-  return await repository.getHomeHealthRecovery();
-});
+      // Listen for refresh trigger
+      ref.watch(metricsRefreshProvider);
+
+      final repository = ref.read(metricsRepositoryProvider);
+      return await repository.getHomeHealthRecovery();
+    });
 
 // Refresh Provider for metrics (similar to diary refresh)
 final metricsRefreshProvider =
