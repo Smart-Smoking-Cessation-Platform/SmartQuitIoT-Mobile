@@ -35,11 +35,14 @@ class QuitPlanDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
+  int selectedDayIndex = 0;
   final Set<int> locallyCompletedMissionIds = <int>{};
   int? _phaseActionInProgressId;
   String? _phaseActionInProgressType;
   late TabController _tabController;
+  final List<TabController> _oldTabControllers = <TabController>[];
+  bool _isDisposing = false;
 
   static const String _phaseActionKeepKey = 'keep';
   static const String _phaseActionRedoKey = 'redo';
@@ -57,7 +60,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
   void initState() {
     super.initState();
     // Initialize TabController with 5 tabs (fixed phases)
-    _tabController = TabController(length: _fixedPhases.length, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(quitPlanDetailViewModelProvider.notifier)
@@ -65,8 +68,34 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
     });
   }
 
+  void _setTabControllerLength(int desiredLength) {
+    final nextLength = desiredLength < 1 ? 1 : desiredLength;
+    if (_tabController.length == nextLength) return;
+
+    final oldController = _tabController;
+    final safeIndex = oldController.index.clamp(0, nextLength - 1);
+    _tabController = TabController(
+      length: nextLength,
+      vsync: this,
+      initialIndex: safeIndex,
+    );
+    _oldTabControllers.add(oldController);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_isDisposing) return;
+      if (_oldTabControllers.remove(oldController)) {
+        oldController.dispose();
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _isDisposing = true;
+    for (final c in _oldTabControllers) {
+      c.dispose();
+    }
+    _oldTabControllers.clear();
     _tabController.dispose();
     super.dispose();
   }
@@ -74,7 +103,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
   void _showMissionCompleteDialog(QuitMissionItem mission, int phaseId) {
     // Don't show dialog in read-only mode
     if (widget.isReadOnly) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -315,9 +344,16 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
           final sortedPhases = data.phases != null && data.phases!.isNotEmpty
               ? _sortPhases(data.phases!)
               : <QuitPhaseDetail>[];
-          
-          // Map fixed phases to actual phase data
-          final phaseMap = _mapPhasesToFixedPhases(sortedPhases);
+
+          final displayPhases = sortedPhases;
+
+          assert(() {
+            _mapPhasesToFixedPhases(sortedPhases);
+            _hasRedoHistoryForPhaseName(sortedPhases, '');
+            return true;
+          }());
+
+          _setTabControllerLength(displayPhases.length);
 
           return NestedScrollView(
             headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
@@ -328,19 +364,23 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                     children: [
                       // Header Section
                       QuitPlanHeader(plan: data),
-                      
+
                       // Congratulations Banner
                       if (isCompleted) _buildCongratulationsBanner(data),
-                      
+
                       // Insights Section
                       QuitPlanInsights(plan: data),
-                      
+
                       // Stats Section - will have square bottom when TabBar docks
-                      _buildStats(data, dockedToTabBar: true),
+                      _buildStats(
+                        data,
+                        phases: displayPhases,
+                        dockedToTabBar: true,
+                      ),
                     ],
                   ),
                 ),
-                
+
                 // Sticky TabBar that docks below Header Card
                 SliverPersistentHeader(
                   pinned: true,
@@ -366,7 +406,10 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                         indicatorWeight: 3,
                         indicatorSize: TabBarIndicatorSize.tab,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         labelStyle: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -375,11 +418,13 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                           fontSize: 14,
                           fontWeight: FontWeight.normal,
                         ),
-                        tabs: _fixedPhases.map((phaseName) {
-                          final phase = phaseMap[phaseName];
-                          final theme = resolvePhaseTheme(phaseName);
-                          final hasData = phase != null;
-                          
+                        tabs: displayPhases.map((phase) {
+                          final phaseName = (phase.name ?? '').trim();
+                          final themeKey = phaseName.isNotEmpty
+                              ? phaseName
+                              : 'Quit Plan';
+                          final theme = resolvePhaseTheme(themeKey);
+
                           return Tab(
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -387,14 +432,35 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                                 Icon(
                                   theme.icon,
                                   size: 18,
-                                  color: hasData
-                                      ? theme.primaryColor
-                                      : Colors.grey[400],
+                                  color: theme.primaryColor,
                                 ),
                                 const SizedBox(width: 6),
-                                Text(phaseName),
-                                if (hasData && phase.status != null) ...[
+                                Text(
+                                  phaseName.isNotEmpty ? phaseName : 'Phase',
+                                ),
+                                if (phase.status != null) ...[
                                   const SizedBox(width: 6),
+                                  if (phase.redo ?? false) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withOpacity(0.18),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text(
+                                        'Redo',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.amber,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                  ],
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 6,
@@ -403,7 +469,9 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                                     decoration: BoxDecoration(
                                       color: _isFailedStatus(phase.status)
                                           ? Colors.redAccent.withOpacity(0.15)
-                                          : theme.primaryColor.withOpacity(0.15),
+                                          : theme.primaryColor.withOpacity(
+                                              0.15,
+                                            ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -430,47 +498,27 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
             },
             body: TabBarView(
               controller: _tabController,
-              children: _fixedPhases.map((phaseName) {
-                final phase = phaseMap[phaseName];
-                final theme = resolvePhaseTheme(phaseName);
-                
-                if (phase == null) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          theme.icon,
-                          size: 64,
-                          color: Colors.grey[300],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '$phaseName phase not started yet',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                
+              children: displayPhases.map((phase) {
+                final phaseName = (phase.name ?? '').trim();
+                final themeKey = phaseName.isNotEmpty ? phaseName : data.name;
+                final theme = resolvePhaseTheme(themeKey);
+
                 return PhaseDetailView(
                   plan: data,
                   phase: phase,
                   theme: theme,
                   locallyCompletedMissionIds: locallyCompletedMissionIds,
                   isReadOnly: widget.isReadOnly,
-                  onKeepPhase: _isFailedStatus(phase.status) && 
-                               !(phase.keepPhase ?? false) &&
-                               !widget.isReadOnly
+                  onKeepPhase:
+                      _isFailedStatus(phase.status) &&
+                          !(phase.keepPhase ?? false) &&
+                          !widget.isReadOnly
                       ? () => _handleKeepPhaseAction(data, phase)
                       : null,
-                  onRedoPhase: _isFailedStatus(phase.status) && 
-                              !(phase.keepPhase ?? false) &&
-                              !widget.isReadOnly
+                  onRedoPhase:
+                      _isFailedStatus(phase.status) &&
+                          !(phase.keepPhase ?? false) &&
+                          !widget.isReadOnly
                       ? () => _handleRedoPhaseAction(phase)
                       : null,
                   onMissionCompleted: widget.isReadOnly
@@ -480,8 +528,14 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                       : (QuitMissionItem mission, int phaseId) {
                           _showMissionCompleteDialog(mission, phaseId);
                         },
-                  keepLoading: _isPhaseActionLoading(phase.id, _phaseActionKeepKey),
-                  redoLoading: _isPhaseActionLoading(phase.id, _phaseActionRedoKey),
+                  keepLoading: _isPhaseActionLoading(
+                    phase.id,
+                    _phaseActionKeepKey,
+                  ),
+                  redoLoading: _isPhaseActionLoading(
+                    phase.id,
+                    _phaseActionRedoKey,
+                  ),
                   hasPhaseActionInProgress: _hasPhaseActionInProgress,
                 );
               }).toList(),
@@ -495,15 +549,27 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
   // Removed _buildHeader - replaced by QuitPlanHeader widget
   // Removed _buildPlanInsightsSection and all related methods - replaced by QuitPlanInsights widget
 
-  Widget _buildStats(QuitPlanDetail data, {bool dockedToTabBar = false}) {
-    final totalMissions = data.totalMissions;
-    final completedMissions = data.completedMissions;
+  Widget _buildStats(
+    QuitPlanDetail data, {
+    List<QuitPhaseDetail>? phases,
+    bool dockedToTabBar = false,
+  }) {
+    final effectivePhases =
+        phases ?? (data.phases ?? const <QuitPhaseDetail>[]);
+    final totalMissions = effectivePhases.fold<int>(
+      0,
+      (sum, p) => sum + (p.totalMissions ?? 0),
+    );
+    final completedMissions = effectivePhases.fold<int>(
+      0,
+      (sum, p) => sum + (p.completedMissions ?? 0),
+    );
     final progress = totalMissions > 0
         ? completedMissions / totalMissions
         : 0.0;
 
     return Container(
-      margin: dockedToTabBar 
+      margin: dockedToTabBar
           ? const EdgeInsets.only(left: 16, right: 16, top: 16)
           : const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -534,7 +600,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
             children: [
               _buildStatItem(
                 'Phases',
-                '${data.phases?.length ?? 0}',
+                '${effectivePhases.length}',
                 Icons.flag,
                 const Color(0xFF3B82F6),
               ),
@@ -1528,68 +1594,113 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
         .join(' ');
   }
 
+  DateTime? _tryParseDateTime(String? value) {
+    if (value == null || value.isEmpty) return null;
+    try {
+      return DateTime.parse(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _hasRedoHistoryForPhaseName(
+    List<QuitPhaseDetail> phases,
+    String phaseName,
+  ) {
+    final normalizedTarget = phaseName.trim().toLowerCase();
+    if (normalizedTarget.isEmpty) return false;
+    return phases.any((p) {
+      final normalizedName = (p.name ?? '').trim().toLowerCase();
+      final matches =
+          normalizedName == normalizedTarget ||
+          normalizedName.contains(normalizedTarget) ||
+          normalizedTarget.contains(normalizedName);
+      return matches && (p.redo ?? false);
+    });
+  }
+
+  int _phaseRecencyCompare(QuitPhaseDetail a, QuitPhaseDetail b) {
+    final aStart = _tryParseDateTime(a.startDate);
+    final bStart = _tryParseDateTime(b.startDate);
+    if (aStart != null || bStart != null) {
+      if (aStart == null) return -1;
+      if (bStart == null) return 1;
+      final cmp = aStart.compareTo(bStart);
+      if (cmp != 0) return cmp;
+    }
+
+    final aCreated = _tryParseDateTime(a.createdAt);
+    final bCreated = _tryParseDateTime(b.createdAt);
+    if (aCreated != null || bCreated != null) {
+      if (aCreated == null) return -1;
+      if (bCreated == null) return 1;
+      final cmp = aCreated.compareTo(bCreated);
+      if (cmp != 0) return cmp;
+    }
+
+    final aId = a.id ?? -1;
+    final bId = b.id ?? -1;
+    return aId.compareTo(bId);
+  }
+
+  bool _isNewerPhase(QuitPhaseDetail candidate, QuitPhaseDetail? existing) {
+    if (existing == null) return true;
+    final cmp = _phaseRecencyCompare(candidate, existing);
+    if (cmp > 0) return true;
+    if (cmp < 0) return false;
+
+    final candidateRedo = candidate.redo ?? false;
+    final existingRedo = existing.redo ?? false;
+    if (existingRedo && !candidateRedo) return true;
+    return false;
+  }
+
   /// Maps fixed phase names to actual phase data from API
   /// Returns a map where keys are fixed phase names and values are QuitPhaseDetail or null
   Map<String, QuitPhaseDetail?> _mapPhasesToFixedPhases(
     List<QuitPhaseDetail> sortedPhases,
   ) {
     final Map<String, QuitPhaseDetail?> phaseMap = {};
-    
+
     // Initialize all fixed phases as null
     for (final fixedPhase in _fixedPhases) {
       phaseMap[fixedPhase] = null;
     }
-    
+
     // Map actual phases to fixed phases by matching phase names
     for (final phase in sortedPhases) {
       final phaseName = (phase.name ?? '').trim();
       if (phaseName.isEmpty) continue;
-      
-      // Try exact match first
+
+      String? matchedKey;
       if (phaseMap.containsKey(phaseName)) {
-        // If there's already a phase mapped, prefer the one that's not failed or the most recent one
-        final existing = phaseMap[phaseName];
-        if (existing == null || 
-            (_isFailedStatus(existing.status) && !_isFailedStatus(phase.status)) ||
-            (existing.startDate != null && phase.startDate != null &&
-             DateTime.parse(phase.startDate!).isAfter(DateTime.parse(existing.startDate!)))) {
-          phaseMap[phaseName] = phase;
-        }
-        continue;
-      }
-      
-      // Try case-insensitive match
-      final normalizedPhaseName = phaseName.toLowerCase();
-      for (final fixedPhase in _fixedPhases) {
-        if (normalizedPhaseName == fixedPhase.toLowerCase()) {
-          final existing = phaseMap[fixedPhase];
-          if (existing == null || 
-              (_isFailedStatus(existing.status) && !_isFailedStatus(phase.status)) ||
-              (existing.startDate != null && phase.startDate != null &&
-               DateTime.parse(phase.startDate!).isAfter(DateTime.parse(existing.startDate!)))) {
-            phaseMap[fixedPhase] = phase;
+        matchedKey = phaseName;
+      } else {
+        final normalizedPhaseName = phaseName.toLowerCase();
+        for (final fixedPhase in _fixedPhases) {
+          if (normalizedPhaseName == fixedPhase.toLowerCase()) {
+            matchedKey = fixedPhase;
+            break;
           }
-          break;
         }
-      }
-      
-      // Try partial match (e.g., "Peak Craving" matches "Peak Craving Phase")
-      for (final fixedPhase in _fixedPhases) {
-        final normalizedFixed = fixedPhase.toLowerCase();
-        if (normalizedPhaseName.contains(normalizedFixed) || 
-            normalizedFixed.contains(normalizedPhaseName)) {
-          final existing = phaseMap[fixedPhase];
-          if (existing == null || 
-              (_isFailedStatus(existing.status) && !_isFailedStatus(phase.status)) ||
-              (existing.startDate != null && phase.startDate != null &&
-               DateTime.parse(phase.startDate!).isAfter(DateTime.parse(existing.startDate!)))) {
-            phaseMap[fixedPhase] = phase;
+        matchedKey ??= () {
+          for (final fixedPhase in _fixedPhases) {
+            final normalizedFixed = fixedPhase.toLowerCase();
+            if (normalizedPhaseName.contains(normalizedFixed) ||
+                normalizedFixed.contains(normalizedPhaseName)) {
+              return fixedPhase;
+            }
           }
-          break;
-        }
+          return null;
+        }();
+      }
+
+      if (matchedKey == null) continue;
+      if (_isNewerPhase(phase, phaseMap[matchedKey])) {
+        phaseMap[matchedKey] = phase;
       }
     }
-    
+
     return phaseMap;
   }
 
@@ -1867,54 +1978,6 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
     }
   }
 
-  /// Check if there's a new phase created after a failed phase (redo scenario)
-  bool _hasNewPhaseAfterFailed(
-    QuitPhaseDetail failedPhase,
-    List<QuitPhaseDetail> allPhases,
-  ) {
-    if (!_isFailedStatus(failedPhase.status)) return false;
-
-    final failedPhaseName = failedPhase.name ?? '';
-    final failedPhaseId = failedPhase.id;
-    if (failedPhaseName.isEmpty || failedPhaseId == null) return false;
-
-    // Find if there's a phase with the same name but different status (CREATED or IN_PROGRESS)
-    // and created after the failed phase
-    for (final phase in allPhases) {
-      if (phase.id == failedPhaseId) continue; // Skip the failed phase itself
-      if (phase.name != failedPhaseName) continue; // Must be same phase name
-
-      // Check if it's a new phase (CREATED or IN_PROGRESS) that was created after the failed phase
-      final isNewPhase =
-          phase.status == 'CREATED' || phase.status == 'IN_PROGRESS';
-      if (isNewPhase) {
-        // Check if startDate is after failed phase's endDate (or created after)
-        try {
-          if (failedPhase.endDate != null && phase.startDate != null) {
-            final failedEndDate = DateTime.parse(failedPhase.endDate!);
-            final newStartDate = DateTime.parse(phase.startDate!);
-            if (newStartDate.isAfter(failedEndDate) ||
-                newStartDate.isAtSameMomentAs(failedEndDate)) {
-              return true;
-            }
-          }
-          // If dates are not available, check by createdAt
-          if (failedPhase.createdAt != null && phase.createdAt != null) {
-            final failedCreatedAt = DateTime.parse(failedPhase.createdAt!);
-            final newCreatedAt = DateTime.parse(phase.createdAt!);
-            if (newCreatedAt.isAfter(failedCreatedAt)) {
-              return true;
-            }
-          }
-        } catch (e) {
-          // If date parsing fails, assume it's a new phase if status matches
-          if (isNewPhase) return true;
-        }
-      }
-    }
-    return false;
-  }
-
   /// Get smokeAvgPerDay from formMetricDTO or calculate from fmCigarettesTotal
   int _getSmokeAvgPerDay(
     int? formMetricSmokeAvgPerDay,
@@ -1941,98 +2004,23 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
     // Create a copy to avoid modifying original list
     final sorted = List<QuitPhaseDetail>.from(phases);
 
-    // First, sort by startDate
     sorted.sort((a, b) {
-      final aStart = a.startDate;
-      final bStart = b.startDate;
-      if (aStart == null && bStart == null) return 0;
-      if (aStart == null) return 1;
-      if (bStart == null) return -1;
-      try {
-        final aDate = DateTime.parse(aStart);
-        final bDate = DateTime.parse(bStart);
-        return aDate.compareTo(bDate);
-      } catch (e) {
-        return 0;
+      final aDate = _tryParseDateTime(a.startDate);
+      final bDate = _tryParseDateTime(b.startDate);
+
+      if (aDate != null || bDate != null) {
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        final cmp = aDate.compareTo(bDate);
+        if (cmp != 0) return cmp;
       }
+
+      final aId = a.id ?? -1;
+      final bId = b.id ?? -1;
+      return aId.compareTo(bId);
     });
 
-    // Then, reorganize: if a failed phase has a redo phase, move redo phase right after it
-    final result = <QuitPhaseDetail>[];
-    final processedIds = <int>{};
-
-    for (int i = 0; i < sorted.length; i++) {
-      final phase = sorted[i];
-      final phaseId = phase.id;
-      if (phaseId == null || processedIds.contains(phaseId)) continue;
-
-      // If this is a failed phase, check if there's a redo phase
-      if (_isFailedStatus(phase.status)) {
-        result.add(phase);
-        processedIds.add(phaseId);
-
-        // Find redo phase (same name, different id, CREATED or IN_PROGRESS)
-        final phaseName = phase.name ?? '';
-        if (phaseName.isNotEmpty) {
-          // Search through all phases to find the redo phase
-          for (final candidate in sorted) {
-            final candidateId = candidate.id;
-            if (candidateId == null || processedIds.contains(candidateId))
-              continue;
-
-            // Check if this is a redo phase of the failed phase
-            if (candidate.name == phaseName &&
-                candidateId != phaseId &&
-                (candidate.status == 'CREATED' ||
-                    candidate.status == 'IN_PROGRESS')) {
-              // Check if it's created after the failed phase
-              if (_hasNewPhaseAfterFailed(phase, sorted)) {
-                result.add(candidate);
-                processedIds.add(candidateId);
-                break; // Only take the first matching redo phase
-              }
-            }
-          }
-        }
-      } else {
-        // Regular phase - check if it's not a redo of a failed phase we already processed
-        final phaseName = phase.name ?? '';
-        bool isRedoOfProcessedFailed = false;
-
-        if (phaseName.isNotEmpty) {
-          // Check if this phase is a redo of a failed phase we already added
-          for (final processedPhase in result) {
-            if (_isFailedStatus(processedPhase.status) &&
-                processedPhase.name == phaseName &&
-                processedPhase.id != phaseId) {
-              // Check if this phase is the redo
-              if ((phase.status == 'CREATED' ||
-                      phase.status == 'IN_PROGRESS') &&
-                  _hasNewPhaseAfterFailed(processedPhase, sorted)) {
-                isRedoOfProcessedFailed = true;
-                break;
-              }
-            }
-          }
-        }
-
-        if (!isRedoOfProcessedFailed) {
-          result.add(phase);
-          processedIds.add(phaseId);
-        }
-      }
-    }
-
-    // Add any remaining phases that weren't processed
-    for (final phase in sorted) {
-      final phaseId = phase.id;
-      if (phaseId != null && !processedIds.contains(phaseId)) {
-        result.add(phase);
-        processedIds.add(phaseId);
-      }
-    }
-
-    return result;
+    return sorted;
   }
 
   // Removed _buildTriggerChip - not used
@@ -2052,7 +2040,10 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return child;
   }
 
