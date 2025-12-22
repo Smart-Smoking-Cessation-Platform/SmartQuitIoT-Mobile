@@ -1341,6 +1341,11 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
           ),
         ),
 
+        if (shouldShowRedoBadge) ...[
+          const SizedBox(height: 12),
+          _buildRedoPhaseBanner(),
+        ],
+
         // Kept Phase Banner
         if (shouldShowKeptBanner) ...[
           const SizedBox(height: 12),
@@ -2326,6 +2331,50 @@ class _QuitPlanScreenState extends ConsumerState<QuitPlanScreen>
                 Text(
                   'Continue with your saved progress. Actions are no longer needed.',
                   style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRedoPhaseBanner() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.08), // Màu nền vàng nhạt
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.amber.withOpacity(0.4)), // Viền vàng
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.refresh_rounded, color: Colors.amber[800]),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Phase Redone',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.amber[900], // Màu chữ đậm
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'You have chosen to redo this phase.', // Nội dung bạn yêu cầu
+                  style: TextStyle(fontSize: 12, color: Colors.amber[900]),
                 ),
               ],
             ),
