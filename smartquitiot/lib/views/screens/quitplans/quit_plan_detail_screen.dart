@@ -151,6 +151,513 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
         _phaseActionInProgressType == actionKey;
   }
 
+  Widget _buildPhaseDetails(
+    QuitPlanDetail plan,
+    QuitPhaseDetail phase,
+    PhaseTheme theme,
+  ) {
+    final days = phase.details ?? [];
+
+    // Tính toán tiến độ
+    final totalMissions = phase.totalMissions ?? 0;
+    final completedMissions = phase.completedMissions ?? 0;
+    final phaseProgress = (totalMissions > 0)
+        ? (completedMissions / totalMissions)
+        : 0.0;
+    final phasePercent = (phaseProgress * 100).toInt();
+
+    final shouldShowKeptBanner =
+        _isFailedStatus(phase.status) && (phase.keepPhase ?? false);
+    final shouldShowRedoBadge = (phase.redo ?? false);
+
+    // Lấy thông tin cho conditions
+    final formMetric = plan
+        .formMetricDTO; // Lưu ý: check model của bạn là formMetric hay formMetricDTO
+    final smokeAvg = formMetric?.smokeAvgPerDay ?? 0;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Phase Header Card
+          Card(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: theme.primaryColor.withOpacity(0.18),
+                width: 1,
+              ),
+            ),
+            elevation: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          theme.icon,
+                          color: theme.primaryColor,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              phase.name ?? '',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_formatDate(phase.startDate)} → ${_formatDate(phase.endDate)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Status Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _isFailedStatus(phase.status)
+                              ? Colors.redAccent.withOpacity(0.15)
+                              : theme.primaryColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _formatStatus(phase.status),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: _isFailedStatus(phase.status)
+                                ? Colors.redAccent
+                                : theme.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _buildPhaseInfoChips(phase, theme),
+                  const SizedBox(height: 8),
+                  // Progress Bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: phaseProgress.clamp(0.0, 1.0),
+                      minHeight: 6,
+                      backgroundColor: theme.primaryColor.withOpacity(0.1),
+                      valueColor: AlwaysStoppedAnimation(theme.primaryColor),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '$phasePercent% completed',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: theme.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 2. ✨ Redo Banner (CẬP NHẬT: Thêm vào đây)
+          if (shouldShowRedoBadge) ...[
+            const SizedBox(height: 12),
+            _buildRedoPhaseBanner(),
+          ],
+
+          // 3. Kept Phase Banner
+          if (shouldShowKeptBanner) ...[
+            const SizedBox(height: 12),
+            _buildKeptPhaseBanner(theme),
+          ],
+
+          // 4. Failed Actions
+          if (_isFailedStatus(phase.status) &&
+              !(phase.keepPhase ?? false) &&
+              !(phase.redo ?? false)) ...[
+            const SizedBox(height: 12),
+            _buildFailedPhaseActionsInline(plan, phase, theme),
+          ],
+
+          // 5. Reason Text
+          const SizedBox(height: 12),
+          if ((phase.reason ?? '').isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, color: theme.primaryColor, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      phase.reason ?? '',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // ❌ 6. Stats Section -> ĐÃ BỊ XÓA THEO YÊU CẦU
+
+          // 7. Conditions
+          if (phase.condition != null &&
+              (phase.condition!.rules?.isNotEmpty ?? false)) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.verified_outlined,
+                        size: 16,
+                        color: theme.primaryColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Conditions to Pass',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPhaseConditions(
+                    phase.condition!,
+                    theme,
+                    phase.fmCigarettesTotal ?? 0,
+                    smokeAvg, // Dùng biến lấy từ formMetricDTO ở trên
+                    phase.durationDay ?? 0,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // 8. Missions List (Sử dụng lại logic của bạn nhưng cần copy hàm _buildMissionsList từ Screen kia qua hoặc viết lại nhẹ)
+          // Ở đây tôi giả định bạn sẽ dùng logic hiển thị list ngày như cũ.
+          // Nếu bạn chưa copy hàm _buildMissionsList từ QuitPlanScreen qua đây, hãy copy nó qua.
+          // Tạm thời tôi dùng logic hiển thị đơn giản cho Day List để code chạy được:
+          if (days.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Center(
+                child: Text(
+                  'No missions available yet',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ),
+            )
+          else ...[
+            const Text(
+              'Days:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            // ... (Copy logic ListView Day selector từ QuitPlanScreen qua đây) ...
+            SizedBox(
+              height: 70,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: days.length,
+                itemBuilder: (context, dayIdx) {
+                  final day = days[dayIdx];
+                  final isSelected = selectedDayIndex == dayIdx;
+                  final missions = day.missions ?? [];
+                  final completed = missions
+                      .where(
+                        (m) =>
+                            m.status == 'COMPLETED' ||
+                            locallyCompletedMissionIds.contains(m.id),
+                      )
+                      .length;
+
+                  return GestureDetector(
+                    onTap: () => setState(() => selectedDayIndex = dayIdx),
+                    child: Container(
+                      width: 80,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? theme.primaryColor
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Day ${day.dayIndex}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            _formatDate(day.date),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isSelected
+                                  ? Colors.white70
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                          Text(
+                            '$completed/${missions.length}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected
+                                  ? Colors.white
+                                  : theme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Hiển thị missions của ngày đang chọn
+            if (selectedDayIndex < days.length)
+              // Lưu ý: Bạn cần copy hàm _buildMissionsList từ file QuitPlanScreen.dart sang file này
+              _buildMissionsList(days[selectedDayIndex], theme, phase),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMissionsList(
+    QuitDay day,
+    PhaseTheme theme,
+    QuitPhaseDetail phase,
+  ) {
+    final missions = day.missions ?? [];
+    if (missions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: Center(child: Text('No missions for this day')),
+      );
+    }
+
+    final isSelectedDayToday = _isToday(day.date);
+    final isDayAvailableForCompletion = _isPastOrToday(day.date);
+    final allMissionsCompleted = _areAllMissionsCompleted(missions);
+    final showCongratulations = isSelectedDayToday && allMissionsCompleted;
+    final isRedoPhase = phase.redo == true;
+
+    // ✅ Logic mới: Kiểm tra xem Phase đã hoàn thành chưa
+    final isPhaseCompleted = phase.status == 'COMPLETED';
+
+    return Column(
+      children: [
+        if (showCongratulations)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.primaryColor.withOpacity(0.12),
+                  theme.primaryColor.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Text('', style: TextStyle(fontSize: 24)),
+                    SizedBox(width: 8),
+                    Text('🎆', style: TextStyle(fontSize: 20)),
+                    SizedBox(width: 8),
+                    Text('✨', style: TextStyle(fontSize: 18)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Congratulations!',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: theme.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'You have completed all missions for today!\nCome back tomorrow for new challenges.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+              ],
+            ),
+          ),
+        ...missions.map((mission) {
+          final missionId = mission.id ?? -1;
+          final completed =
+              mission.status == 'COMPLETED' ||
+              locallyCompletedMissionIds.contains(missionId);
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: completed
+                  ? Colors.green.withOpacity(0.05)
+                  : theme.primaryColor.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: completed
+                    ? Colors.green
+                    : theme.primaryColor.withOpacity(0.4),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      completed
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      color: completed ? Colors.green : theme.primaryColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        mission.name ?? '',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          decoration: completed
+                              ? TextDecoration.lineThrough
+                              : null,
+                          color: completed ? Colors.green : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if ((mission.description ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 28),
+                    child: Text(
+                      mission.description ?? '',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ),
+                ],
+
+                // ✅ Đã cập nhật điều kiện ở đây:
+                // Thêm: && !isPhaseCompleted
+                if (!widget.isReadOnly &&
+                    !completed &&
+                    missionId != -1 &&
+                    !isRedoPhase &&
+                    !isPhaseCompleted) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: isDayAvailableForCompletion && phase.id != null
+                          ? () => _showMissionCompleteDialog(mission, phase.id!)
+                          : null,
+                      style: TextButton.styleFrom(
+                        backgroundColor: isDayAvailableForCompletion
+                            ? theme.primaryColor
+                            : Colors.grey,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        isDayAvailableForCompletion
+                            ? 'Complete Mission'
+                            : 'Not Available Yet',
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  bool _areAllMissionsCompleted(List<QuitMissionItem> missions) {
+    if (missions.isEmpty) return false;
+    return missions.every((mission) {
+      final missionId = mission.id ?? -1;
+      return mission.status == 'COMPLETED' ||
+          locallyCompletedMissionIds.contains(missionId);
+    });
+  }
+
   bool get _hasPhaseActionInProgress =>
       _phaseActionInProgressId != null && _phaseActionInProgressType != null;
 
@@ -503,41 +1010,42 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                 final themeKey = phaseName.isNotEmpty ? phaseName : data.name;
                 final theme = resolvePhaseTheme(themeKey);
 
-                return PhaseDetailView(
-                  plan: data,
-                  phase: phase,
-                  theme: theme,
-                  locallyCompletedMissionIds: locallyCompletedMissionIds,
-                  isReadOnly: widget.isReadOnly,
-                  onKeepPhase:
-                      _isFailedStatus(phase.status) &&
-                          !(phase.keepPhase ?? false) &&
-                          !widget.isReadOnly
-                      ? () => _handleKeepPhaseAction(data, phase)
-                      : null,
-                  onRedoPhase:
-                      _isFailedStatus(phase.status) &&
-                          !(phase.keepPhase ?? false) &&
-                          !widget.isReadOnly
-                      ? () => _handleRedoPhaseAction(phase)
-                      : null,
-                  onMissionCompleted: widget.isReadOnly
-                      ? (QuitMissionItem mission, int phaseId) {
-                          // No-op in read-only mode
-                        }
-                      : (QuitMissionItem mission, int phaseId) {
-                          _showMissionCompleteDialog(mission, phaseId);
-                        },
-                  keepLoading: _isPhaseActionLoading(
-                    phase.id,
-                    _phaseActionKeepKey,
-                  ),
-                  redoLoading: _isPhaseActionLoading(
-                    phase.id,
-                    _phaseActionRedoKey,
-                  ),
-                  hasPhaseActionInProgress: _hasPhaseActionInProgress,
-                );
+                // return PhaseDetailView(
+                //   plan: data,
+                //   phase: phase,
+                //   theme: theme,
+                //   locallyCompletedMissionIds: locallyCompletedMissionIds,
+                //   isReadOnly: widget.isReadOnly,
+                //   onKeepPhase:
+                //       _isFailedStatus(phase.status) &&
+                //           !(phase.keepPhase ?? false) &&
+                //           !widget.isReadOnly
+                //       ? () => _handleKeepPhaseAction(data, phase)
+                //       : null,
+                //   onRedoPhase:
+                //       _isFailedStatus(phase.status) &&
+                //           !(phase.keepPhase ?? false) &&
+                //           !widget.isReadOnly
+                //       ? () => _handleRedoPhaseAction(phase)
+                //       : null,
+                //   onMissionCompleted: widget.isReadOnly
+                //       ? (QuitMissionItem mission, int phaseId) {
+                //           // No-op in read-only mode
+                //         }
+                //       : (QuitMissionItem mission, int phaseId) {
+                //           _showMissionCompleteDialog(mission, phaseId);
+                //         },
+                //   keepLoading: _isPhaseActionLoading(
+                //     phase.id,
+                //     _phaseActionKeepKey,
+                //   ),
+                //   redoLoading: _isPhaseActionLoading(
+                //     phase.id,
+                //     _phaseActionRedoKey,
+                //   ),
+                //   hasPhaseActionInProgress: _hasPhaseActionInProgress,
+                // );
+                return _buildPhaseDetails(data, phase, theme);
               }).toList(),
             ),
           );
@@ -933,6 +1441,50 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
                 Text(
                   'Continue with your saved progress. Actions are no longer needed.',
                   style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRedoPhaseBanner() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.amber.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.refresh_rounded, color: Colors.amber[800]),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Phase Redone',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.amber[900],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'You have chosen to redo this phase.',
+                  style: TextStyle(fontSize: 12, color: Colors.amber[900]),
                 ),
               ],
             ),
@@ -1410,23 +1962,23 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
               ),
             ),
           ),
-        if (baselineTotal > 0)
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'Baseline total cigarettes: ${baselineTotal.toStringAsFixed(0)}',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: theme.primaryColor,
-              ),
-            ),
-          ),
+        // if (baselineTotal > 0)
+        //   Container(
+        //     margin: const EdgeInsets.only(top: 6),
+        //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        //     decoration: BoxDecoration(
+        //       color: theme.primaryColor.withOpacity(0.1),
+        //       borderRadius: BorderRadius.circular(8),
+        //     ),
+        //     child: Text(
+        //       'Baseline total cigarettes: ${baselineTotal.toStringAsFixed(0)}',
+        //       style: TextStyle(
+        //         fontSize: 11,
+        //         fontWeight: FontWeight.w600,
+        //         color: theme.primaryColor,
+        //       ),
+        //     ),
+        //   ),
         const SizedBox(height: 6),
         ...rules
             .map<Widget>(
@@ -1554,15 +2106,7 @@ class _QuitPlanDetailScreenState extends ConsumerState<QuitPlanDetailScreen>
       );
 
       if (base == 'fm_cigarettes_total') {
-        if (fmCigarettesTotal > 0) {
-          final computed = fmCigarettesTotal * percent;
-          final computedRounded = computed.toStringAsFixed(1);
-          // Show the computed value prominently with clear explanation
-          return 'Must be $operator $computedRounded cigarettes\n($percentLabel% of your baseline: ${fmCigarettesTotal.toStringAsFixed(0)} cigarettes)';
-        } else {
-          // If baseline is not available, still show the percentage
-          return 'Must be $operator $percentLabel% of baseline total cigarettes';
-        }
+        return 'Must be $operator $percentLabel% of your baseline cigarettes';
       }
 
       return 'Must be $operator $percentLabel% $op ${_formatFormulaBase(base)}';
