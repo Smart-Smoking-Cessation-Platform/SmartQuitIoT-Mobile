@@ -282,7 +282,10 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
             _buildChartCard(
               'Cigarettes Smoked',
               charts.cigarettesSmoked
-                  .map((e) => ChartDataPoint(e.date, e.cigarettesSmoked.toDouble()))
+                  .map(
+                    (e) =>
+                        ChartDataPoint(e.date, e.cigarettesSmoked.toDouble()),
+                  )
                   .toList(),
               const Color(0xFFF44336),
               Icons.smoking_rooms,
@@ -372,77 +375,77 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
   }
 
   Widget _buildChartCard(
-      String title,
-      List<ChartDataPoint> data,
-      Color color,
-      IconData icon,
-      ) {
-    // 1. Kiểm tra dữ liệu rỗng
+    String title,
+    List<ChartDataPoint> data,
+    Color color,
+    IconData icon,
+  ) {
     if (data.isEmpty) return const SizedBox();
 
-    // 2. Tìm Min/Max thực tế của dữ liệu
+    // 1. Tìm Min/Max thực tế
     double minVal = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
     double maxVal = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-
-    // 3. Cờ kiểm tra xem có số âm không
     bool hasNegative = minVal < 0;
 
-    // Khai báo biến
-    double minY;
-    double maxY;
-    double interval;
+    // 2. Tính toán trục Y (MinY, MaxY, Interval)
+    double minY, maxY, interval;
 
-    // =========================================================================
-    // CASE 1: LOGIC CŨ (Giữ nguyên cho các chart dương như Mood, Cigarettes...)
-    // =========================================================================
+    // --- CASE A: CHỈ CÓ SỐ DƯƠNG ---
     if (!hasNegative) {
-      minY = 0; // Logic cũ luôn set min là 0
+      minY = 0; // Luôn bắt đầu từ 0 cho đẹp
 
-      // --- [Đoạn này copy từ code gốc của bạn] ---
       if (maxVal <= 10) {
-        maxY = 10;
+        maxY = 12; // Padding nhẹ
         interval = 2;
       } else if (maxVal <= 100) {
-        maxY = 100;
+        // [Logic cũ] Đẩy lên 120 để số 100 không bị sát mép
+        maxY = 120;
         interval = 20;
       } else {
+        // Số lớn > 100
         maxY = (maxVal * 1.2).ceilToDouble();
+        // Làm tròn lên hàng chục
         maxY = ((maxY / 10).ceil() * 10).toDouble();
 
-        if (maxY < 50) {
-          interval = 10;
-        } else if (maxY < 100) {
+        if (maxY < 200)
           interval = 20;
-        } else {
-          interval = maxY / 5;
-          interval = ((interval / 10).ceil() * 10).toDouble();
-        }
+        else if (maxY < 500)
+          interval = 50;
+        else
+          interval = 100;
       }
     }
-    // =========================================================================
-    // CASE 2: LOGIC MỚI (Chỉ chạy khi dữ liệu bị ÂM, ví dụ Reduction Rate -300)
-    // =========================================================================
+    // --- CASE B: CÓ SỐ ÂM (XỬ LÝ ĐẶC BIỆT) ---
     else {
-      // Tính khoảng cách giữa Max và Min
+      // 1. Tính khoảng cách (Range)
       double range = maxVal - minVal;
+      if (range == 0) range = 10; // Fallback nếu min == max
 
-      // Thêm padding 10% trên dưới để đường line không chạm mép
-      double padding = range * 0.1;
+      // 2. Thêm "khoảng thở" (Padding) 20% cho cả trên và dưới
+      double padding = range * 0.2;
 
       maxY = maxVal + padding;
       minY = minVal - padding;
 
-      // Làm tròn số Min/Max về hàng chục cho đẹp (Ví dụ -312 -> -320)
+      // 3. Làm tròn số Min/Max về hàng chục (Ví dụ -32 -> -40)
       maxY = ((maxY / 10).ceil() * 10).toDouble();
       minY = ((minY / 10).floor() * 10).toDouble();
 
-      // Tính interval chia làm 5 phần
-      interval = (maxY - minY) / 5;
-
-      // Làm tròn interval
-      interval = ((interval / 10).ceil() * 10).toDouble();
+      // 4. Tính interval chia làm 5 khoảng
+      double rawInterval = (maxY - minY) / 5;
+      // Làm tròn interval về bội số của 5 hoặc 10
+      interval = ((rawInterval / 5).ceil() * 5).toDouble();
       if (interval == 0) interval = 10;
+
+      // Tinh chỉnh lại để đảm bảo lưới (grid) đẹp hơn nếu cần
+      // (Đoạn này giúp các đường line ngang khớp với các số tròn chục)
     }
+
+    // 3. Tính toán chiều rộng để SCROLL NGANG (như logic trước)
+    double itemWidth = 50.0;
+    double totalWidth = data.length * itemWidth;
+    double screenWidth = MediaQuery.of(context).size.width - 40;
+    double chartWidth = totalWidth < screenWidth ? screenWidth : totalWidth;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -461,6 +464,7 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             children: [
               Icon(icon, color: color, size: 24),
@@ -476,144 +480,181 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen>
             ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: interval,
-                  getDrawingHorizontalLine: (value) {
-                    // Logic UI: Nếu đang ở chế độ số âm, vẽ đường 0 đậm hơn chút cho dễ nhìn
-                    if (hasNegative && (value >= -1 && value <= 1)) {
-                      return FlLine(
-                          color: Colors.grey[400]!,
-                          strokeWidth: 1.5,
-                          dashArray: [4, 4] // Nét đứt
-                      );
-                    }
-                    return FlLine(color: Colors.grey[200]!, strokeWidth: 1);
-                  },
-                ),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      // Nếu có số âm (ví dụ -300) thì cần lề rộng hơn (45) so với bình thường (40)
-                      reservedSize: hasNegative ? 48 : 40,
-                      interval: interval,
-                      getTitlesWidget: (value, meta) {
-                        // Ẩn số nếu nó trùng với mép trên hoặc dưới cùng để đỡ bị cắt
-                        if (value == maxY || value == minY) return const SizedBox();
 
-                        return Text(
-                          value % interval == 0
-                              ? (value.toInt() == value
-                              ? value.toInt().toString()
-                              : value.toStringAsFixed(1))
-                              : '',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.right,
-                        );
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      interval: 1,
-                      getTitlesWidget: (value, meta) {
-                        if (value != value.toInt()) {
-                          return const Text('');
-                        }
-                        if (value.toInt() >= 0 && value.toInt() < data.length) {
-                          final date = DateTime.parse(data[value.toInt()].date);
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              DateFormat('dd/MM').format(date),
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 10,
-                              ),
-                            ),
+          // Scrollable Chart Body
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              height: 200,
+              width: chartWidth,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 20.0),
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: true,
+                      verticalInterval: 1,
+                      horizontalInterval: interval,
+                      getDrawingHorizontalLine: (value) {
+                        // [QUAN TRỌNG] Vẽ đường mốc số 0 (Zero Line) thật nổi bật
+                        if (value == 0) {
+                          return FlLine(
+                            color: Colors.blueGrey.withOpacity(0.6),
+                            strokeWidth: 2, // Đậm hơn bình thường
                           );
                         }
-                        return const Text('');
+                        // Đường 100 (cho trường hợp reduction)
+                        if (value == 100 && !hasNegative) {
+                          return FlLine(
+                            color: Colors.grey[300]!,
+                            strokeWidth: 1.2,
+                          );
+                        }
+                        return FlLine(color: Colors.grey[200]!, strokeWidth: 1);
                       },
+                      getDrawingVerticalLine: (value) =>
+                          FlLine(color: Colors.grey[100]!, strokeWidth: 1),
                     ),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[300]!),
-                    left: BorderSide(color: Colors.grey[300]!),
-                  ),
-                ),
-                minX: -0.3,
-                maxX: (data.length - 1).toDouble() + 0.3,
+                    titlesData: FlTitlesData(
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          // Nếu có số âm thì cần nhiều không gian bên trái hơn (để hiện dấu -)
+                          reservedSize: hasNegative ? 48 : 40,
+                          interval: interval,
+                          getTitlesWidget: (value, meta) {
+                            if (value == maxY && !hasNegative)
+                              return const SizedBox(); // Ẩn số đỉnh nếu dương
+                            if (value == minY && !hasNegative)
+                              return const SizedBox();
 
-                // QUAN TRỌNG: Dùng biến minY đã tính toán thay vì fix cứng số 0
-                minY: minY,
-                maxY: maxY,
+                            // Style chữ
+                            TextStyle style = TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                              fontWeight: (value == 0 || value == 100)
+                                  ? FontWeight.bold
+                                  : FontWeight.normal, // In đậm số 0 và 100
+                            );
 
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: data.asMap().entries.map((e) {
-                      return FlSpot(e.key.toDouble(), e.value.value);
-                    }).toList(),
-                    isCurved: true,
-                    color: color,
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 4,
-                          // Nếu giá trị âm, hiển thị màu đỏ cho user chú ý (hoặc giữ nguyên màu color nếu muốn)
-                          color: (hasNegative && spot.y < 0) ? Colors.redAccent : color,
-                          strokeWidth: 2,
-                          strokeColor: Colors.white,
-                        );
-                      },
+                            String text = value % interval == 0
+                                ? (value.toInt() == value
+                                      ? value.toInt().toString()
+                                      : value.toStringAsFixed(1))
+                                : '';
+
+                            return Text(
+                              text,
+                              style: style,
+                              textAlign: TextAlign.right,
+                            );
+                          },
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 30,
+                          interval: 1,
+                          getTitlesWidget: (value, meta) {
+                            final index = value.toInt();
+                            if (index >= 0 && index < data.length) {
+                              final date = DateTime.parse(data[index].date);
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  DateFormat('dd/MM').format(date),
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const Text('');
+                          },
+                        ),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                     ),
-                    belowBarData: BarAreaData(
+                    borderData: FlBorderData(
                       show: true,
-                      color: color.withOpacity(0.1),
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey[300]!),
+                        left: BorderSide(color: Colors.grey[300]!),
+                      ),
                     ),
-                  ),
-                ],
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        final date = DateTime.parse(data[spot.x.toInt()].date);
-                        final value = spot.y % 1 == 0
-                            ? spot.y.toInt().toString()
-                            : spot.y.toStringAsFixed(1);
-                        return LineTooltipItem(
-                          '${DateFormat('MMM dd').format(date)}\n$value',
-                          const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        );
-                      }).toList();
-                    },
+                    minX: 0,
+                    maxX: (data.length - 1).toDouble(),
+                    minY: minY,
+                    maxY: maxY,
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: data
+                            .asMap()
+                            .entries
+                            .map((e) => FlSpot(e.key.toDouble(), e.value.value))
+                            .toList(),
+                        isCurved: true,
+                        color: color,
+                        barWidth: 3,
+                        isStrokeCapRound: true,
+                        // [QUAN TRỌNG] Chấm tròn: Số âm màu ĐỎ, số dương màu THEO CHART
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) {
+                            Color dotColor = color;
+                            if (spot.y < 0)
+                              dotColor = Colors.redAccent; // Âm -> Đỏ
+                            if (spot.y == 0)
+                              dotColor = Colors.grey; // 0 -> Xám (tuỳ chọn)
+
+                            return FlDotCirclePainter(
+                              radius: 4,
+                              color: dotColor,
+                              strokeWidth: 2,
+                              strokeColor: Colors.white,
+                            );
+                          },
+                        ),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          // Gradient nhẹ: Phần dương màu gốc, phần âm có thể pha chút đỏ nếu muốn phức tạp
+                          // Ở đây giữ đơn giản là màu gốc
+                          color: color.withOpacity(0.1),
+                        ),
+                      ),
+                    ],
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipItems: (touchedSpots) {
+                          return touchedSpots.map((spot) {
+                            final date = DateTime.parse(
+                              data[spot.x.toInt()].date,
+                            );
+                            final value = spot.y % 1 == 0
+                                ? spot.y.toInt().toString()
+                                : spot.y.toStringAsFixed(1);
+                            return LineTooltipItem(
+                              '${DateFormat('MMM dd').format(date)}\n$value',
+                              const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                      handleBuiltInTouches: true,
+                    ),
                   ),
                 ),
               ),
