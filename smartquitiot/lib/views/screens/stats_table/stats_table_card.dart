@@ -481,6 +481,6 @@ class _StatsTableCardState extends ConsumerState<StatsTableCard>
   String _formatMoney(double amount) {
     // if (amount < 0) return '0';
     final formatter = NumberFormat('#,###');
-    return formatter.format(amount.abs());
+    return formatter.format(amount);
   }
 }
